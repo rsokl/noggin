@@ -3,7 +3,7 @@ import time
 import importlib
 import numpy as np
 from inspect import cleandoc
-from collections import OrderedDict, namedtuple, Sequence
+from collections import OrderedDict, namedtuple
 import os
 
 
@@ -82,7 +82,10 @@ class LivePlot:
             Stores training metric results data and plot-objects.
 
         test_metrics : OrderedDict[str, Dict[str, numpy.ndarray]]
-            Stores testing metric results data and plot-objects..
+            Stores testing metric results data and plot-objects.
+
+        pyplot : module
+            Submodule of matplotlib
 
         Notes
         -----
@@ -126,13 +129,16 @@ class LivePlot:
 
             Returns
             -------
-            Tuple[matplotlib.figure.Figure, Dict[str, matplotlib.axes.Axes]]"""
-        return self._fig, self._axis_mapping
+            Tuple[matplotlib.figure.Figure, numpy.ndarray(matplotlib.axes.Axes)]"""
+        return self._fig, np.array(tuple(self._axis_mapping.values()))
 
-    def __init__(self, refresh=0., plot_title=None, figsize=None, output_file=None,
+    def __init__(self, metrics, refresh=0., plot_title=None, figsize=None, output_file=None,
                  each_batch_save=None):
         """ Parameters
             ----------
+            metrics : Union[str, Sequence[str]]
+                The name, or sequence of names, of the metric(s) that will be plotted.
+
             refresh : float, optional (default=0.)
                 Sets the plot refresh rate in seconds.
 
@@ -160,7 +166,7 @@ class LivePlot:
                 """
 
         # import matplotlib and check backend
-        self._pyplot = importlib.import_module('matplotlib.pyplot')
+        self.pyplot = importlib.import_module('matplotlib.pyplot')
         _matplotlib = importlib.import_module('matplotlib')
 
         self._backend = _matplotlib.get_backend()
@@ -174,6 +180,8 @@ class LivePlot:
             print(cleandoc(_inline_msg.format(self._backend)))
 
         # type checking on inputs
+        metrics = (metrics,) if isinstance(metrics, str) else tuple(metrics)
+        assert all(isinstance(i, str) for i in metrics)
         assert isinstance(refresh, Real)
         assert plot_title is None or isinstance(plot_title, str)
         assert figsize is None or len(figsize) == 2 and all(isinstance(i, Integral) for i in figsize)
@@ -181,6 +189,7 @@ class LivePlot:
         assert each_batch_save is None or isinstance.items()(each_batch_save, Integral) and each_batch_save > 0
 
         # input parameters
+        self._metrics = metrics
         self._refresh = refresh
         self._liveplot = self._refresh >= 0. and 'nbAgg' in self._backend
         self._pltkwargs = {"figsize": figsize}
@@ -205,11 +214,13 @@ class LivePlot:
         self._last_epoch_acc = None  # Stores the previous epoch accuracy
         self._last_val_acc = None  # Stores the previous validation accuracy
 
-        self._axis_mapping = dict()  # metric name -> matplotlib axis object
+        self._axis_mapping = OrderedDict()  # metric name -> matplotlib axis object
 
         # stores batch/epoch-level training statistics and plot objects for training/validation
         self._train_metrics = OrderedDict()
         self._test_metrics = OrderedDict()
+
+        self._plot_batch = True
 
         self._fig, self._axes, self._text = None, None, None  # matplotlib plot objects
 
@@ -243,9 +254,9 @@ class LivePlot:
         self._start_time = time.time()
 
         # enable active plotting
-        if self._pyplot is not None:
+        if self.pyplot is not None:
             if self._liveplot:
-                self._pyplot.ion()
+                self.pyplot.ion()
             self._last_plot_time = time.time()
 
         return self
@@ -254,15 +265,31 @@ class LivePlot:
         if self._fig is not None:
             self._plot()
             if not self._liveplot:
-                self._pyplot.show()
+                self.pyplot.show()
             self._save_fig()
 
-    def train_batch(self, message):
+    def set_train_batch(self, metrics, batch_size, plot=True):
+        """
+            Parameters
+            ----------
+            metrics : Dict[str, Real]
+                Mapping of metric-name to value. Only those metrics that were
+                registered when initializing LivePlot will be recorded.
+
+            batch_size : Integral
+                The number of samples in the batch used to produce the metrics.
+                Used to weight the metrics to produce epoch-level statistics.
+
+            plot : bool
+                If True, plot the batch-metrics (adhering to the refresh rate)
+            """
+        self._plot_batch = plot
+
         if not self._train_batch_num:
-            self._init_plot_window(message.output)
+            self._init_plot_window()
 
             # initialize batch-level plot objects
-            self._train_metrics.update((key, LiveMetric(key)) for key in message.output)
+            self._train_metrics.update((key, LiveMetric(key)) for key in metrics if key in self._metrics)
             for key, metric in self._train_metrics.items():
                 try:
                     ax = self._axis_mapping[key]
@@ -273,16 +300,20 @@ class LivePlot:
                     pass
 
         # record each incoming batch metric
-        for key, value in message.output.items():
-            self._train_metrics[key].add_datapoint(value, weighting=message.input.size)
+        for key, value in metrics.items():
+            try:
+                self._train_metrics[key].add_datapoint(value, weighting=batch_size)
+            except KeyError:
+                pass
 
-        self._do_liveplot()
-        if self._save_rate and self._train_batch_num and self._train_batch_num % self._save_rate == 0:
-            self._save_fig()
+        if self._plot_batch:
+            self._do_liveplot()
+            if self._save_rate and self._train_batch_num and self._train_batch_num % self._save_rate == 0:
+                self._save_fig()
 
         self._train_batch_num += 1
 
-    def train_epoch(self):
+    def plot_train_epoch(self):
         if not self._train_epoch_num:
             # initialize batch-level plot objects
             for ax, key in zip(self._axes, self._train_metrics):
@@ -297,20 +328,34 @@ class LivePlot:
         self._do_liveplot()
         self._train_epoch_num += 1
 
-    def test_batch(self, message):
+    def set_test_batch(self, metrics, batch_size):
+        """
+            Parameters
+            ----------
+            metrics : Dict[str, Real]
+                Mapping of metric-name to value. Only those metrics that were
+                registered when initializing LivePlot will be recorded.
+
+            batch_size : Integral
+                The number of samples in the batch used to produce the metrics.
+                Used to weight the metrics to produce epoch-level statistics.
+            """
         # initialize live plot objects for testing
         if not self._test_batch_num:
-            self._test_metrics.update((key, LiveMetric(key)) for key in message.output)
+            self._test_metrics.update((key, LiveMetric(key)) for key in metrics if key in self._metrics)
 
         # record each incoming batch metric
-        for key, value in message.output.items():
-            self._test_metrics[key].add_datapoint(value, weighting=message.input.size)
+        for key, value in metrics.items():
+            try:
+                self._test_metrics[key].add_datapoint(value, weighting=batch_size)
+            except KeyError:
+                pass
 
         self._test_batch_num += 1
 
-    def test_epoch(self):
+    def plot_test_epoch(self):
         if not self._test_epoch_num:
-            self._init_plot_window(self._test_metrics)
+            self._init_plot_window()
 
             # initialize epoch-level plot objects
             for key, metric in self._test_metrics.items():
@@ -333,23 +378,19 @@ class LivePlot:
         self._do_liveplot()
         self._test_epoch_num += 1
 
-    def _init_plot_window(self, metrics):
-        """ Parameters
-            ---------
-            metrics : Sequence[str]
-                An ordered sequence of metric names. """
-        if self._pyplot is None:
+    def _init_plot_window(self):
+        if self.pyplot is None or self._fig is not None:
             return None
 
-        if self._fig is not None:
-            return None
+        if self._start_time is None:
+            self._start_time = time.time()
 
-        self._fig, self._axes = self._pyplot.subplots(nrows=len(metrics), sharex=True, **self._pltkwargs)
+        self._fig, self._axes = self.pyplot.subplots(nrows=len(self._metrics), sharex=True, **self._pltkwargs)
 
-        if len(metrics) == 1:
+        if len(self._metrics) == 1:
             self._axes = [self._axes]
 
-        self._axis_mapping = dict(zip(metrics, self._axes))
+        self._axis_mapping.update(zip(self._metrics, self._axes))
 
         for ax in self._axes:
             ax.grid(True)
@@ -379,13 +420,13 @@ class LivePlot:
         self._text.set_text(cleandoc(text))
 
     def _plot(self):
-        if self._pyplot is None:
+        if self.pyplot is None:
             return None
 
         # plot update all train/test line objects with latest x/y data
         for mode_metrics in [self._train_metrics, self._test_metrics]:
             for key, livedata in mode_metrics.items():
-                if livedata.batch_line is not None:
+                if self._plot_batch and livedata.batch_line is not None:
                     livedata.batch_line.set_xdata(livedata.batch_domain)
                     livedata.batch_line.set_ydata(livedata.batch_data)
 
@@ -401,6 +442,12 @@ class LivePlot:
         self._last_plot_time = time.time()
 
     def _do_liveplot(self):
+        # enable active plotting upon first plot
+        if self._last_plot_time is None:
+            if self._liveplot:
+                self.pyplot.ion()
+            self._last_plot_time = time.time()
+
         if self._liveplot and time.time() - self._last_plot_time >= self._refresh:
             self._plot()
 
