@@ -1,7 +1,7 @@
 from liveplot.plotter import LivePlot
 
 
-def create_plot(metrics, refresh=0., plot_title=None, figsize=None):
+def create_plot(metrics, refresh=0., plot_title=None, figsize=None, track_time=True):
     """ Create matplotlib figure/axes, and a live-plotter, which publishes
         "live" training/testing metric data, at a batch and epoch level, to
         the figure.
@@ -23,12 +23,15 @@ def create_plot(metrics, refresh=0., plot_title=None, figsize=None):
         figsize : Optional[Sequence[int, int]]
             Specifies the width and height, respectively, of the figure.
 
+        track_time : bool, default=True
+            If `True`, the total time of plotting is annotated in within the first axes
+
         Returns
         -------
         Tuple[liveplot.LivePlot, matplotlib.figure.Figure, numpy.ndarray(matplotlib.axes.Axes)]
             (LivePlot-instance, figure, array-of-axes) """
 
-    plot = LivePlot(metrics, refresh, plot_title, figsize)
+    plot = LivePlot(metrics, refresh, plot_title, figsize, track_time)
     plot._init_plot_window()
     fig, ax = plot.plot_objects()
     return plot, fig, ax

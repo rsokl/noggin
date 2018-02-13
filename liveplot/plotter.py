@@ -6,7 +6,6 @@ from inspect import cleandoc
 from collections import OrderedDict
 
 
-
 class LiveMetric:
     """ Holds the relevant data for a train/test metric for live plotting. """
     def __init__(self, name):
@@ -73,8 +72,6 @@ class LivePlot:
     """ Plots batch-level and epoch-level summary statistics of the training and
         testing metrics of a model during a session.
 
-        This class instance can be referenced after the training session to access the training
-        performance statistics.
 
         Attributes
         ----------
@@ -132,7 +129,7 @@ class LivePlot:
             Tuple[matplotlib.figure.Figure, numpy.ndarray(matplotlib.axes.Axes)]"""
         return self._fig, np.array(tuple(self._axis_mapping.values()))
 
-    def __init__(self, metrics, refresh=0., plot_title=None, figsize=None):
+    def __init__(self, metrics, refresh=0., plot_title=None, figsize=None, track_time=True):
         """ Parameters
             ----------
             metrics : Union[str, Sequence[str]]
@@ -148,7 +145,10 @@ class LivePlot:
                 Specifies the title used on the plot.
 
             figsize : Optional[Sequence[int, int]]
-                Specifies the width and height, respectively, of the figure."""
+                Specifies the width and height, respectively, of the figure.
+
+            track_time : bool, default=True
+                If `True`, the total time of plotting is annotated in within the first axes"""
 
         # import matplotlib and check backend
         self.pyplot = importlib.import_module('matplotlib.pyplot')
@@ -165,19 +165,19 @@ class LivePlot:
             print(cleandoc(_inline_msg.format(self._backend)))
 
         # type checking on inputs
-        metrics = (metrics,) if isinstance(metrics, str) else tuple(metrics)
-        assert all(isinstance(i, str) for i in metrics)
+        assert isinstance(metrics, str) or all(isinstance(i, str) for i in metrics)
         assert isinstance(refresh, Real)
         assert plot_title is None or isinstance(plot_title, str)
         assert figsize is None or len(figsize) == 2 and all(isinstance(i, Integral) for i in figsize)
-
+        assert isinstance(track_time, bool)
 
         # input parameters
-        self._metrics = metrics
+        self._metrics = (metrics,) if isinstance(metrics, str) else tuple(metrics)
         self._refresh = refresh
         self._liveplot = self._refresh >= 0. and 'nbAgg' in self._backend
         self._pltkwargs = {"figsize": figsize}
         self._plot_title = plot_title
+        self._track_time = track_time
 
         # plot config
         self._batch_ax = dict(ls='-', alpha=0.5)  # plot settings for batch-data
@@ -210,22 +210,19 @@ class LivePlot:
     def __repr__(self):
         msg = "LivePlot({})\n\n".format(", ".join(self._metrics))
 
-        t = 0 if self._last_plot_time is None else self._last_plot_time
-        t = time.strftime("%H:%M:%S", time.localtime(t))
-
         words = ["training batches", "training epochs", "testing batches", "testing epochs"]
         things = [self._train_batch_num, self._train_epoch_num,
                   self._test_batch_num, self._test_epoch_num]
         for word, thing in zip(words, things):
             msg += "number of {word} set: {thing}\n".format(word=word, thing=thing)
 
-        msg += "\n\nlast plot time: {}\n".format(t)
+        if self._track_time and self._last_plot_time is not None:
+            t = time.strftime("%H:%M:%S", time.localtime(self._last_plot_time))
+            msg += "\n\nlast plot time: {}\n".format(t)
         return msg
 
-
     def set_train_batch(self, metrics, batch_size, plot=True):
-        """
-            Parameters
+        """ Parameters
             ----------
             metrics : Dict[str, Real]
                 Mapping of metric-name to value. Only those metrics that were
@@ -354,13 +351,15 @@ class LivePlot:
         self._axes[-1].set_xlabel("Number of iterations")
 
         time_passed = time.strftime("%H:%M:%S", time.gmtime(0))
-        text = "total time: {}\n".format(time_passed)
-        self._text = self._axes[0].text(.3, .8, text,
-                                        transform=self._axes[0].transAxes,
-                                        bbox=dict(facecolor='none',
-                                                  edgecolor='black',
-                                                  boxstyle='round,pad=0.5'),
-                                        family='monospace')
+
+        if self._track_time:
+            text = "total time: {}\n".format(time_passed)
+            self._text = self._axes[0].text(.3, .8, text,
+                                            transform=self._axes[0].transAxes,
+                                            bbox=dict(facecolor='none',
+                                                      edgecolor='none',
+                                                      boxstyle='round,pad=0.5'),
+                                            family='monospace')
 
     def _resize(self):
         for ax in self._axes:
@@ -368,6 +367,9 @@ class LivePlot:
             ax.autoscale_view()
 
     def _update_text(self):
+        if not self._track_time:
+            return None
+
         time_passed = time.strftime("%H:%M:%S", time.gmtime(time.time() - self._start_time))
         text = "total time: {}\n".format(time_passed)
         self._text.set_text(cleandoc(text))
