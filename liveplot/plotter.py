@@ -344,7 +344,7 @@ class LivePlot:
         if self._fig is not None:
             return None
 
-        self._fig, self._axes = self._pyplot.subplots(nrows=len(metrics), **self._pltkwargs)
+        self._fig, self._axes = self._pyplot.subplots(nrows=len(metrics), sharex=True, **self._pltkwargs)
 
         if len(metrics) == 1:
             self._axes = [self._axes]
