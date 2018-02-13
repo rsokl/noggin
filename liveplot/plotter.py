@@ -6,6 +6,42 @@ from inspect import cleandoc
 from collections import OrderedDict
 
 
+def is_valid_color(c):
+    """ Checks if `c` is a valid color argument for matplotlib.
+
+        Parameters
+        ----------
+        c : Union[str, Real, Sequence[Real]]
+
+        Returns
+        -------
+        bool"""
+    from matplotlib import colors
+    from collections import Sequence
+    from numbers import Real
+
+    if isinstance(c, Sequence) and not isinstance(c, str):
+        return 3 <= len(c) <= 4 and all(0 <= i <= 1 for i in c)
+
+    # greyscale
+    if isinstance(c, Real):
+        return 0 <= c <= 1
+
+    if isinstance(c, str):
+        # greyscale
+        if c.isdecimal():
+            return 0 <= float(c) <= 1
+        # color cycle value: C0
+        if c.startswith("C"):
+            return len(c) > 1 and c[1:].isdigit()
+        # html hex
+        if c.startswith("#"):
+            return len(c) == 7
+
+        return c.lower() in colors.BASE_COLORS or c.lower() in colors.CSS4_COLORS
+    return False
+
+
 class LiveMetric:
     """ Holds the relevant data for a train/test metric for live plotting. """
     def __init__(self, name):
@@ -166,6 +202,9 @@ class LivePlot:
 
         # type checking on inputs
         assert isinstance(metrics, str) or all(isinstance(i, str) for i in metrics)
+        if isinstance(metrics, dict):
+            assert all(v is None or is_valid_color(v) for v in metrics.values())
+
         assert isinstance(refresh, Real)
         assert plot_title is None or isinstance(plot_title, str)
         assert figsize is None or len(figsize) == 2 and all(isinstance(i, Integral) for i in figsize)
@@ -180,6 +219,7 @@ class LivePlot:
         self._track_time = track_time
 
         # plot config
+        self._metric_colors = metrics if isinstance(metrics, dict) else {key: None for key in metrics}
         self._batch_ax = dict(ls='-', alpha=0.5)  # plot settings for batch-data
         self._epoch_ax = dict(ls='-', marker='o', markersize=6, lw=3)  # plot settings for epoch-data
         self._legend = dict()
@@ -245,7 +285,7 @@ class LivePlot:
             for key, metric in self._train_metrics.items():
                 try:
                     ax = self._axis_mapping[key]
-                    metric.batch_line, = ax.plot([], [], label="train", **self._batch_ax)
+                    metric.batch_line, = ax.plot([], [], label="train", color=self._metric_colors[key], **self._batch_ax)
                     ax.set_ylabel(key)
                     ax.legend()
                 except KeyError:
