@@ -88,7 +88,9 @@ class LiveMetric:
             ----------
             value : Real
             weighting : Real """
-        value = np.asscalar(value)
+        if isinstance(value, np.ndarray):
+            value = np.asscalar(value)
+
         self._batch_data.append(value)
         self._running_weighted_sum += weighting*value
         self._total_weighting += weighting
