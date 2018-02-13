@@ -29,9 +29,38 @@ def create_plot(metrics, refresh=0., plot_title=None, figsize=None, track_time=T
         Returns
         -------
         Tuple[liveplot.LivePlot, matplotlib.figure.Figure, numpy.ndarray(matplotlib.axes.Axes)]
-            (LivePlot-instance, figure, array-of-axes) """
+            (LivePlot-instance, figure, array-of-axes)
 
-    plot = LivePlot(metrics, refresh, plot_title, figsize, track_time)
-    plot._init_plot_window()
-    fig, ax = plot.plot_objects()
-    return plot, fig, ax
+
+        Examples
+        --------
+        >>> %matplotlib notebook
+        >>> import numpy as np
+        >>> from liveplot import create_plot
+        >>> metrics = ["accuracy", "loss"]
+        >>> plotter, fig, ax = create_plot(metrics, refresh=0)
+        >>> for i, x in enumerate(np.linspace(0, 10, 100)):
+        ...     # training
+        ...     x += np.random.rand(1)*5
+        ...     batch_metrics = {"accuracy": x**2, "loss": 1/x**.5}
+        ...     plotter.set_train_batch(batch_metrics, batch_size=1, plot=True)
+        ...
+        ...     # cue training epoch
+        ...     if i%10 == 0 and i > 0:
+        ...         plotter.plot_train_epoch()
+        ...
+        ...         # cue test-time computations
+        ...         for x in np.linspace(0, 10, 5):
+        ...             x += (np.random.rand(1) - 0.5)*5
+        ...             test_metrics = {"accuracy": x**2}
+        ...             plotter.set_test_batch(test_metrics, batch_size=1)
+        ...         plotter.plot_test_epoch()
+        ...
+        ... plotter.plot()  # ensures final data gets plotted
+
+        """
+
+    live_plotter = LivePlot(metrics, refresh, plot_title, figsize, track_time)
+    live_plotter._init_plot_window()
+    fig, ax = live_plotter.plot_objects()
+    return live_plotter, fig, ax

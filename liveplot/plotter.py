@@ -124,10 +124,7 @@ class LivePlot:
         -----
         Live plotting is only supported for the 'nbAgg' backend (i.e.
         when the cell magic ``%matplotlib notebook`` is invoked in a
-        jupyter notebook). When using other backends, a single plot will
-        be produced at the end of the session. It is strongly recommended
-        that only the 'nbAgg' backend is used - other backends may produce
-        highly unstable behavior. """
+        jupyter notebook). """
 
     @property
     def train_metrics(self):
