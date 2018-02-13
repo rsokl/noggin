@@ -117,7 +117,7 @@ class LivePlot:
         test_metrics : OrderedDict[str, Dict[str, numpy.ndarray]]
             Stores testing metric results data and plot-objects.
 
-        pyplot : module
+        _pyplot : module
             Submodule of matplotlib
 
         Notes
@@ -168,14 +168,20 @@ class LivePlot:
     def __init__(self, metrics, refresh=0., plot_title=None, figsize=None, track_time=True):
         """ Parameters
             ----------
-            metrics : Union[str, Sequence[str]]
+            metrics : Union[str, Sequence[str], Dict[str, valid-color]
                 The name, or sequence of names, of the metric(s) that will be plotted.
+
+                `metrics` can also specify the mapping metric -> color-value. Which determined
+                the training-batch/epoch colors to be used for that metric.
 
             refresh : float, optional (default=0.)
                 Sets the plot refresh rate in seconds.
 
-                A refresh rate of 0. updates the plot as frequently as possible. A
-                negative refresh rate will draw the plot only at the end of the session.
+                A refresh rate of 0. updates the plot as frequently as possible.
+
+                A negative refresh rate  turns off live plotting:
+                   Call `self.plot()` to draw the static plot.
+                   Call `self.show()` to open a window showing the static plot
 
             plot_title : Optional[str]
                 Specifies the title used on the plot.
@@ -186,20 +192,6 @@ class LivePlot:
             track_time : bool, default=True
                 If `True`, the total time of plotting is annotated in within the first axes"""
 
-        # import matplotlib and check backend
-        self.pyplot = importlib.import_module('matplotlib.pyplot')
-        _matplotlib = importlib.import_module('matplotlib')
-
-        self._backend = _matplotlib.get_backend()
-        if 'nbAgg' not in self._backend:
-            _inline_msg = """ Warning: live plotting is not supported when matplotlib uses the '{}'
-                             backend. Instead, use the 'nbAgg' backend.
-            
-                             In a Jupyter notebook, this can be activated using the cell magic:
-            
-                                %matplotlib notebook."""
-            print(cleandoc(_inline_msg.format(self._backend)))
-
         # type checking on inputs
         assert isinstance(metrics, str) or all(isinstance(i, str) for i in metrics)
         if isinstance(metrics, dict):
@@ -209,6 +201,21 @@ class LivePlot:
         assert plot_title is None or isinstance(plot_title, str)
         assert figsize is None or len(figsize) == 2 and all(isinstance(i, Integral) for i in figsize)
         assert isinstance(track_time, bool)
+
+        # import matplotlib and check backend
+        self._pyplot = importlib.import_module('matplotlib.pyplot')
+        _matplotlib = importlib.import_module('matplotlib')
+
+        self._backend = _matplotlib.get_backend()
+        if 'nbAgg' not in self._backend and refresh >= 0:
+            _inline_msg = """ Warning: live plotting is not supported when matplotlib uses the '{}'
+                             backend. Instead, use the 'nbAgg' backend.
+            
+                             In a Jupyter notebook, this can be activated using the cell magic:
+            
+                                %matplotlib notebook."""
+            print(cleandoc(_inline_msg.format(self._backend)))
+
 
         # input parameters
         self._metrics = (metrics,) if isinstance(metrics, str) else tuple(metrics)
@@ -369,13 +376,13 @@ class LivePlot:
         self._test_epoch_num += 1
 
     def _init_plot_window(self):
-        if self.pyplot is None or self._fig is not None:
+        if self._pyplot is None or self._fig is not None:
             return None
 
         if self._start_time is None:
             self._start_time = time.time()
 
-        self._fig, self._axes = self.pyplot.subplots(nrows=len(self._metrics), sharex=True, **self._pltkwargs)
+        self._fig, self._axes = self._pyplot.subplots(nrows=len(self._metrics), sharex=True, **self._pltkwargs)
 
         if len(self._metrics) == 1:
             self._axes = [self._axes]
@@ -414,8 +421,10 @@ class LivePlot:
         text = "total time: {}\n".format(time_passed)
         self._text.set_text(cleandoc(text))
 
-    def _plot(self):
-        if self.pyplot is None:
+    def plot(self):
+        """ Plot data, irrespective of the refresh rate. This should only
+           be called if you are generating a static plot."""
+        if self._pyplot is None:
             return None
 
         # plot update all train/test line objects with latest x/y data
@@ -436,12 +445,17 @@ class LivePlot:
 
         self._last_plot_time = time.time()
 
+    def show(self):
+        """ Calls `matplotlib.pyplot.show()`. For visualizing a static-plot"""
+        if not self._liveplot:
+            self._pyplot.show()
+
     def _do_liveplot(self):
         # enable active plotting upon first plot
         if self._last_plot_time is None:
             if self._liveplot:
-                self.pyplot.ion()
+                self._pyplot.ion()
             self._last_plot_time = time.time()
 
         if self._liveplot and time.time() - self._last_plot_time >= self._refresh:
-            self._plot()
+            self.plot()
