@@ -1,10 +1,7 @@
 from liveplot.plotter import LivePlot
 
-def create_plot(metrics, refresh=0.,
-                plot_title=None,
-                figsize=None,
-                output_file=None,
-                each_batch_save=None):
+
+def create_plot(metrics, refresh=0., plot_title=None, figsize=None):
     """ Create matplotlib figure/axes, and a live-plotter, which publishes
         "live" training/testing metric data, at a batch and epoch level, to
         the figure.
@@ -26,24 +23,12 @@ def create_plot(metrics, refresh=0.,
         figsize : Optional[Sequence[int, int]]
             Specifies the width and height, respectively, of the figure.
 
-        output_file : Optional[str], optional (default="fig.png")
-            Required for saving the figure. Specifies the path, base filename,
-            and output format of the saved figure.
-
-            The iteration number is appended to the end of the base filename
-            (e.g. 'path/fig_100.png')
-
-        each_batch_save : Optional[int]
-            The iteration-rate at which the plot figure is saved.
-
-            If None is specified but `output_file` is specified, the figure
-            will be saved at only the end of the session.
-
         Returns
         -------
         Tuple[liveplot.LivePlot, matplotlib.figure.Figure, numpy.ndarray(matplotlib.axes.Axes)]
             (LivePlot-instance, figure, array-of-axes) """
-    plotter = LivePlot(metrics, refresh, plot_title, figsize, output_file, each_batch_save)
-    plotter._init_plot_window()
-    fig, ax = plotter.plot_objects()
-    return plotter, fig, ax
+
+    plot = LivePlot(metrics, refresh, plot_title, figsize)
+    plot._init_plot_window()
+    fig, ax = plot.plot_objects()
+    return plot, fig, ax

@@ -3,11 +3,11 @@ import time
 import importlib
 import numpy as np
 from inspect import cleandoc
-from collections import OrderedDict, namedtuple
-import os
+from collections import OrderedDict
 
 
-class LiveMetric(object):
+
+class LiveMetric:
     """ Holds the relevant data for a train/test metric for live plotting. """
     def __init__(self, name):
         """ Parameters
@@ -132,8 +132,7 @@ class LivePlot:
             Tuple[matplotlib.figure.Figure, numpy.ndarray(matplotlib.axes.Axes)]"""
         return self._fig, np.array(tuple(self._axis_mapping.values()))
 
-    def __init__(self, metrics, refresh=0., plot_title=None, figsize=None, output_file=None,
-                 each_batch_save=None):
+    def __init__(self, metrics, refresh=0., plot_title=None, figsize=None):
         """ Parameters
             ----------
             metrics : Union[str, Sequence[str]]
@@ -149,21 +148,7 @@ class LivePlot:
                 Specifies the title used on the plot.
 
             figsize : Optional[Sequence[int, int]]
-                Specifies the width and height, respectively, of the figure.
-
-            output_file : Optional[str], optional (default="fig.png")
-                Required for saving the figure. Specifies the path, base filename,
-                and output format of the saved figure.
-
-                The iteration number is appended to the end of the base filename
-                (e.g. 'path/fig_100.png')
-
-            each_batch_save : Optional[int]
-                The iteration-rate at which the plot figure is saved.
-
-                If None is specified but `output_file` is specified, the figure
-                will be saved at only the end of the session.
-                """
+                Specifies the width and height, respectively, of the figure."""
 
         # import matplotlib and check backend
         self.pyplot = importlib.import_module('matplotlib.pyplot')
@@ -185,8 +170,7 @@ class LivePlot:
         assert isinstance(refresh, Real)
         assert plot_title is None or isinstance(plot_title, str)
         assert figsize is None or len(figsize) == 2 and all(isinstance(i, Integral) for i in figsize)
-        assert output_file is None or isinstance(output_file, str)
-        assert each_batch_save is None or isinstance.items()(each_batch_save, Integral) and each_batch_save > 0
+
 
         # input parameters
         self._metrics = metrics
@@ -194,7 +178,6 @@ class LivePlot:
         self._liveplot = self._refresh >= 0. and 'nbAgg' in self._backend
         self._pltkwargs = {"figsize": figsize}
         self._plot_title = plot_title
-        self._save_rate = each_batch_save
 
         # plot config
         self._batch_ax = dict(ls='-', alpha=0.5)  # plot settings for batch-data
@@ -224,49 +207,21 @@ class LivePlot:
 
         self._fig, self._axes, self._text = None, None, None  # matplotlib plot objects
 
-        ## TODO: implement pathlib.Path
-        # prepping figure saving: self._file -> NamedTuple("File", [("pth", str), ("name", str), ("fmt", str)])
-        if output_file is not None:
-            File = namedtuple("File", ["pth", "name", "fmt"])
-            pth, f = os.path.split(output_file)
-            if not pth:
-                pth = "."
-            pth = os.path.abspath(pth)
+    def __repr__(self):
+        msg = "LivePlot({})\n\n".format(", ".join(self._metrics))
 
-            if not os.path.exists(pth):
-                os.makedirs(pth)
+        t = 0 if self._last_plot_time is None else self._last_plot_time
+        t = time.strftime("%H:%M:%S", time.localtime(t))
 
-            if not os.access(pth, os.W_OK):
-                raise IOError("Permission denied: LivePlot does not have write access to {}".format(pth))
+        words = ["training batches", "training epochs", "testing batches", "testing epochs"]
+        things = [self._train_batch_num, self._train_epoch_num,
+                  self._test_batch_num, self._test_epoch_num]
+        for word, thing in zip(words, things):
+            msg += "number of {word} set: {thing}\n".format(word=word, thing=thing)
 
-            try:
-                name, fmt = f.rsplit(".")
-                fmt = "." + fmt
-            except ValueError:
-                name, fmt = f, ""
-            self._file = File(pth, name, fmt)
-        else:
-            self._file = None
-            if self._save_rate is not None:
-                raise ValueError("`each_batch_save` was specified, however `output_file` was not provided.")
+        msg += "\n\nlast plot time: {}\n".format(t)
+        return msg
 
-    def __enter__(self):
-        self._start_time = time.time()
-
-        # enable active plotting
-        if self.pyplot is not None:
-            if self._liveplot:
-                self.pyplot.ion()
-            self._last_plot_time = time.time()
-
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if self._fig is not None:
-            self._plot()
-            if not self._liveplot:
-                self.pyplot.show()
-            self._save_fig()
 
     def set_train_batch(self, metrics, batch_size, plot=True):
         """
@@ -308,8 +263,6 @@ class LivePlot:
 
         if self._plot_batch:
             self._do_liveplot()
-            if self._save_rate and self._train_batch_num and self._train_batch_num % self._save_rate == 0:
-                self._save_fig()
 
         self._train_batch_num += 1
 
@@ -450,10 +403,3 @@ class LivePlot:
 
         if self._liveplot and time.time() - self._last_plot_time >= self._refresh:
             self._plot()
-
-    def _save_fig(self):
-        if self._file is not None and self._fig is not None:
-            # save figure
-            _file = self._file.name + "_iter{}".format(self._train_batch_num) + self._file.fmt
-            _file = os.path.join(self._file.pth, _file)
-            self._fig.savefig(_file, bbox_inches="tight")
