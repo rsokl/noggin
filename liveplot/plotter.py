@@ -216,7 +216,6 @@ class LivePlot:
                                 %matplotlib notebook."""
             print(cleandoc(_inline_msg.format(self._backend)))
 
-
         # input parameters
         self._metrics = (metrics,) if isinstance(metrics, str) else tuple(metrics)
         self._refresh = refresh
