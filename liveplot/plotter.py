@@ -6,6 +6,7 @@ from inspect import cleandoc
 from collections import OrderedDict
 import warnings
 
+
 def is_valid_color(c):
     """ Checks if `c` is a valid color argument for matplotlib.
 
@@ -156,6 +157,18 @@ class LivePlot:
         for k, v in self._test_metrics.items():
             out[k] = {attr: getattr(v, attr) for attr in ["batch_data", "epoch_data", "epoch_domain"]}
         return out
+
+    @property
+    def refresh(self):
+        return self._refresh
+
+    @refresh.setter
+    def refresh(self, value):
+        """ Set the refresh rate (per second). A negative refresh rate
+            turns off static plotting."""
+        assert isinstance(value, Real)
+        self._refresh = value
+        self._liveplot = self._refresh >= 0. and 'nbAgg' in self._backend
 
     def plot_objects(self):
         """ The figure-instance of the plot, and the axis-instance for each metric.
