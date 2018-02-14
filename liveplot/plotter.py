@@ -4,7 +4,7 @@ import importlib
 import numpy as np
 from inspect import cleandoc
 from collections import OrderedDict
-
+import warnings
 
 def is_valid_color(c):
     """ Checks if `c` is a valid color argument for matplotlib.
@@ -100,10 +100,11 @@ class LiveMetric:
             ----------
             x : Optional[Real]
                 Specify the domain-value to be set for this data point."""
-        self._epoch_data.append(self._running_weighted_sum / self._total_weighting)
-        self._epoch_domain.append(x if x is not None else self.batch_domain[-1])
-        self._running_weighted_sum = 0.
-        self._total_weighting = 0.
+        if self._running_weighted_sum:
+            self._epoch_data.append(self._running_weighted_sum / self._total_weighting)
+            self._epoch_domain.append(x if x is not None else self.batch_domain[-1])
+            self._running_weighted_sum = 0.
+            self._total_weighting = 0.
 
 
 class LivePlot:
@@ -286,6 +287,11 @@ class LivePlot:
         if not self._train_batch_num:
             self._init_plot_window()
 
+            unreg_metrics = set(metrics).difference(self._metrics)
+            if unreg_metrics:
+                msg = "\nThe following training metrics are not registered for live-plotting:\n\t" + "\n\t".join(sorted(unreg_metrics))
+                warnings.warn(cleandoc(msg),)
+
             # initialize batch-level plot objects
             self._train_metrics.update((key, LiveMetric(key)) for key in metrics if key in self._metrics)
             for key, metric in self._train_metrics.items():
@@ -312,7 +318,8 @@ class LivePlot:
     def plot_train_epoch(self):
         if not self._train_epoch_num:
             # initialize batch-level plot objects
-            for ax, key in zip(self._axes, self._train_metrics):
+            for key in self._train_metrics:
+                ax = self._axis_mapping[key]
                 batch_color = self._train_metrics[key].batch_line.get_color()
                 self._train_metrics[key].epoch_line, = ax.plot([], [], color=batch_color, **self._epoch_ax)
                 ax.legend(**self._legend)
@@ -339,6 +346,11 @@ class LivePlot:
         # initialize live plot objects for testing
         if not self._test_batch_num:
             self._test_metrics.update((key, LiveMetric(key)) for key in metrics if key in self._metrics)
+
+            unreg_metrics = set(metrics).difference(self._metrics)
+            if unreg_metrics:
+                msg = "\nThe following testing metrics are not registered for live-plotting:\n\t" + "\n\t".join(sorted(unreg_metrics))
+                warnings.warn(cleandoc(msg),)
 
         # record each incoming batch metric
         for key, value in metrics.items():
@@ -427,8 +439,9 @@ class LivePlot:
             return None
 
         # plot update all train/test line objects with latest x/y data
-        for mode_metrics in [self._train_metrics, self._test_metrics]:
+        for i, mode_metrics in enumerate([self._train_metrics, self._test_metrics]):
             for key, livedata in mode_metrics.items():
+
                 if self._plot_batch and livedata.batch_line is not None:
                     livedata.batch_line.set_xdata(livedata.batch_domain)
                     livedata.batch_line.set_ydata(livedata.batch_data)
