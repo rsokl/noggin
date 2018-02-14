@@ -230,29 +230,22 @@ class LivePlot:
         self._batch_ax = dict(ls='-', alpha=0.5)  # plot settings for batch-data
         self._epoch_ax = dict(ls='-', marker='o', markersize=6, lw=3)  # plot settings for epoch-data
         self._legend = dict()
+        self._axis_mapping = OrderedDict()  # metric name -> matplotlib axis object
+        self._plot_batch = True
+        self._fig, self._axes, self._text = None, None, None  # matplotlib plot objects
 
         # attribute initialization
-        self._start_time = None  # Time upon entering the training session
-        self._last_plot_time = None  # Time of last plot
+        self._start_time = None      # float: Time upon entering the training session
+        self._last_plot_time = None  # float: Time of last plot
 
-        self._train_epoch_num = 0  # Current number of epochs trained
-        self._train_batch_num = 0  # Current number of batches trained
-        self._test_epoch_num = 0  # Current number of epochs tested
-        self._test_batch_num = 0  # Current number of batches tested
+        self._train_epoch_num = 0    # int: Current number of epochs trained
+        self._train_batch_num = 0    # int: Current number of batches trained
+        self._test_epoch_num = 0     # int: Current number of epochs tested
+        self._test_batch_num = 0     # int: Current number of batches tested
 
-        self._last_batch_acc = None  # Stores the previous batch accuracy
-        self._last_epoch_acc = None  # Stores the previous epoch accuracy
-        self._last_val_acc = None  # Stores the previous validation accuracy
-
-        self._axis_mapping = OrderedDict()  # metric name -> matplotlib axis object
-
-        # stores batch/epoch-level training statistics and plot objects for training/validation
-        self._train_metrics = OrderedDict()
-        self._test_metrics = OrderedDict()
-
-        self._plot_batch = True
-
-        self._fig, self._axes, self._text = None, None, None  # matplotlib plot objects
+        # stores batch/epoch-level training statistics and plot objects for training/testing
+        self._train_metrics = OrderedDict()  # metric-name -> LiveMetric
+        self._test_metrics = OrderedDict()   # metric-name -> LiveMetric
 
     def __repr__(self):
         msg = "LivePlot({})\n\n".format(", ".join(self._metrics))
@@ -260,6 +253,7 @@ class LivePlot:
         words = ["training batches", "training epochs", "testing batches", "testing epochs"]
         things = [self._train_batch_num, self._train_epoch_num,
                   self._test_batch_num, self._test_epoch_num]
+
         for word, thing in zip(words, things):
             msg += "number of {word} set: {thing}\n".format(word=word, thing=thing)
 
@@ -280,8 +274,7 @@ class LivePlot:
                 Used to weight the metrics to produce epoch-level statistics.
 
             plot : bool
-                If True, plot the batch-metrics (adhering to the refresh rate)
-            """
+                If True, plot the batch-metrics (adhering to the refresh rate)"""
         self._plot_batch = plot
 
         if not self._train_batch_num:
