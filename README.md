@@ -40,6 +40,7 @@ from liveplot import save_metrics
 
 # save metrics from liveplot instance
 save_metrics("tmp.npz", plotter)
+```
 
 ### Recreating plot from saved metrics
 ```python
