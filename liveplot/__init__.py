@@ -1,3 +1,6 @@
+from liveplot.utils import check_valid_color
+
+
 __all__ = ["create_plot", "recreate_plot"]
 
 def create_plot(metrics, refresh=0., plot_title=None, figsize=None, track_time=True):
@@ -7,8 +10,13 @@ def create_plot(metrics, refresh=0., plot_title=None, figsize=None, track_time=T
 
         Parameters
         ----------
-        metrics : Union[str, Sequence[str]]
+        metrics : Union[str, Sequence[str], Dict[str, valid-color]
             The name, or sequence of names, of the metric(s) that will be plotted.
+
+            `metrics` can also be a dictionary, specifying the colors used to plot
+            the metrics. Two mappings are valid:
+                - metric-name -> color-value  (specifies train-metric color only)
+                - metric-name -> {train/test : color-value}
 
         refresh : float, optional (default=0.)
             Sets the plot refresh rate in seconds.
@@ -71,7 +79,7 @@ def create_plot(metrics, refresh=0., plot_title=None, figsize=None, track_time=T
     return live_plotter, fig, ax
 
 
-def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None):
+def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None, colors=None):
     """ Recreate a plot from a LivePlot instance or from train/test metric dictionaries.
 
         Parameters
@@ -79,6 +87,8 @@ def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None):
         liveplot : Optional[liveplot.LivePlot]
             An existing liveplot object.
 
+        Keyword-Only Arguments
+        ----------------------
         train_metrics : Optional[OrderedDict[str, Dict[str, numpy.ndarray]]]
            metric_name -> {"batch_data":   array,
                            "epoch_data":   array,
@@ -89,12 +99,22 @@ def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None):
                            "epoch_data":   array,
                            "epoch_domain": array}
 
+        colors : Optional[Dict[str, color-value], Dict[str, Dict[str, color-value]]
+            Specifying train-time metric colors only:
+                  metric-name -> color-value
+
+            Specifying train or test-time metric colors:
+                 metric-name -> {train/test -> color-value}
+
         Returns
         -------
         Tuple[liveplot.LivePlot, matplotlib.figure.Figure, numpy.ndarray(matplotlib.axes.Axes)]
             (LivePlot-instance, figure, array-of-axes)"""
     from liveplot.plotter import LiveMetric
+    from collections import defaultdict
+
     assert any(i is not None for i in [liveplot, train_metrics, test_metrics])
+
     if liveplot is not None:
         assert train_metrics is None and test_metrics is None
     else:
@@ -112,7 +132,24 @@ def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None):
     new, fig, ax = create_plot(metrics, refresh=-1)
 
     if liveplot:
-        new._metric_colors = liveplot._metric_colors
+        new._train_colors = liveplot._train_colors
+        new._test_colors = liveplot._test_colors
+    else:
+        # set plotting colors
+        train_colors = defaultdict(lambda x: None)
+        test_colors = defaultdict(lambda x: None)
+        if isinstance(colors, dict):
+            for k, v in colors.items():
+                if isinstance(v, dict):
+                    train_colors[k] = v.get("train")
+                    test_colors[k] = v.get("test")
+                else:
+                    train_colors[k] = v
+        sum(check_valid_color(c) for c in train_colors.values())
+        sum(check_valid_color(c) for c in test_colors.values())
+
+        new._train_colors = train_colors
+        new._test_colors = test_colors
 
     new._init_plot_window()
     fig, ax = new.plot_objects()
@@ -152,7 +189,7 @@ def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None):
     for key, metric in new._train_metrics.items():
         try:
             ax = new._axis_mapping[key]
-            metric.batch_line, = ax.plot([], [], label="train", color=new._metric_colors[key], **new._batch_ax)
+            metric.batch_line, = ax.plot([], [], label="train", color=new._train_colors[key], **new._batch_ax)
             ax.set_ylabel(key)
             ax.legend()
         except KeyError:
@@ -167,7 +204,7 @@ def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None):
     for key, metric in new._test_metrics.items():
         try:
             ax = new._axis_mapping[key]
-            metric.epoch_line, = ax.plot([], [], label="test", **new._epoch_ax)
+            metric.epoch_line, = ax.plot([], [], label="test", color=new._test_colors[key], **new._epoch_ax)
             ax.set_ylabel(key)
             ax.legend(**new._legend)
         except KeyError:

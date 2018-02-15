@@ -3,45 +3,9 @@ import time
 import importlib
 import numpy as np
 from inspect import cleandoc
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 import warnings
-
-
-def is_valid_color(c):
-    """ Checks if `c` is a valid color argument for matplotlib.
-
-        Parameters
-        ----------
-        c : Union[str, Real, Sequence[Real]]
-
-        Returns
-        -------
-        bool"""
-    from matplotlib import colors
-    from collections import Sequence
-    from numbers import Real
-
-    if isinstance(c, Sequence) and not isinstance(c, str):
-        return 3 <= len(c) <= 4 and all(0 <= i <= 1 for i in c)
-
-    # greyscale
-    if isinstance(c, Real):
-        return 0 <= c <= 1
-
-    if isinstance(c, str):
-        # greyscale
-        if c.isdecimal():
-            return 0 <= float(c) <= 1
-        # color cycle value: C0
-        if c.startswith("C"):
-            return len(c) > 1 and c[1:].isdigit()
-        # html hex
-        if c.startswith("#"):
-            return len(c) == 7
-
-        return c.lower() in colors.BASE_COLORS or c.lower() in colors.CSS4_COLORS
-    return False
-
+from liveplot.utils import check_valid_color
 
 class LiveMetric:
     """ Holds the relevant data for a train/test metric for live plotting. """
@@ -159,6 +123,15 @@ class LivePlot:
         return out
 
     @property
+    def metric_colors(self):
+        """ Returns
+            -------
+            Dict[str, Dict[str, color-value]]
+                {train/test -> {metric-name -> color-value}}"""
+        return dict(train=self._train_colors, test=self._test_colors)
+
+
+    @property
     def refresh(self):
         return self._refresh
 
@@ -184,8 +157,9 @@ class LivePlot:
             metrics : Union[str, Sequence[str], Dict[str, valid-color]
                 The name, or sequence of names, of the metric(s) that will be plotted.
 
-                `metrics` can also specify the mapping metric -> color-value. Which determined
-                the training-batch/epoch colors to be used for that metric.
+                `metrics` can also specify the colors used to plot the metrics via the mappings:
+                    - metric-name -> color-value  (specifies train-metric color only)
+                    - metric-name -> {train/test -> color-value}
 
             refresh : float, optional (default=0.)
                 Sets the plot refresh rate in seconds.
@@ -206,9 +180,6 @@ class LivePlot:
                 If `True`, the total time of plotting is annotated in within the first axes"""
 
         # type checking on inputs
-        assert isinstance(metrics, str) or all(isinstance(i, str) for i in metrics)
-        if isinstance(metrics, dict):
-            assert all(v is None or is_valid_color(v) for v in metrics.values())
 
         assert isinstance(refresh, Real)
         assert plot_title is None or isinstance(plot_title, str)
@@ -231,6 +202,9 @@ class LivePlot:
 
         # input parameters
         self._metrics = (metrics,) if isinstance(metrics, str) else tuple(metrics)
+        if any(not isinstance(i, str) for i in self._metrics):
+            raise TypeError("`metrics` must be a string or a collection of strings")
+
         self._refresh = refresh
         self._liveplot = self._refresh >= 0. and 'nbAgg' in self._backend
         self._pltkwargs = {"figsize": figsize}
@@ -238,6 +212,18 @@ class LivePlot:
         self._track_time = track_time
 
         # plot config
+        self._train_colors = defaultdict(lambda x: None)
+        self._test_colors = defaultdict(lambda x: None)
+        if isinstance(metrics, dict):
+            for k, v in metrics.items():
+                if isinstance(v, dict):
+                    self._train_colors[k] = v.get("train")
+                    self._test_colors[k] = v.get("test")
+                else:
+                    self._train_colors[k] = v
+        sum(check_valid_color(c) for c in self._train_colors.values())
+        sum(check_valid_color(c) for c in self._test_colors.values())
+
         self._metric_colors = metrics if isinstance(metrics, dict) else {key: None for key in metrics}
         self._batch_ax = dict(ls='-', alpha=0.5)  # plot settings for batch-data
         self._epoch_ax = dict(ls='-', marker='o', markersize=6, lw=3)  # plot settings for epoch-data
@@ -302,7 +288,7 @@ class LivePlot:
             for key, metric in self._train_metrics.items():
                 try:
                     ax = self._axis_mapping[key]
-                    metric.batch_line, = ax.plot([], [], label="train", color=self._metric_colors[key], **self._batch_ax)
+                    metric.batch_line, = ax.plot([], [], label="train", color=self._train_colors[key], **self._batch_ax)
                     ax.set_ylabel(key)
                     ax.legend()
                 except KeyError:
@@ -374,7 +360,7 @@ class LivePlot:
             for key, metric in self._test_metrics.items():
                 try:
                     ax = self._axis_mapping[key]
-                    metric.epoch_line, = ax.plot([], [], label="test", **self._epoch_ax)
+                    metric.epoch_line, = ax.plot([], [], label="test", color=self._test_colors[key], **self._epoch_ax)
                     ax.set_ylabel(key)
                     ax.legend(**self._legend)
                 except KeyError:
