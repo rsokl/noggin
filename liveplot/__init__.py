@@ -21,8 +21,8 @@ def create_plot(metrics, refresh=0., plot_title=None, figsize=None, track_time=T
         refresh : float, optional (default=0.)
             Sets the plot refresh rate in seconds.
 
-            A refresh rate of 0. updates the plot as frequently as possible. A
-            negative refresh rate will draw the plot only at the end of the session.
+
+        A refresh rate of 0. updates the once every 1/1000 seconds.
 
         plot_title : Optional[str]
             Specifies the title used on the plot.
@@ -46,7 +46,7 @@ def create_plot(metrics, refresh=0., plot_title=None, figsize=None, track_time=T
         >>> import numpy as np
         >>> from liveplot import create_plot, save_metrics
         >>> metrics = ["accuracy", "loss"]
-        >>> plotter, fig, ax = create_plot(metrics, refresh=0)
+        >>> plotter, fig, ax = create_plot(metrics)
         >>> for i, x in enumerate(np.linspace(0, 10, 100)):
         ...     # training
         ...     x += np.random.rand(1)*5

@@ -14,7 +14,7 @@ from liveplot import create_plot
 metrics = {"accuracy":dict(train="C2", test="C3"),
            "loss": None}
 
-plotter, fig, ax = create_plot(metrics, refresh=0.2)
+plotter, fig, ax = create_plot(metrics)
 
 for i, x in enumerate(np.linspace(0, 10, 100)):
     # training
@@ -77,7 +77,7 @@ def create_plot(metrics, refresh=0., plot_title=None, figsize=None, track_time=T
         refresh : float, optional (default=0.)
             Sets the plot refresh rate in seconds.
 
-            A refresh rate of 0. updates the plot as frequently as possible. A
+            A refresh rate of 0. updates the once every 1/1000 seconds. A
             negative refresh rate will draw the plot only at the end of the session.
 
         plot_title : Optional[str]

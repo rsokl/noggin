@@ -170,7 +170,7 @@ class LivePlot:
             refresh : float, optional (default=0.)
                 Sets the plot refresh rate in seconds.
 
-                A refresh rate of 0. updates the plot as frequently as possible.
+                A refresh rate of 0. updates the once every 1/1000 seconds.
 
                 A negative refresh rate  turns off live plotting:
                    Call `self.plot()` to draw the static plot.
@@ -211,6 +211,8 @@ class LivePlot:
         if any(not isinstance(i, str) for i in self._metrics):
             raise TypeError("`metrics` must be a string or a collection of strings")
 
+        if 0 <= refresh < 0.001:
+            refresh = 0.001
         self._refresh = refresh
         self._liveplot = self._refresh >= 0. and 'nbAgg' in self._backend
         self._pltkwargs = {"figsize": figsize}
@@ -421,6 +423,10 @@ class LivePlot:
             ax.autoscale_view()
 
     def _update_text(self):
+
+        for ax in self._axis_mapping.values():
+            ax.legend()
+
         if not self._track_time:
             return None
 
@@ -440,11 +446,15 @@ class LivePlot:
 
                 if self._plot_batch and livedata.batch_line is not None:
                     livedata.batch_line.set_xdata(livedata.batch_domain)
-                    livedata.batch_line.set_ydata(livedata.batch_data)
+                    livedata.batch_line.set_ydata(livedata._batch_data)
+                    if livedata._epoch_data:
+                        livedata.batch_line.set_label("train: {:.2e}".format(livedata._epoch_data[-1]))
 
                 if livedata.epoch_line is not None:
                     livedata.epoch_line.set_xdata(livedata.epoch_domain)
-                    livedata.epoch_line.set_ydata(livedata.epoch_data)
+                    livedata.epoch_line.set_ydata(livedata._epoch_data)
+                    if i == 1 and livedata._epoch_data:
+                        livedata.epoch_line.set_label("test: " + "{:.2e}".format(livedata._epoch_data[-1]))
 
         self._update_text()
         self._resize()
