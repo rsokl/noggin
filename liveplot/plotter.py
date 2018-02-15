@@ -85,8 +85,8 @@ class LivePlot:
         test_metrics : OrderedDict[str, Dict[str, numpy.ndarray]]
             Stores testing metric results data and plot-objects.
 
-        _pyplot : module
-            Submodule of matplotlib
+        metric_colors : Dict[str, Dict[str, color-value]]
+            {metric-name -> {'train'/'test' -> color-value}}
 
         Notes
         -----
@@ -127,8 +127,14 @@ class LivePlot:
         """ Returns
             -------
             Dict[str, Dict[str, color-value]]
-                {train/test -> {metric-name -> color-value}}"""
-        return dict(train=self._train_colors, test=self._test_colors)
+                {metric-name -> {'train'/'test' -> color-value}}"""
+        out = defaultdict(dict)
+        for k, v in self._train_colors.items():
+            out[k]["train"] = v
+        
+        for k, v in self._test_colors.items():
+                    out[k]["test"] = v
+        return dict(out)
 
 
     @property
@@ -212,8 +218,8 @@ class LivePlot:
         self._track_time = track_time
 
         # plot config
-        self._train_colors = defaultdict(lambda x: None)
-        self._test_colors = defaultdict(lambda x: None)
+        self._train_colors = defaultdict(lambda: None)
+        self._test_colors = defaultdict(lambda: None)
         if isinstance(metrics, dict):
             for k, v in metrics.items():
                 if isinstance(v, dict):
@@ -224,7 +230,6 @@ class LivePlot:
         sum(check_valid_color(c) for c in self._train_colors.values())
         sum(check_valid_color(c) for c in self._test_colors.values())
 
-        self._metric_colors = metrics if isinstance(metrics, dict) else {key: None for key in metrics}
         self._batch_ax = dict(ls='-', alpha=0.5)  # plot settings for batch-data
         self._epoch_ax = dict(ls='-', marker='o', markersize=6, lw=3)  # plot settings for epoch-data
         self._legend = dict()
@@ -288,7 +293,7 @@ class LivePlot:
             for key, metric in self._train_metrics.items():
                 try:
                     ax = self._axis_mapping[key]
-                    metric.batch_line, = ax.plot([], [], label="train", color=self._train_colors[key], **self._batch_ax)
+                    metric.batch_line, = ax.plot([], [], label="train", color=self._train_colors.get(key), **self._batch_ax)
                     ax.set_ylabel(key)
                     ax.legend()
                 except KeyError:
@@ -360,7 +365,7 @@ class LivePlot:
             for key, metric in self._test_metrics.items():
                 try:
                     ax = self._axis_mapping[key]
-                    metric.epoch_line, = ax.plot([], [], label="test", color=self._test_colors[key], **self._epoch_ax)
+                    metric.epoch_line, = ax.plot([], [], label="test", color=self._test_colors.get(key), **self._epoch_ax)
                     ax.set_ylabel(key)
                     ax.legend(**self._legend)
                 except KeyError:

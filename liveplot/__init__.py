@@ -136,8 +136,8 @@ def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None, color
         new._test_colors = liveplot._test_colors
     else:
         # set plotting colors
-        train_colors = defaultdict(lambda x: None)
-        test_colors = defaultdict(lambda x: None)
+        train_colors = defaultdict(lambda: None)
+        test_colors = defaultdict(lambda: None)
         if isinstance(colors, dict):
             for k, v in colors.items():
                 if isinstance(v, dict):
