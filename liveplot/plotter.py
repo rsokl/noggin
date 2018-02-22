@@ -7,6 +7,7 @@ from collections import OrderedDict, defaultdict
 import warnings
 from liveplot.utils import check_valid_color
 
+
 class LiveMetric:
     """ Holds the relevant data for a train/test metric for live plotting. """
     def __init__(self, name):
@@ -76,18 +77,6 @@ class LivePlot:
     """ Plots batch-level and epoch-level summary statistics of the training and
         testing metrics of a model during a session.
 
-
-        Attributes
-        ----------
-        train_metrics : OrderedDict[str, Dict[str, numpy.ndarray]]
-            Stores training metric results data and plot-objects.
-
-        test_metrics : OrderedDict[str, Dict[str, numpy.ndarray]]
-            Stores testing metric results data and plot-objects.
-
-        metric_colors : Dict[str, Dict[str, color-value]]
-            {metric-name -> {'train'/'test' -> color-value}}
-
         Notes
         -----
         Live plotting is only supported for the 'nbAgg' backend (i.e.
@@ -105,7 +94,7 @@ class LivePlot:
             metric-name -> {batch_data -> array, epoch_domain -> array, epoch_data -> array} """
         out = OrderedDict()
         for k, v in self._train_metrics.items():
-            out[k] = {attr: getattr(v, attr) for attr in ["batch_data", "epoch_data", "epoch_domain"]}
+            out[k] = {attr: getattr(v, attr) for attr in ("batch_data", "epoch_data", "epoch_domain")}
         return out
 
     @property
@@ -136,7 +125,6 @@ class LivePlot:
             out[k]["test"] = v
         return dict(out)
 
-
     @property
     def refresh(self):
         return self._refresh
@@ -165,7 +153,7 @@ class LivePlot:
 
                 `metrics` can also specify the colors used to plot the metrics via the mappings:
                     - metric-name -> color-value  (specifies train-metric color only)
-                    - metric-name -> {train/test -> color-value}
+                    - metric-name -> {'train'/'test' -> color-value}
 
             refresh : float, optional (default=0.)
                 Sets the plot refresh rate in seconds.
@@ -255,9 +243,9 @@ class LivePlot:
     def __repr__(self):
         msg = "LivePlot({})\n\n".format(", ".join(self._metrics))
 
-        words = ["training batches", "training epochs", "testing batches", "testing epochs"]
-        things = [self._train_batch_num, self._train_epoch_num,
-                  self._test_batch_num, self._test_epoch_num]
+        words = ("training batches", "training epochs", "testing batches", "testing epochs")
+        things = (self._train_batch_num, self._train_epoch_num,
+                  self._test_batch_num, self._test_epoch_num)
 
         for word, thing in zip(words, things):
             msg += "number of {word} set: {thing}\n".format(word=word, thing=thing)
@@ -287,15 +275,16 @@ class LivePlot:
 
             unreg_metrics = set(metrics).difference(self._metrics)
             if unreg_metrics:
-                msg = "\nThe following training metrics are not registered for live-plotting:\n\t" + "\n\t".join(sorted(unreg_metrics))
-                warnings.warn(cleandoc(msg),)
+                msg = "\nThe following training metrics are not registered for live-plotting:\n\t" + "\n\t"
+                warnings.warn(cleandoc(msg.join(sorted(unreg_metrics))),)
 
             # initialize batch-level plot objects
             self._train_metrics.update((key, LiveMetric(key)) for key in metrics if key in self._metrics)
             for key, metric in self._train_metrics.items():
                 try:
                     ax = self._axis_mapping[key]
-                    metric.batch_line, = ax.plot([], [], label="train", color=self._train_colors.get(key), **self._batch_ax)
+                    metric.batch_line, = ax.plot([], [], label="train",
+                                                 color=self._train_colors.get(key), **self._batch_ax)
                     ax.set_ylabel(key)
                     ax.legend()
                 except KeyError:
@@ -347,8 +336,8 @@ class LivePlot:
 
             unreg_metrics = set(metrics).difference(self._metrics)
             if unreg_metrics:
-                msg = "\nThe following testing metrics are not registered for live-plotting:\n\t" + "\n\t".join(sorted(unreg_metrics))
-                warnings.warn(cleandoc(msg),)
+                msg = "\nThe following testing metrics are not registered for live-plotting:\n\t" + "\n\t"
+                warnings.warn(cleandoc(msg.join(sorted(unreg_metrics))),)
 
         # record each incoming batch metric
         for key, value in metrics.items():
@@ -367,7 +356,8 @@ class LivePlot:
             for key, metric in self._test_metrics.items():
                 try:
                     ax = self._axis_mapping[key]
-                    metric.epoch_line, = ax.plot([], [], label="test", color=self._test_colors.get(key), **self._epoch_ax)
+                    metric.epoch_line, = ax.plot([], [], label="test",
+                                                 color=self._test_colors.get(key), **self._epoch_ax)
                     ax.set_ylabel(key)
                     ax.legend(**self._legend)
                 except KeyError:
@@ -423,7 +413,6 @@ class LivePlot:
             ax.autoscale_view()
 
     def _update_text(self):
-
         for ax in self._axis_mapping.values():
             ax.legend()
 
@@ -451,7 +440,7 @@ class LivePlot:
                         livedata.batch_line.set_label("train: {:.2e}".format(livedata._epoch_data[-1]))
 
                 if livedata.epoch_line is not None:
-                    livedata.epoch_line.set_xdata(livedata.epoch_domain)
+                    livedata.epoch_line.set_xdata(livedata._epoch_domain)
                     livedata.epoch_line.set_ydata(livedata._epoch_data)
                     if i == 1 and livedata._epoch_data:
                         livedata.epoch_line.set_label("test: " + "{:.2e}".format(livedata._epoch_data[-1]))
