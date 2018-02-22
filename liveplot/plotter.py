@@ -145,7 +145,7 @@ class LivePlot:
             Tuple[matplotlib.figure.Figure, numpy.ndarray(matplotlib.axes.Axes)]"""
         return self._fig, np.array(tuple(self._axis_mapping.values()))
 
-    def __init__(self, metrics, refresh=0., plot_title=None, figsize=None, track_time=True):
+    def __init__(self, metrics, refresh=0., ncols=None, nrows=None, figsize=None, track_time=True):
         """ Parameters
             ----------
             metrics : Union[str, Sequence[str], Dict[str, valid-color]
@@ -164,9 +164,6 @@ class LivePlot:
                    Call `self.plot()` to draw the static plot.
                    Call `self.show()` to open a window showing the static plot
 
-            plot_title : Optional[str]
-                Specifies the title used on the plot.
-
             figsize : Optional[Sequence[int, int]]
                 Specifies the width and height, respectively, of the figure.
 
@@ -176,7 +173,6 @@ class LivePlot:
         # type checking on inputs
 
         assert isinstance(refresh, Real)
-        assert plot_title is None or isinstance(plot_title, str)
         assert figsize is None or len(figsize) == 2 and all(isinstance(i, Integral) for i in figsize)
         assert isinstance(track_time, bool)
 
@@ -203,8 +199,18 @@ class LivePlot:
             refresh = 0.001
         self._refresh = refresh
         self._liveplot = self._refresh >= 0. and 'nbAgg' in self._backend
-        self._pltkwargs = {"figsize": figsize}
-        self._plot_title = plot_title
+
+        if nrows is None and ncols is None:
+            nrows = len(metrics)
+            ncols = 1
+        else:
+            if nrows is None:
+                nrows = 1
+            if ncols is None:
+                ncols = 1
+
+        assert len(metrics) == nrows * ncols, "The number of metrics must match the nrows * ncols"
+        self._pltkwargs = dict(figsize=figsize, nrows=nrows, ncols=ncols)
         self._track_time = track_time
 
         # plot config
@@ -381,34 +387,31 @@ class LivePlot:
         if self._start_time is None:
             self._start_time = time.time()
 
-        self._fig, self._axes = self._pyplot.subplots(nrows=len(self._metrics), sharex=True, **self._pltkwargs)
+        self._fig, self._axes = self._pyplot.subplots(sharex=True, **self._pltkwargs)
 
         if len(self._metrics) == 1:
-            self._axes = [self._axes]
+            self._axes = np.array([self._axes])
 
-        self._axis_mapping.update(zip(self._metrics, self._axes))
+        self._axis_mapping.update(zip(self._metrics, self._axes.flat))
 
-        for ax in self._axes:
+        for ax in self._axes.flat:
             ax.grid(True)
 
-        if self._plot_title:
-            self._axes[0].set_title(self._plot_title)
-
-        self._axes[-1].set_xlabel("Number of iterations")
+        self._axes.flat[-1].set_xlabel("Number of iterations")
 
         time_passed = time.strftime("%H:%M:%S", time.gmtime(0))
 
         if self._track_time:
             text = "total time: {}\n".format(time_passed)
-            self._text = self._axes[0].text(.3, .8, text,
-                                            transform=self._axes[0].transAxes,
-                                            bbox=dict(facecolor='none',
-                                                      edgecolor='none',
-                                                      boxstyle='round,pad=0.5'),
-                                            family='monospace')
+            self._text = self._axes.flat[0].text(.3, .8, text,
+                                                 transform=self._axes.flat[0].transAxes,
+                                                 bbox=dict(facecolor='none',
+                                                           edgecolor='none',
+                                                           boxstyle='round,pad=0.5'),
+                                                 family='monospace')
 
     def _resize(self):
-        for ax in self._axes:
+        for ax in self._axes.flat:
             ax.relim()
             ax.autoscale_view()
 
