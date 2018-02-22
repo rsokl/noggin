@@ -58,7 +58,7 @@ new_plotter, fig, ax = recreate_plot(train_metrics=train,
 
 ## Documentation
 
-```python
+```
 def create_plot(metrics, refresh=0., plot_title=None, figsize=None, track_time=True):
     """ Create matplotlib figure/axes, and a live-plotter, which publishes
         "live" training/testing metric data, at a batch and epoch level, to
