@@ -1,7 +1,5 @@
-from liveplot.utils import check_valid_color
-
-
 __all__ = ["create_plot", "recreate_plot"]
+
 
 def create_plot(metrics, refresh=0., plot_title=None, figsize=None, track_time=True):
     """ Create matplotlib figure/axes, and a live-plotter, which publishes
@@ -112,8 +110,9 @@ def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None, color
             (LivePlot-instance, figure, array-of-axes)"""
     from liveplot.plotter import LiveMetric
     from collections import defaultdict
+    from liveplot.utils import check_valid_color
 
-    assert any(i is not None for i in [liveplot, train_metrics, test_metrics])
+    assert any(i is not None for i in (liveplot, train_metrics, test_metrics))
 
     if liveplot is not None:
         assert train_metrics is None and test_metrics is None
@@ -162,6 +161,7 @@ def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None, color
                      "_test_epoch_num", "_test_batch_num"]:
             setattr(new, attr, getattr(liveplot, attr))
     else:
+        # initializing LiveMetrics and setting data
         new._train_metrics.update((key, LiveMetric(key)) for key in train_metrics if key in new._metrics)
         new._test_metrics.update((key, LiveMetric(key)) for key in test_metrics if key in new._metrics)
 
@@ -173,6 +173,7 @@ def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None, color
             for item in ["batch_data", "epoch_data", "epoch_domain"]:
                 setattr(metric, "_" + item, list(test_metrics[metric_name][item]))
 
+        # setting num_batch/num_epoch values
         num_name = ["_train_epoch_num", "_train_batch_num", "_test_epoch_num", "_test_batch_num"]
         vals = [0, 0, 0, 0]
 
@@ -186,6 +187,7 @@ def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None, color
         for name, val in zip(num_name, vals):
             setattr(new, name, val)
 
+    # initialize train metric batch lines
     for key, metric in new._train_metrics.items():
         try:
             ax = new._axis_mapping[key]
@@ -195,12 +197,14 @@ def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None, color
         except KeyError:
             pass
 
+    # initialize train metric epoch lines
     for key in new._train_metrics:
         ax = new._axis_mapping[key]
         batch_color = new._train_metrics[key].batch_line.get_color()
         new._train_metrics[key].epoch_line, = ax.plot([], [], color=batch_color, **new._epoch_ax)
         ax.legend(**new._legend)
 
+    # initialize test metric epoch lines
     for key, metric in new._test_metrics.items():
         try:
             ax = new._axis_mapping[key]
@@ -212,6 +216,7 @@ def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None, color
 
     new.plot()
     return new, fig, ax
+
 
 def save_metrics(path, liveplot=None, *, train_metrics=None, test_metrics=None):
     """ Save live-plot metrics to a numpy zipped-archive (.npz). A LivePlot-instance
@@ -275,7 +280,7 @@ def load_metrics(path):
     from collections import OrderedDict, defaultdict
     import numpy as np
 
-    recursive_default_dict = lambda: defaultdict(recursive_default_dict)
+    def recursive_default_dict(): return defaultdict(recursive_default_dict)
     out = recursive_default_dict()
 
     with np.load(path) as f:
