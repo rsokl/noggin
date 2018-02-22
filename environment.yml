@@ -1,0 +1,5 @@
+name: plot-env
+dependencies:
+  - python=3.6
+  - numpy=1.13
+  - matplotlib=2.0
