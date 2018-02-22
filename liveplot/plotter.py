@@ -133,7 +133,7 @@ class LivePlot:
             out[k]["train"] = v
         
         for k, v in self._test_colors.items():
-                    out[k]["test"] = v
+            out[k]["test"] = v
         return dict(out)
 
 
