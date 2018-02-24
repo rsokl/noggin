@@ -390,7 +390,8 @@ class LivePlot:
         if len(self._metrics) == 1:
             self._axes = np.array([self._axes])
 
-        for i, ax in zip(range(self._axes.size - len(self._metrics)), self._axes.flat[::-1]):
+        axis_offset = self._axes.size - len(self._metrics)
+        for i, ax in zip(range(axis_offset), self._axes.flat[::-1]):
             ax.remove()
 
         self._axis_mapping.update(zip(self._metrics, self._axes.flat))
@@ -398,7 +399,8 @@ class LivePlot:
         for ax in self._axes.flat:
             ax.grid(True)
 
-        self._axes.flat[-1].set_xlabel("Number of iterations")
+        for i in range(min(self._pltkwargs["ncols"], len(self._metrics))):
+            self._axes.flat[-(i + 1 + axis_offset)].set_xlabel("Number of iterations")
 
     def _resize(self):
         for ax in self._axes.flat:
