@@ -201,8 +201,9 @@ class LivePlot:
         if any(not isinstance(i, str) for i in self._metrics):
             raise TypeError("`metrics` must be a string or a collection of strings")
 
-        self.refresh = refresh
-        self._liveplot = self._refresh >= 0. and 'nbAgg' in self._backend
+        self._refresh = None
+        self._liveplot = None
+        self.refresh = refresh  # sets _refresh and _liveplot
 
         self._pltkwargs = dict(figsize=figsize, nrows=nrows, ncols=ncols)
         self._track_time = track_time
