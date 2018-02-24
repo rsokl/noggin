@@ -198,6 +198,8 @@ class LivePlot:
 
         # input parameters
         self._metrics = (metrics,) if isinstance(metrics, str) else tuple(metrics)
+        assert len(self._metrics) >= 1, "at least one metric must be specified"
+
         if any(not isinstance(i, str) for i in self._metrics):
             raise TypeError("`metrics` must be a string or a collection of strings")
 
