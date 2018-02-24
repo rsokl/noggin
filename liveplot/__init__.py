@@ -228,10 +228,15 @@ def save_metrics(path, liveplot=None, *, train_metrics=None, test_metrics=None):
 
         train_metrics : Optional[OrderedDict[str, Dict[str, numpy.ndarray]]]]
 
-            metric-name -> {batch_data -> array, epoch_domain -> array, epoch_data -> array}
+            '<metric-name>' -> {'batch_data'   -> array,
+                                'epoch_domain' -> array,
+                                'epoch_data'   -> array}
 
         test_metrics : Optional[OrderedDict[str, Dict[str, numpy.ndarray]]]]
-            metric-name -> {batch_data -> array, epoch_domain -> array, epoch_data -> array}"""
+
+            '<metric-name>' -> {'batch_data'   -> array,
+                                'epoch_domain' -> array,
+                                'epoch_data'   -> array}"""
     import numpy as np
 
     if liveplot is not None:
