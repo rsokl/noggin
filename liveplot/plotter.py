@@ -83,6 +83,26 @@ class LivePlot:
         when the cell magic ``%matplotlib notebook`` is invoked in a
         jupyter notebook). """
 
+    _batch_ax = dict(ls='-', alpha=0.5)  # plot settings for batch-data
+    _epoch_ax = dict(ls='-', marker='o', markersize=6, lw=3)  # plot settings for epoch-data
+    _legend = dict()
+    _axis_mapping = OrderedDict()  # metric name -> matplotlib axis object
+    _plot_batch = True
+    _fig, _axes, _text = None, None, None  # matplotlib plot objects
+
+    # attribute initialization
+    _start_time = None  # float: Time upon entering the training session
+    _last_plot_time = None  # float: Time of last plot
+
+    _train_epoch_num = 0  # int: Current number of epochs trained
+    _train_batch_num = 0  # int: Current number of batches trained
+    _test_epoch_num = 0  # int: Current number of epochs tested
+    _test_batch_num = 0  # int: Current number of batches tested
+
+    # stores batch/epoch-level training statistics and plot objects for training/testing
+    _train_metrics = OrderedDict()  # metric-name -> LiveMetric
+    _test_metrics = OrderedDict()  # metric-name -> LiveMetric
+
     @property
     def train_metrics(self):
         """ The batch and epoch data for each metric.
@@ -200,16 +220,6 @@ class LivePlot:
         self._refresh = refresh
         self._liveplot = self._refresh >= 0. and 'nbAgg' in self._backend
 
-        if nrows is None and ncols is None:
-            nrows = len(metrics)
-            ncols = 1
-        else:
-            if nrows is None:
-                nrows = 1
-            if ncols is None:
-                ncols = 1
-
-        assert len(metrics) == nrows * ncols, "The number of metrics must match the nrows * ncols"
         self._pltkwargs = dict(figsize=figsize, nrows=nrows, ncols=ncols)
         self._track_time = track_time
 
@@ -225,26 +235,6 @@ class LivePlot:
                     self._train_colors[k] = v
         sum(check_valid_color(c) for c in self._train_colors.values())
         sum(check_valid_color(c) for c in self._test_colors.values())
-
-        self._batch_ax = dict(ls='-', alpha=0.5)  # plot settings for batch-data
-        self._epoch_ax = dict(ls='-', marker='o', markersize=6, lw=3)  # plot settings for epoch-data
-        self._legend = dict()
-        self._axis_mapping = OrderedDict()  # metric name -> matplotlib axis object
-        self._plot_batch = True
-        self._fig, self._axes, self._text = None, None, None  # matplotlib plot objects
-
-        # attribute initialization
-        self._start_time = None      # float: Time upon entering the training session
-        self._last_plot_time = None  # float: Time of last plot
-
-        self._train_epoch_num = 0    # int: Current number of epochs trained
-        self._train_batch_num = 0    # int: Current number of batches trained
-        self._test_epoch_num = 0     # int: Current number of epochs tested
-        self._test_batch_num = 0     # int: Current number of batches tested
-
-        # stores batch/epoch-level training statistics and plot objects for training/testing
-        self._train_metrics = OrderedDict()  # metric-name -> LiveMetric
-        self._test_metrics = OrderedDict()   # metric-name -> LiveMetric
 
     def __repr__(self):
         msg = "LivePlot({})\n\n".format(", ".join(self._metrics))
