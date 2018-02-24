@@ -198,10 +198,15 @@ class LivePlot:
 
         # input parameters
         self._metrics = (metrics,) if isinstance(metrics, str) else tuple(metrics)
-        assert len(self._metrics) >= 1, "at least one metric must be specified"
+
+        if len(self._metrics) >= 1:
+            raise ValueError("At least one metric must be specified")
 
         if any(not isinstance(i, str) for i in self._metrics):
             raise TypeError("`metrics` must be a string or a collection of strings")
+
+        if len(self._metrics) < ncols * nrows:
+            nrows = len(self._metrics)
 
         self._refresh = None
         self._liveplot = None
@@ -385,9 +390,13 @@ class LivePlot:
             self._start_time = time.time()
 
         self._fig, self._axes = self._pyplot.subplots(sharex=True, **self._pltkwargs)
+        self._fig.tight_layout()
 
         if len(self._metrics) == 1:
             self._axes = np.array([self._axes])
+
+        for i, ax in zip(range(self._axes.size - len(self._metrics)), self._axes.flat[::-1]):
+            ax.remove()
 
         self._axis_mapping.update(zip(self._metrics, self._axes.flat))
 
