@@ -8,13 +8,13 @@ def create_plot(metrics, refresh=0., figsize=None, ncols=1, nrows=1):
 
         Parameters
         ----------
-        metrics : Union[str, Sequence[str], Dict[str, valid-color]
+        metrics : Union[str, Sequence[str], Dict[str, valid-color], Dict[str, Dict['train'/'test', valid-color]]]
             The name, or sequence of names, of the metric(s) that will be plotted.
 
             `metrics` can also be a dictionary, specifying the colors used to plot
             the metrics. Two mappings are valid:
-                - metric-name -> color-value  (specifies train-metric color only)
-                - metric-name -> {train/test : color-value}
+                - '<metric-name>' -> color-value  (specifies train-metric color only)
+                - '<metric-name>' -> {'train'/'test' : color-value}
 
         refresh : float, optional (default=0.)
             Sets the plot refresh rate in seconds.
@@ -23,6 +23,10 @@ def create_plot(metrics, refresh=0., figsize=None, ncols=1, nrows=1):
 
         figsize : Optional[Sequence[int, int]]
             Specifies the width and height, respectively, of the figure.
+
+        nrows, ncols : int, optional, default: 1
+            Number of rows/columns of the subplot grid. Metrics are added in
+            row-major order to fill the grid.
 
         Returns
         -------
@@ -97,6 +101,10 @@ def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None, color
             Specifying train or test-time metric colors:
                  metric-name -> {train/test -> color-value}
 
+        nrows, ncols : int, optional, default: 1
+            Number of rows/columns of the subplot grid. Metrics are added in
+            row-major order to fill the grid.
+
         Returns
         -------
         Tuple[liveplot.LivePlot, matplotlib.figure.Figure, numpy.ndarray(matplotlib.axes.Axes)]
@@ -121,7 +129,7 @@ def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None, color
         metrics = list(train_metrics)
         metrics.extend(k for k in test_metrics if k not in metrics)
 
-    new, fig, ax = create_plot(metrics, refresh=-1)
+    new, fig, ax = create_plot(metrics, refresh=-1, nrows=nrows, ncols=ncols)
 
     if liveplot:
         new._train_colors = liveplot._train_colors

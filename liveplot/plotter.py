@@ -154,12 +154,13 @@ class LivePlot:
     def __init__(self, metrics, refresh=0., ncols=1, nrows=1, figsize=None):
         """ Parameters
             ----------
-            metrics : Union[str, Sequence[str], Dict[str, valid-color]
-                The name, or sequence of names, of the metric(s) that will be plotted.
+        metrics : Union[str, Sequence[str], Dict[str, valid-color], Dict[str, Dict['train'/'test', valid-color]]]
+            The name, or sequence of names, of the metric(s) that will be plotted.
 
-                `metrics` can also specify the colors used to plot the metrics via the mappings:
-                    - metric-name -> color-value  (specifies train-metric color only)
-                    - metric-name -> {'train'/'test' -> color-value}
+            `metrics` can also be a dictionary, specifying the colors used to plot
+            the metrics. Two mappings are valid:
+                - '<metric-name>' -> color-value  (specifies train-metric color only)
+                - '<metric-name>' -> {'train'/'test' : color-value}
 
             refresh : float, optional (default=0.)
                 Sets the plot refresh rate in seconds.
@@ -169,6 +170,10 @@ class LivePlot:
                 A negative refresh rate  turns off live plotting:
                    Call `self.plot()` to draw the static plot.
                    Call `self.show()` to open a window showing the static plot
+
+            nrows, ncols : int, optional, default: 1
+                Number of rows/columns of the subplot grid. Metrics are added in
+                row-major order to fill the grid.
 
             figsize : Optional[Sequence[int, int]]
                 Specifies the width and height, respectively, of the figure."""
@@ -253,9 +258,6 @@ class LivePlot:
         for word, thing in zip(words, things):
             msg += "number of {word} set: {thing}\n".format(word=word, thing=thing)
 
-        if self._track_time and self._last_plot_time is not None:
-            t = time.strftime("%H:%M:%S", time.localtime(self._last_plot_time))
-            msg += "\n\nlast plot time: {}\n".format(t)
         return msg
 
     def set_train_batch(self, metrics, batch_size, plot=True):
