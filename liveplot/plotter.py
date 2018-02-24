@@ -151,7 +151,7 @@ class LivePlot:
             Tuple[matplotlib.figure.Figure, numpy.ndarray[matplotlib.axes.Axes]]"""
         return self._fig, self._axes
 
-    def __init__(self, metrics, refresh=0., ncols=1, nrows=1, figsize=None, track_time=True):
+    def __init__(self, metrics, refresh=0., ncols=1, nrows=1, figsize=None):
         """ Parameters
             ----------
             metrics : Union[str, Sequence[str], Dict[str, valid-color]
@@ -171,16 +171,12 @@ class LivePlot:
                    Call `self.show()` to open a window showing the static plot
 
             figsize : Optional[Sequence[int, int]]
-                Specifies the width and height, respectively, of the figure.
-
-            track_time : bool, default=True
-                If `True`, the total time of plotting is annotated in within the first axes"""
+                Specifies the width and height, respectively, of the figure."""
 
         # type checking on inputs
 
         assert isinstance(refresh, Real)
         assert figsize is None or len(figsize) == 2 and all(isinstance(i, Integral) for i in figsize)
-        assert isinstance(track_time, bool)
 
         # import matplotlib and check backend
         self._pyplot = importlib.import_module('matplotlib.pyplot')
@@ -213,7 +209,6 @@ class LivePlot:
         self.refresh = refresh  # sets _refresh and _liveplot
 
         self._pltkwargs = dict(figsize=figsize, nrows=nrows, ncols=ncols)
-        self._track_time = track_time
 
         # color config
         self._train_colors = defaultdict(lambda: None)
@@ -405,17 +400,6 @@ class LivePlot:
 
         self._axes.flat[-1].set_xlabel("Number of iterations")
 
-        time_passed = time.strftime("%H:%M:%S", time.gmtime(0))
-
-        if self._track_time:
-            text = "total time: {}\n".format(time_passed)
-            self._text = self._axes.flat[0].text(.3, .8, text,
-                                                 transform=self._axes.flat[0].transAxes,
-                                                 bbox=dict(facecolor='none',
-                                                           edgecolor='none',
-                                                           boxstyle='round,pad=0.5'),
-                                                 family='monospace')
-
     def _resize(self):
         for ax in self._axes.flat:
             ax.relim()
@@ -424,13 +408,6 @@ class LivePlot:
     def _update_text(self):
         for ax in self._axis_mapping.values():
             ax.legend()
-
-        if not self._track_time:
-            return None
-
-        time_passed = time.strftime("%H:%M:%S", time.gmtime(time.time() - self._start_time))
-        text = "total time: {}\n".format(time_passed)
-        self._text.set_text(cleandoc(text))
 
     def plot(self):
         """ Plot data, irrespective of the refresh rate. This should only

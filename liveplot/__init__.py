@@ -1,7 +1,7 @@
 __all__ = ["create_plot", "recreate_plot"]
 
 
-def create_plot(metrics, refresh=0., figsize=None, ncols=1, nrows=1, track_time=True):
+def create_plot(metrics, refresh=0., figsize=None, ncols=1, nrows=1):
     """ Create matplotlib figure/axes, and a live-plotter, which publishes
         "live" training/testing metric data, at a batch and epoch level, to
         the figure.
@@ -23,9 +23,6 @@ def create_plot(metrics, refresh=0., figsize=None, ncols=1, nrows=1, track_time=
 
         figsize : Optional[Sequence[int, int]]
             Specifies the width and height, respectively, of the figure.
-
-        track_time : bool, default=True
-            If `True`, the total time of plotting is annotated in within the first axes
 
         Returns
         -------
@@ -67,7 +64,7 @@ def create_plot(metrics, refresh=0., figsize=None, ncols=1, nrows=1, track_time=
         >>> recreate_plot(train_metrics=train, test_metrics=test)"""
 
     from liveplot.plotter import LivePlot
-    live_plotter = LivePlot(metrics, refresh, figsize=figsize, ncols=ncols, nrows=nrows, track_time=track_time)
+    live_plotter = LivePlot(metrics, refresh, figsize=figsize, ncols=ncols, nrows=nrows)
     live_plotter._init_plot_window()
     fig, ax = live_plotter.plot_objects()
     return live_plotter, fig, ax
