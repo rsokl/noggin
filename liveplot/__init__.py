@@ -84,14 +84,14 @@ def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None, color
         Keyword-Only Arguments
         ----------------------
         train_metrics : Optional[OrderedDict[str, Dict[str, numpy.ndarray]]]
-           metric_name -> {"batch_data":   array,
-                           "epoch_data":   array,
-                           "epoch_domain": array}
+           '<metric-name>' -> {"batch_data":   array,
+                               "epoch_data":   array,
+                               "epoch_domain": array}
 
         test_metrics : Optional[OrderedDict[str, Dict[str, numpy.ndarray]]]
-           metric_name -> {"batch_data":   array,
-                           "epoch_data":   array,
-                           "epoch_domain": array}
+           '<metric-name>' -> {"batch_data":   array,
+                               "epoch_data":   array,
+                               "epoch_domain": array}
 
         colors : Optional[Dict[str, color-value], Dict[str, Dict[str, color-value]]
             Specifying train-time metric colors only:

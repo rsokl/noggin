@@ -83,26 +83,6 @@ class LivePlot:
         when the cell magic ``%matplotlib notebook`` is invoked in a
         jupyter notebook). """
 
-    _batch_ax = dict(ls='-', alpha=0.5)  # plot settings for batch-data
-    _epoch_ax = dict(ls='-', marker='o', markersize=6, lw=3)  # plot settings for epoch-data
-    _legend = dict()
-    _axis_mapping = OrderedDict()  # metric name -> matplotlib axis object
-    _plot_batch = True
-    _fig, _axes, _text = None, None, None  # matplotlib plot objects
-
-    # attribute initialization
-    _start_time = None  # float: Time upon entering the training session
-    _last_plot_time = None  # float: Time of last plot
-
-    _train_epoch_num = 0  # int: Current number of epochs trained
-    _train_batch_num = 0  # int: Current number of batches trained
-    _test_epoch_num = 0  # int: Current number of epochs tested
-    _test_batch_num = 0  # int: Current number of batches tested
-
-    # stores batch/epoch-level training statistics and plot objects for training/testing
-    _train_metrics = OrderedDict()  # metric-name -> LiveMetric
-    _test_metrics = OrderedDict()  # metric-name -> LiveMetric
-
     @property
     def train_metrics(self):
         """ The batch and epoch data for each metric.
@@ -111,7 +91,9 @@ class LivePlot:
             -------
             OrderedDict[str, Dict[str, numpy.ndarray]]
 
-            metric-name -> {batch_data -> array, epoch_domain -> array, epoch_data -> array} """
+           '<metric-name>' -> {"batch_data":   array,
+                               "epoch_data":   array,
+                               "epoch_domain": array} """
         out = OrderedDict()
         for k, v in self._train_metrics.items():
             out[k] = {attr: getattr(v, attr) for attr in ("batch_data", "epoch_data", "epoch_domain")}
@@ -125,10 +107,12 @@ class LivePlot:
             -------
             OrderedDict[str, Dict[str, numpy.ndarray]]
 
-            metric-name -> {batch_data -> array, epoch_domain -> array, epoch_data -> array} """
+           '<metric-name>' -> {"batch_data":   array,
+                               "epoch_data":   array,
+                               "epoch_domain": array} """
         out = OrderedDict()
         for k, v in self._test_metrics.items():
-            out[k] = {attr: getattr(v, attr) for attr in ["batch_data", "epoch_data", "epoch_domain"]}
+            out[k] = {attr: getattr(v, attr) for attr in ("batch_data", "epoch_data", "epoch_domain")}
         return out
 
     @property
@@ -136,7 +120,7 @@ class LivePlot:
         """ Returns
             -------
             Dict[str, Dict[str, color-value]]
-                {metric-name -> {'train'/'test' -> color-value}}"""
+                {'<metric-name>' -> {'train'/'test' -> color-value}}"""
         out = defaultdict(dict)
         for k, v in self._train_colors.items():
             out[k]["train"] = v
@@ -147,6 +131,8 @@ class LivePlot:
 
     @property
     def refresh(self):
+        """ The minimum time between canvas-draw events, in seconds.
+            A negative `refresh` value turns off live-plotting."""
         return self._refresh
 
     @refresh.setter
@@ -154,7 +140,7 @@ class LivePlot:
         """ Set the refresh rate (per second). A negative refresh rate
             turns off static plotting."""
         assert isinstance(value, Real)
-        self._refresh = value
+        self._refresh = 0.001 if 0 <= value < 0.001 else value
         self._liveplot = self._refresh >= 0. and 'nbAgg' in self._backend
 
     def plot_objects(self):
@@ -162,8 +148,8 @@ class LivePlot:
 
             Returns
             -------
-            Tuple[matplotlib.figure.Figure, numpy.ndarray(matplotlib.axes.Axes)]"""
-        return self._fig, np.array(tuple(self._axis_mapping.values()))
+            Tuple[matplotlib.figure.Figure, numpy.ndarray[matplotlib.axes.Axes]]"""
+        return self._fig, self._axes
 
     def __init__(self, metrics, refresh=0., ncols=None, nrows=None, figsize=None, track_time=True):
         """ Parameters
@@ -215,15 +201,13 @@ class LivePlot:
         if any(not isinstance(i, str) for i in self._metrics):
             raise TypeError("`metrics` must be a string or a collection of strings")
 
-        if 0 <= refresh < 0.001:
-            refresh = 0.001
-        self._refresh = refresh
+        self.refresh = refresh
         self._liveplot = self._refresh >= 0. and 'nbAgg' in self._backend
 
         self._pltkwargs = dict(figsize=figsize, nrows=nrows, ncols=ncols)
         self._track_time = track_time
 
-        # plot config
+        # color config
         self._train_colors = defaultdict(lambda: None)
         self._test_colors = defaultdict(lambda: None)
         if isinstance(metrics, dict):
@@ -235,6 +219,26 @@ class LivePlot:
                     self._train_colors[k] = v
         sum(check_valid_color(c) for c in self._train_colors.values())
         sum(check_valid_color(c) for c in self._test_colors.values())
+
+        self._batch_ax = dict(ls='-', alpha=0.5)  # plot settings for batch-data
+        self._epoch_ax = dict(ls='-', marker='o', markersize=6, lw=3)  # plot settings for epoch-data
+        self._legend = dict()
+        self._axis_mapping = OrderedDict()  # metric name -> matplotlib axis object
+        self._plot_batch = True
+        self._fig, _axes, _text = None, None, None  # matplotlib plot objects
+
+        # attribute initialization
+        self._start_time = None      # float: Time upon entering the training session
+        self._last_plot_time = None  # float: Time of last plot
+
+        self._train_epoch_num = 0  # int: Current number of epochs trained
+        self._train_batch_num = 0  # int: Current number of batches trained
+        self._test_epoch_num = 0   # int: Current number of epochs tested
+        self._test_batch_num = 0   # int: Current number of batches tested
+
+        # stores batch/epoch-level training statistics and plot objects for training/testing
+        self._train_metrics = OrderedDict()  # metric-name -> LiveMetric
+        self._test_metrics = OrderedDict()   # metric-name -> LiveMetric
 
     def __repr__(self):
         msg = "LivePlot({})\n\n".format(", ".join(self._metrics))
