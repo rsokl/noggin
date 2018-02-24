@@ -288,7 +288,7 @@ class LivePlot:
                     ax = self._axis_mapping[key]
                     metric.batch_line, = ax.plot([], [], label="train",
                                                  color=self._train_colors.get(key), **self._batch_ax)
-                    ax.set_ylabel(key)
+                    ax.set_title(key)
                     ax.legend()
                 except KeyError:
                     pass
@@ -361,7 +361,7 @@ class LivePlot:
                     ax = self._axis_mapping[key]
                     metric.epoch_line, = ax.plot([], [], label="test",
                                                  color=self._test_colors.get(key), **self._epoch_ax)
-                    ax.set_ylabel(key)
+                    ax.set_title(key)
                     ax.legend(**self._legend)
                 except KeyError:
                     pass

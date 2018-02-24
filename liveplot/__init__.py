@@ -70,7 +70,7 @@ def create_plot(metrics, refresh=0., figsize=None, ncols=1, nrows=1):
     return live_plotter, fig, ax
 
 
-def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None, colors=None):
+def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None, colors=None, ncols=1, nrows=1):
     """ Recreate a plot from a LivePlot instance or from train/test metric dictionaries.
 
         Parameters
