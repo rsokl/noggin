@@ -1,7 +1,7 @@
 __all__ = ["create_plot", "recreate_plot"]
 
 
-def create_plot(metrics, refresh=0., figsize=None, ncols=None, nrows=None, track_time=True):
+def create_plot(metrics, refresh=0., figsize=None, ncols=1, nrows=1, track_time=True):
     """ Create matplotlib figure/axes, and a live-plotter, which publishes
         "live" training/testing metric data, at a batch and epoch level, to
         the figure.

@@ -151,7 +151,7 @@ class LivePlot:
             Tuple[matplotlib.figure.Figure, numpy.ndarray[matplotlib.axes.Axes]]"""
         return self._fig, self._axes
 
-    def __init__(self, metrics, refresh=0., ncols=None, nrows=None, figsize=None, track_time=True):
+    def __init__(self, metrics, refresh=0., ncols=1, nrows=1, figsize=None, track_time=True):
         """ Parameters
             ----------
             metrics : Union[str, Sequence[str], Dict[str, valid-color]
@@ -199,13 +199,13 @@ class LivePlot:
         # input parameters
         self._metrics = (metrics,) if isinstance(metrics, str) else tuple(metrics)
 
-        if len(self._metrics) >= 1:
+        if not self._metrics:
             raise ValueError("At least one metric must be specified")
 
         if any(not isinstance(i, str) for i in self._metrics):
             raise TypeError("`metrics` must be a string or a collection of strings")
 
-        if len(self._metrics) < ncols * nrows:
+        if len(self._metrics) > ncols * nrows:
             nrows = len(self._metrics)
 
         self._refresh = None
