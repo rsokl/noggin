@@ -1,3 +1,5 @@
+[![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/rsokl/liveplot/master?filepath=LivePlot_Demo.ipynb)
+
 # liveplot
 Log and plot metrics in during train/test time for a neural network (or whatever, really) 
 
