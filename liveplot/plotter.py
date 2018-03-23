@@ -91,7 +91,9 @@ class LivePlot:
             -------
             OrderedDict[str, Dict[str, numpy.ndarray]]
 
-            metric-name -> {batch_data -> array, epoch_domain -> array, epoch_data -> array} """
+           '<metric-name>' -> {"batch_data":   array,
+                               "epoch_data":   array,
+                               "epoch_domain": array} """
         out = OrderedDict()
         for k, v in self._train_metrics.items():
             out[k] = {attr: getattr(v, attr) for attr in ("batch_data", "epoch_data", "epoch_domain")}
@@ -105,10 +107,12 @@ class LivePlot:
             -------
             OrderedDict[str, Dict[str, numpy.ndarray]]
 
-            metric-name -> {batch_data -> array, epoch_domain -> array, epoch_data -> array} """
+           '<metric-name>' -> {"batch_data":   array,
+                               "epoch_data":   array,
+                               "epoch_domain": array} """
         out = OrderedDict()
         for k, v in self._test_metrics.items():
-            out[k] = {attr: getattr(v, attr) for attr in ["batch_data", "epoch_data", "epoch_domain"]}
+            out[k] = {attr: getattr(v, attr) for attr in ("batch_data", "epoch_data", "epoch_domain")}
         return out
 
     @property
@@ -116,7 +120,7 @@ class LivePlot:
         """ Returns
             -------
             Dict[str, Dict[str, color-value]]
-                {metric-name -> {'train'/'test' -> color-value}}"""
+                {'<metric-name>' -> {'train'/'test' -> color-value}}"""
         out = defaultdict(dict)
         for k, v in self._train_colors.items():
             out[k]["train"] = v
@@ -127,6 +131,8 @@ class LivePlot:
 
     @property
     def refresh(self):
+        """ The minimum time between canvas-draw events, in seconds.
+            A negative `refresh` value turns off live-plotting."""
         return self._refresh
 
     @refresh.setter
@@ -134,7 +140,7 @@ class LivePlot:
         """ Set the refresh rate (per second). A negative refresh rate
             turns off static plotting."""
         assert isinstance(value, Real)
-        self._refresh = value
+        self._refresh = 0.001 if 0 <= value < 0.001 else value
         self._liveplot = self._refresh >= 0. and 'nbAgg' in self._backend
 
     def plot_objects(self):
@@ -142,18 +148,19 @@ class LivePlot:
 
             Returns
             -------
-            Tuple[matplotlib.figure.Figure, numpy.ndarray(matplotlib.axes.Axes)]"""
-        return self._fig, np.array(tuple(self._axis_mapping.values()))
+            Tuple[matplotlib.figure.Figure, numpy.ndarray[matplotlib.axes.Axes]]"""
+        return self._fig, self._axes
 
-    def __init__(self, metrics, refresh=0., plot_title=None, figsize=None, track_time=True):
+    def __init__(self, metrics, refresh=0., ncols=1, nrows=1, figsize=None):
         """ Parameters
             ----------
-            metrics : Union[str, Sequence[str], Dict[str, valid-color]
-                The name, or sequence of names, of the metric(s) that will be plotted.
+        metrics : Union[str, Sequence[str], Dict[str, valid-color], Dict[str, Dict['train'/'test', valid-color]]]
+            The name, or sequence of names, of the metric(s) that will be plotted.
 
-                `metrics` can also specify the colors used to plot the metrics via the mappings:
-                    - metric-name -> color-value  (specifies train-metric color only)
-                    - metric-name -> {'train'/'test' -> color-value}
+            `metrics` can also be a dictionary, specifying the colors used to plot
+            the metrics. Two mappings are valid:
+                - '<metric-name>' -> color-value  (specifies train-metric color only)
+                - '<metric-name>' -> {'train'/'test' : color-value}
 
             refresh : float, optional (default=0.)
                 Sets the plot refresh rate in seconds.
@@ -164,21 +171,17 @@ class LivePlot:
                    Call `self.plot()` to draw the static plot.
                    Call `self.show()` to open a window showing the static plot
 
-            plot_title : Optional[str]
-                Specifies the title used on the plot.
+            nrows, ncols : int, optional, default: 1
+                Number of rows/columns of the subplot grid. Metrics are added in
+                row-major order to fill the grid.
 
             figsize : Optional[Sequence[int, int]]
-                Specifies the width and height, respectively, of the figure.
-
-            track_time : bool, default=True
-                If `True`, the total time of plotting is annotated in within the first axes"""
+                Specifies the width and height, respectively, of the figure."""
 
         # type checking on inputs
 
         assert isinstance(refresh, Real)
-        assert plot_title is None or isinstance(plot_title, str)
         assert figsize is None or len(figsize) == 2 and all(isinstance(i, Integral) for i in figsize)
-        assert isinstance(track_time, bool)
 
         # import matplotlib and check backend
         self._pyplot = importlib.import_module('matplotlib.pyplot')
@@ -196,18 +199,23 @@ class LivePlot:
 
         # input parameters
         self._metrics = (metrics,) if isinstance(metrics, str) else tuple(metrics)
+
+        if not self._metrics:
+            raise ValueError("At least one metric must be specified")
+
         if any(not isinstance(i, str) for i in self._metrics):
             raise TypeError("`metrics` must be a string or a collection of strings")
 
-        if 0 <= refresh < 0.001:
-            refresh = 0.001
-        self._refresh = refresh
-        self._liveplot = self._refresh >= 0. and 'nbAgg' in self._backend
-        self._pltkwargs = {"figsize": figsize}
-        self._plot_title = plot_title
-        self._track_time = track_time
+        if len(self._metrics) > ncols * nrows:
+            nrows = len(self._metrics)
 
-        # plot config
+        self._refresh = None
+        self._liveplot = None
+        self.refresh = refresh  # sets _refresh and _liveplot
+
+        self._pltkwargs = dict(figsize=figsize, nrows=nrows, ncols=ncols)
+
+        # color config
         self._train_colors = defaultdict(lambda: None)
         self._test_colors = defaultdict(lambda: None)
         if isinstance(metrics, dict):
@@ -225,16 +233,16 @@ class LivePlot:
         self._legend = dict()
         self._axis_mapping = OrderedDict()  # metric name -> matplotlib axis object
         self._plot_batch = True
-        self._fig, self._axes, self._text = None, None, None  # matplotlib plot objects
+        self._fig, _axes, _text = None, None, None  # matplotlib plot objects
 
         # attribute initialization
         self._start_time = None      # float: Time upon entering the training session
         self._last_plot_time = None  # float: Time of last plot
 
-        self._train_epoch_num = 0    # int: Current number of epochs trained
-        self._train_batch_num = 0    # int: Current number of batches trained
-        self._test_epoch_num = 0     # int: Current number of epochs tested
-        self._test_batch_num = 0     # int: Current number of batches tested
+        self._train_epoch_num = 0  # int: Current number of epochs trained
+        self._train_batch_num = 0  # int: Current number of batches trained
+        self._test_epoch_num = 0   # int: Current number of epochs tested
+        self._test_batch_num = 0   # int: Current number of batches tested
 
         # stores batch/epoch-level training statistics and plot objects for training/testing
         self._train_metrics = OrderedDict()  # metric-name -> LiveMetric
@@ -250,9 +258,6 @@ class LivePlot:
         for word, thing in zip(words, things):
             msg += "number of {word} set: {thing}\n".format(word=word, thing=thing)
 
-        if self._track_time and self._last_plot_time is not None:
-            t = time.strftime("%H:%M:%S", time.localtime(self._last_plot_time))
-            msg += "\n\nlast plot time: {}\n".format(t)
         return msg
 
     def set_train_batch(self, metrics, batch_size, plot=True):
@@ -285,7 +290,7 @@ class LivePlot:
                     ax = self._axis_mapping[key]
                     metric.batch_line, = ax.plot([], [], label="train",
                                                  color=self._train_colors.get(key), **self._batch_ax)
-                    ax.set_ylabel(key)
+                    ax.set_title(key)
                     ax.legend()
                 except KeyError:
                     pass
@@ -358,7 +363,7 @@ class LivePlot:
                     ax = self._axis_mapping[key]
                     metric.epoch_line, = ax.plot([], [], label="test",
                                                  color=self._test_colors.get(key), **self._epoch_ax)
-                    ax.set_ylabel(key)
+                    ax.set_title(key)
                     ax.legend(**self._legend)
                 except KeyError:
                     pass
@@ -381,47 +386,32 @@ class LivePlot:
         if self._start_time is None:
             self._start_time = time.time()
 
-        self._fig, self._axes = self._pyplot.subplots(nrows=len(self._metrics), sharex=True, **self._pltkwargs)
+        self._fig, self._axes = self._pyplot.subplots(sharex=True, **self._pltkwargs)
+        self._fig.tight_layout()
 
         if len(self._metrics) == 1:
-            self._axes = [self._axes]
+            self._axes = np.array([self._axes])
 
-        self._axis_mapping.update(zip(self._metrics, self._axes))
+        axis_offset = self._axes.size - len(self._metrics)
+        for i, ax in zip(range(axis_offset), self._axes.flat[::-1]):
+            ax.remove()
 
-        for ax in self._axes:
+        self._axis_mapping.update(zip(self._metrics, self._axes.flat))
+
+        for ax in self._axes.flat:
             ax.grid(True)
 
-        if self._plot_title:
-            self._axes[0].set_title(self._plot_title)
-
-        self._axes[-1].set_xlabel("Number of iterations")
-
-        time_passed = time.strftime("%H:%M:%S", time.gmtime(0))
-
-        if self._track_time:
-            text = "total time: {}\n".format(time_passed)
-            self._text = self._axes[0].text(.3, .8, text,
-                                            transform=self._axes[0].transAxes,
-                                            bbox=dict(facecolor='none',
-                                                      edgecolor='none',
-                                                      boxstyle='round,pad=0.5'),
-                                            family='monospace')
+        for i in range(min(self._pltkwargs["ncols"], len(self._metrics))):
+            self._axes.flat[-(i + 1 + axis_offset)].set_xlabel("Number of iterations")
 
     def _resize(self):
-        for ax in self._axes:
+        for ax in self._axes.flat:
             ax.relim()
             ax.autoscale_view()
 
     def _update_text(self):
         for ax in self._axis_mapping.values():
             ax.legend()
-
-        if not self._track_time:
-            return None
-
-        time_passed = time.strftime("%H:%M:%S", time.gmtime(time.time() - self._start_time))
-        text = "total time: {}\n".format(time_passed)
-        self._text.set_text(cleandoc(text))
 
     def plot(self):
         """ Plot data, irrespective of the refresh rate. This should only

@@ -1,35 +1,32 @@
 __all__ = ["create_plot", "recreate_plot"]
 
 
-def create_plot(metrics, refresh=0., plot_title=None, figsize=None, track_time=True):
+def create_plot(metrics, refresh=0., figsize=None, ncols=1, nrows=1):
     """ Create matplotlib figure/axes, and a live-plotter, which publishes
         "live" training/testing metric data, at a batch and epoch level, to
         the figure.
 
         Parameters
         ----------
-        metrics : Union[str, Sequence[str], Dict[str, valid-color]
+        metrics : Union[str, Sequence[str], Dict[str, valid-color], Dict[str, Dict['train'/'test', valid-color]]]
             The name, or sequence of names, of the metric(s) that will be plotted.
 
             `metrics` can also be a dictionary, specifying the colors used to plot
             the metrics. Two mappings are valid:
-                - metric-name -> color-value  (specifies train-metric color only)
-                - metric-name -> {train/test : color-value}
+                - '<metric-name>' -> color-value  (specifies train-metric color only)
+                - '<metric-name>' -> {'train'/'test' : color-value}
 
         refresh : float, optional (default=0.)
             Sets the plot refresh rate in seconds.
 
-
-        A refresh rate of 0. updates the once every 1/1000 seconds.
-
-        plot_title : Optional[str]
-            Specifies the title used on the plot.
+            A refresh rate of 0. updates the once every 1/1000 seconds.
 
         figsize : Optional[Sequence[int, int]]
             Specifies the width and height, respectively, of the figure.
 
-        track_time : bool, default=True
-            If `True`, the total time of plotting is annotated in within the first axes
+        nrows, ncols : int, optional, default: 1
+            Number of rows/columns of the subplot grid. Metrics are added in
+            row-major order to fill the grid.
 
         Returns
         -------
@@ -71,13 +68,13 @@ def create_plot(metrics, refresh=0., plot_title=None, figsize=None, track_time=T
         >>> recreate_plot(train_metrics=train, test_metrics=test)"""
 
     from liveplot.plotter import LivePlot
-    live_plotter = LivePlot(metrics, refresh, plot_title, figsize, track_time)
+    live_plotter = LivePlot(metrics, refresh, figsize=figsize, ncols=ncols, nrows=nrows)
     live_plotter._init_plot_window()
     fig, ax = live_plotter.plot_objects()
     return live_plotter, fig, ax
 
 
-def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None, colors=None):
+def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None, colors=None, ncols=1, nrows=1):
     """ Recreate a plot from a LivePlot instance or from train/test metric dictionaries.
 
         Parameters
@@ -88,14 +85,14 @@ def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None, color
         Keyword-Only Arguments
         ----------------------
         train_metrics : Optional[OrderedDict[str, Dict[str, numpy.ndarray]]]
-           metric_name -> {"batch_data":   array,
-                           "epoch_data":   array,
-                           "epoch_domain": array}
+           '<metric-name>' -> {"batch_data":   array,
+                               "epoch_data":   array,
+                               "epoch_domain": array}
 
         test_metrics : Optional[OrderedDict[str, Dict[str, numpy.ndarray]]]
-           metric_name -> {"batch_data":   array,
-                           "epoch_data":   array,
-                           "epoch_domain": array}
+           '<metric-name>' -> {"batch_data":   array,
+                               "epoch_data":   array,
+                               "epoch_domain": array}
 
         colors : Optional[Dict[str, color-value], Dict[str, Dict[str, color-value]]
             Specifying train-time metric colors only:
@@ -103,6 +100,10 @@ def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None, color
 
             Specifying train or test-time metric colors:
                  metric-name -> {train/test -> color-value}
+
+        nrows, ncols : int, optional, default: 1
+            Number of rows/columns of the subplot grid. Metrics are added in
+            row-major order to fill the grid.
 
         Returns
         -------
@@ -128,7 +129,7 @@ def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None, color
         metrics = list(train_metrics)
         metrics.extend(k for k in test_metrics if k not in metrics)
 
-    new, fig, ax = create_plot(metrics, refresh=-1)
+    new, fig, ax = create_plot(metrics, refresh=-1, nrows=nrows, ncols=ncols)
 
     if liveplot:
         new._train_colors = liveplot._train_colors
@@ -232,10 +233,15 @@ def save_metrics(path, liveplot=None, *, train_metrics=None, test_metrics=None):
 
         train_metrics : Optional[OrderedDict[str, Dict[str, numpy.ndarray]]]]
 
-            metric-name -> {batch_data -> array, epoch_domain -> array, epoch_data -> array}
+            '<metric-name>' -> {'batch_data'   -> array,
+                                'epoch_domain' -> array,
+                                'epoch_data'   -> array}
 
         test_metrics : Optional[OrderedDict[str, Dict[str, numpy.ndarray]]]]
-            metric-name -> {batch_data -> array, epoch_domain -> array, epoch_data -> array}"""
+
+            '<metric-name>' -> {'batch_data'   -> array,
+                                'epoch_domain' -> array,
+                                'epoch_data'   -> array}"""
     import numpy as np
 
     if liveplot is not None:
