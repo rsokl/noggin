@@ -148,8 +148,13 @@ class LivePlot:
 
             Returns
             -------
-            Tuple[matplotlib.figure.Figure, numpy.ndarray[matplotlib.axes.Axes]]"""
-        return self._fig, self._axes
+            Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes
+                If more than one set of axes are present in the figure, an array of
+                axes is returned instead."""
+        if self._axes.size == 1:
+            return self._fig, self._axes.item()
+        else:
+            return self._fig, self._axes
 
     def __init__(self, metrics, refresh=0., ncols=1, nrows=1, figsize=None):
         """ Parameters
