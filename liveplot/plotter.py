@@ -72,6 +72,9 @@ class LiveMetric:
             self._running_weighted_sum = 0.
             self._total_weighting = 0.
 
+    def to_dict(self):
+        return {attr: getattr(self, attr) for attr in ("batch_data", "epoch_data", "epoch_domain")}
+
 
 class LivePlot:
     """ Plots batch-level and epoch-level summary statistics of the training and
@@ -96,7 +99,7 @@ class LivePlot:
                                "epoch_domain": array} """
         out = OrderedDict()
         for k, v in self._train_metrics.items():
-            out[k] = {attr: getattr(v, attr) for attr in ("batch_data", "epoch_data", "epoch_domain")}
+            out[k] = v.to_dict()
         return out
 
     @property
@@ -112,7 +115,7 @@ class LivePlot:
                                "epoch_domain": array} """
         out = OrderedDict()
         for k, v in self._test_metrics.items():
-            out[k] = {attr: getattr(v, attr) for attr in ("batch_data", "epoch_data", "epoch_domain")}
+            out[k] = v.to_dict()
         return out
 
     @property
