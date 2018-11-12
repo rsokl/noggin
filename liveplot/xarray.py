@@ -6,35 +6,43 @@ and for building a dataset from multiple iterations of an experiment.
 try:
     import xarray as xr
 except ImportError:
-    raise ImportError("The Python package `xarray` must be installed "/ 
+    raise ImportError("The Python package `xarray` must be installed "
                       "in order to access this functionality in liveplot.")
 
-from liveplot.plotter import LiveMetric, LivePlot
 import numpy as np
-from typing import Union, Dict, Iterable
+
+from numpy import ndarray
+from liveplot.plotter import LivePlot
+from xarray import Dataset
+
+from typing import Dict, Tuple
 
 
-def batch_metrics_to_DataArray(metrics: Dict[str, Dict[str, np.ndarray]]) -> xr.DataArray:
-    dat_arrays = []
+def metrics_to_DataArrays(metrics: Dict[str, Dict[str, ndarray]]) -> Tuple[Dataset, Dataset]:
+    batch_arrays = []
     for metric_name in metrics.keys():
         dat = metrics[metric_name]['batch_data']
         at = xr.DataArray(dat,
                           dims=('iterations',),
                           coords=[np.arange(1, len(dat) + 1)],
                           name=metric_name)
-        dat_arrays.append(at)
-    return xr.merge(dat_arrays)
+        batch_arrays.append(at)
 
-def epoch_metrics_to_DataArray(metrics):
-    dat_arrays = []
+    epoch_arrays = []
     for metric_name in metrics.keys():
         dat = metrics[metric_name]['epoch_data']
-        at = xr.DataArray(dat, 
-                          dims=('iterations',), 
-                          coords=[metrics[metric_name]['epoch_domain'].astype(np.int32)], 
+        at = xr.DataArray(dat,
+                          dims=('iterations',),
+                          coords=[metrics[metric_name]['epoch_domain'].astype(np.int32)],
                           name=metric_name)
-        dat_arrays.append(at)
-    return xr.merge(dat_arrays)
+        epoch_arrays.append(at)
+
+    return xr.merge(batch_arrays), xr.merge(epoch_arrays)
+
+
+def plotter_to_DataArrays(plotter: LivePlot) -> Tuple[Dataset, Dataset, Dataset, Dataset]:
+    pass
+
 
 def concat_experiments(*exps):
     exp_inds = list(range(len(exps)))
