@@ -4,7 +4,7 @@
 Log and plot metrics in during train/test time for a neural network (or whatever, really). `liveplot`
 provides convenient i/o functions for saving, loading, and recreating liveplot sessions. It also provides
 an interface for accessing logged metrics as [xarray data sets](http://xarray.pydata.org/en/stable/index.html). This
-functionality can be accessed via `liveplot.xarray`.
+functionality, availabile via `liveplot.xarray`, permits users to seamlessly access their logged metrics as N-dimensional arrays with named axes.
 
 Please consult the [demo notebook](https://github.com/rsokl/LivePlot/blob/master/LivePlot_Demo.ipynb) for a summary of `liveplot`'s functionality.
 
