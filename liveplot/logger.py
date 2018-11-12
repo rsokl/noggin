@@ -10,6 +10,9 @@ from numpy import ndarray
 from typing import Dict, Optional, Tuple
 
 
+__all__ = ["LiveLogger", "LiveMetric"]
+
+
 class LiveMetric:
     """ Holds the relevant data for a train/test metric for live plotting. """
 

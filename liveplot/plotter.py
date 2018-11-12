@@ -17,6 +17,9 @@ from liveplot.utils import ValidColor
 Metrics = Union[str, Sequence[str], Dict[str, ValidColor], Dict[str, Dict[str, ValidColor]]]
 
 
+__all__ = ["LivePlot"]
+
+
 class LivePlot(LiveLogger):
     """ Plots batch-level and epoch-level summary statistics of the training and
         testing metrics of a model during a session.
