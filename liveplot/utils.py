@@ -1,4 +1,10 @@
-def is_valid_color(c):
+from numbers import Real
+from typing import Union, Sequence
+
+ValidColor = Union[str, Real, Sequence[Real], None]
+
+
+def _is_valid_color(c: ValidColor) -> bool:
     """ Checks if `c` is a valid color argument for matplotlib.
 
         Parameters
@@ -7,7 +13,7 @@ def is_valid_color(c):
 
         Returns
         -------
-        bool"""
+        bool """
     from matplotlib import colors
     from collections import Sequence
     from numbers import Real
@@ -37,8 +43,21 @@ def is_valid_color(c):
     return False
 
 
-def check_valid_color(c):
-    if not is_valid_color(c):
-        raise TypeError("{} is not a valid matplotlib color".format(repr(c)))
+def check_valid_color(c: ValidColor) -> bool:
+    """ Checks if `c` is a valid color argument for matplotlib.
+
+        Parameters
+        ----------
+        c : Union[str, Real, Sequence[Real], NoneType]
+
+        Returns
+        -------
+        bool
+
+        Raises
+        ------
+        ValueError"""
+    if not _is_valid_color(c):
+        raise ValueError("{} is not a valid matplotlib color".format(repr(c)))
     else:
         return True

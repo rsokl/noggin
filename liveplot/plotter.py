@@ -5,78 +5,19 @@ import numpy as np
 from inspect import cleandoc
 from collections import OrderedDict, defaultdict
 import warnings
+
 from liveplot.utils import check_valid_color
+from liveplot.logger import LiveMetric, LiveLogger
+
+from typing import Union, Sequence, Dict, Tuple, Optional
+
+from matplotlib.pyplot import Figure, Axes
+from liveplot.utils import ValidColor
+
+Metrics = Union[str, Sequence[str], Dict[str, ValidColor], Dict[str, Dict[str, ValidColor]]]
 
 
-class LiveMetric:
-    """ Holds the relevant data for a train/test metric for live plotting. """
-    def __init__(self, name):
-        """ Parameters
-            ----------
-            name : str """
-        self.name = name
-        self.batch_line = None   # ax object for batch data
-        self.epoch_line = None   # ax object for epoch data
-        self._batch_data = []   # metric data for consecutive batches
-        self._epoch_data = []   # accuracies
-        self._epoch_domain = []
-        self._running_weighted_sum = 0.
-        self._total_weighting = 0.
-
-    @property
-    def batch_domain(self):
-        return np.arange(1, len(self.batch_data) + 1, dtype=float)
-
-    @property
-    def batch_data(self):
-        """ Metric data for consecutive batches.
-
-            Returns
-            -------
-            numpy.ndarray, shape=(N_batch, )"""
-        return np.array(self._batch_data)
-
-    @property
-    def epoch_domain(self):
-        return np.array(self._epoch_domain)
-
-    @property
-    def epoch_data(self):
-        """ Metric data for consecutive epochs.
-
-            Returns
-            -------
-            numpy.ndarray, shape=(N_epoch, )"""
-        return np.array(self._epoch_data)
-
-    def add_datapoint(self, value, weighting=1.):
-        """ Parameters
-            ----------
-            value : Real
-            weighting : Real """
-        if isinstance(value, np.ndarray):
-            value = np.asscalar(value)
-
-        self._batch_data.append(value)
-        self._running_weighted_sum += weighting*value
-        self._total_weighting += weighting
-
-    def set_epoch_datapoint(self, x=None):
-        """ Parameters
-            ----------
-            x : Optional[Real]
-                Specify the domain-value to be set for this data point."""
-        if self._running_weighted_sum:
-            self._epoch_data.append(self._running_weighted_sum / self._total_weighting)
-            self._epoch_domain.append(x if x is not None else self.batch_domain[-1])
-            self._running_weighted_sum = 0.
-            self._total_weighting = 0.
-
-    def to_dict(self):
-        return {attr: getattr(self, attr) for attr in ("batch_data", "epoch_data", "epoch_domain")}
-
-
-class LivePlot:
+class LivePlot(LiveLogger):
     """ Plots batch-level and epoch-level summary statistics of the training and
         testing metrics of a model during a session.
 
@@ -87,39 +28,7 @@ class LivePlot:
         jupyter notebook). """
 
     @property
-    def train_metrics(self):
-        """ The batch and epoch data for each metric.
-
-            Returns
-            -------
-            OrderedDict[str, Dict[str, numpy.ndarray]]
-
-           '<metric-name>' -> {"batch_data":   array,
-                               "epoch_data":   array,
-                               "epoch_domain": array} """
-        out = OrderedDict()
-        for k, v in self._train_metrics.items():
-            out[k] = v.to_dict()
-        return out
-
-    @property
-    def test_metrics(self):
-        """ The batch and epoch data for each metric.
-
-            Returns
-            -------
-            OrderedDict[str, Dict[str, numpy.ndarray]]
-
-           '<metric-name>' -> {"batch_data":   array,
-                               "epoch_data":   array,
-                               "epoch_domain": array} """
-        out = OrderedDict()
-        for k, v in self._test_metrics.items():
-            out[k] = v.to_dict()
-        return out
-
-    @property
-    def metric_colors(self):
+    def metric_colors(self) -> Dict[str, Dict[str, str]]:
         """ Returns
             -------
             Dict[str, Dict[str, color-value]]
@@ -133,25 +42,25 @@ class LivePlot:
         return dict(out)
 
     @property
-    def refresh(self):
+    def refresh(self) -> float:
         """ The minimum time between canvas-draw events, in seconds.
             A negative `refresh` value turns off live-plotting."""
         return self._refresh
 
     @refresh.setter
-    def refresh(self, value):
+    def refresh(self, value: float):
         """ Set the refresh rate (per second). A negative refresh rate
             turns off static plotting."""
         assert isinstance(value, Real)
         self._refresh = 0.001 if 0 <= value < 0.001 else value
         self._liveplot = self._refresh >= 0. and 'nbAgg' in self._backend
 
-    def plot_objects(self):
+    def plot_objects(self) -> Union[Tuple[Figure, Axes], Tuple[Figure, np.ndarray]]:
         """ The figure-instance of the plot, and the axis-instance for each metric.
 
             Returns
             -------
-            Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes
+            Union[Tuple[Figure, Axes], Tuple[Figure, np.ndarray]]
                 If more than one set of axes are present in the figure, an array of
                 axes is returned instead."""
         if self._axes.size == 1:
@@ -159,11 +68,16 @@ class LivePlot:
         else:
             return self._fig, self._axes
 
-    def __init__(self, metrics, refresh=0., ncols=1, nrows=1, figsize=None):
+    def __init__(self,
+                 metrics: Metrics,
+                 refresh: Real = 0.,
+                 ncols: int = 1,
+                 nrows: int = 1,
+                 figsize: Optional[Tuple[int, int]] = None):
         """ Parameters
             ----------
-        metrics : Union[str, Sequence[str], Dict[str, valid-color], Dict[str, Dict['train'/'test', valid-color]]]
-            The name, or sequence of names, of the metric(s) that will be plotted.
+            metrics : Union[str, Sequence[str], Dict[str, valid-color], Dict[str, Dict['train'/'test', valid-color]]]
+                The name, or sequence of names, of the metric(s) that will be plotted.
 
             `metrics` can also be a dictionary, specifying the colors used to plot
             the metrics. Two mappings are valid:
@@ -179,14 +93,19 @@ class LivePlot:
                    Call `self.plot()` to draw the static plot.
                    Call `self.show()` to open a window showing the static plot
 
-            nrows, ncols : int, optional, default: 1
-                Number of rows/columns of the subplot grid. Metrics are added in
+            nrows : int, optional, default: 1
+                Number of rows of the subplot grid. Metrics are added in
+                row-major order to fill the grid.
+
+            ncols : int, optional, default: 1
+                Number of columns of the subplot grid. Metrics are added in
                 row-major order to fill the grid.
 
             figsize : Optional[Sequence[int, int]]
                 Specifies the width and height, respectively, of the figure."""
-
         # type checking on inputs
+        # initializes the batch and epoch numbers
+        super().__init__()
 
         assert isinstance(refresh, Real)
         assert figsize is None or len(figsize) == 2 and all(isinstance(i, Integral) for i in figsize)
@@ -241,35 +160,17 @@ class LivePlot:
         self._legend = dict()
         self._axis_mapping = OrderedDict()  # metric name -> matplotlib axis object
         self._plot_batch = True
-        self._fig, _axes, _text = None, None, None  # matplotlib plot objects
+        self._fig = None   # type: Figure
+        self._axes = None  # type: np.ndarray
 
         # attribute initialization
         self._start_time = None      # float: Time upon entering the training session
         self._last_plot_time = None  # float: Time of last plot
 
-        self._train_epoch_num = 0  # int: Current number of epochs trained
-        self._train_batch_num = 0  # int: Current number of batches trained
-        self._test_epoch_num = 0   # int: Current number of epochs tested
-        self._test_batch_num = 0   # int: Current number of batches tested
+    def set_train_batch(self, metrics: Dict[str, Real], batch_size: Integral, plot: bool = True):
+        """ Provide the batch-level metric values to be recorded, and (optionally) plotted.
 
-        # stores batch/epoch-level training statistics and plot objects for training/testing
-        self._train_metrics = OrderedDict()  # metric-name -> LiveMetric
-        self._test_metrics = OrderedDict()   # metric-name -> LiveMetric
-
-    def __repr__(self):
-        msg = "LivePlot({})\n\n".format(", ".join(self._metrics))
-
-        words = ("training batches", "training epochs", "testing batches", "testing epochs")
-        things = (self._train_batch_num, self._train_epoch_num,
-                  self._test_batch_num, self._test_epoch_num)
-
-        for word, thing in zip(words, things):
-            msg += "number of {word} set: {thing}\n".format(word=word, thing=thing)
-
-        return msg
-
-    def set_train_batch(self, metrics, batch_size, plot=True):
-        """ Parameters
+            Parameters
             ----------
             metrics : Dict[str, Real]
                 Mapping of metric-name to value. Only those metrics that were
@@ -316,6 +217,9 @@ class LivePlot:
         self._train_batch_num += 1
 
     def plot_train_epoch(self):
+        """
+        Compute the epoch-level train statistics and plot the data point.
+        """
         if not self._train_epoch_num:
             # initialize batch-level plot objects
             for key in self._train_metrics:
@@ -331,8 +235,9 @@ class LivePlot:
         self._do_liveplot()
         self._train_epoch_num += 1
 
-    def set_test_batch(self, metrics, batch_size):
-        """
+    def set_test_batch(self, metrics: Dict[str, Real], batch_size: Integral):
+        """ Provide the batch-level metric values to be recorded, and (optionally) plotted.
+
             Parameters
             ----------
             metrics : Dict[str, Real]
@@ -362,6 +267,9 @@ class LivePlot:
         self._test_batch_num += 1
 
     def plot_test_epoch(self):
+        """
+        Compute the epoch-level test statistics and plot the data point.
+        """
         if not self._test_epoch_num:
             self._init_plot_window()
 
@@ -386,7 +294,7 @@ class LivePlot:
 
         self._do_liveplot()
         self._test_epoch_num += 1
-
+    
     def _init_plot_window(self):
         if self._pyplot is None or self._fig is not None:
             return None
@@ -464,3 +372,11 @@ class LivePlot:
 
         if self._liveplot and time.time() - self._last_plot_time >= self._refresh:
             self.plot()
+
+    def set_test_epoch(self):
+        """ Not implemented. Use `plot_test_epoch` instead"""
+        raise NotImplementedError("Use the method `plot_test_epoch` instead")
+
+    def set_train_epoch(self):
+        """ Not implemented. Use `plot_train_epoch` instead"""
+        raise NotImplementedError("Use the method `plot_train_epoch` instead")
