@@ -19,6 +19,23 @@ from typing import Dict, Tuple
 
 
 def metrics_to_DataArrays(metrics: Dict[str, Dict[str, ndarray]]) -> Tuple[Dataset, Dataset]:
+    """
+    Given liveplot metrics, returns xarray datasets for the batch-level and epoch-level
+    metrics, respectively.
+
+    Parameters
+    ----------
+    metrics : Dict[str, Dict[str, ndarray]]
+        Live metrics reported as a dictionary, (e.g. via `LivePlot.train_metrics`
+        or `LivePlot.test_metrics`)
+
+    Returns
+    -------
+    Tuple[xarray.Dataset, xarray.Dataset]
+        The batch-level and epoch-level datasets. The metrics are reported as 
+        data variables in the dataset, and the coordinates corresponds to
+        the batch-iteration count.
+    """
     batch_arrays = []
     for metric_name in metrics.keys():
         dat = metrics[metric_name]['batch_data']
