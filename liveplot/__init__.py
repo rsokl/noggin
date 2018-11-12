@@ -1,4 +1,4 @@
-__all__ = ["create_plot", "recreate_plot"]
+__all__ = ["create_plot", "recreate_plot", "save_metrics", "load_metrics"]
 
 
 def create_plot(metrics, refresh=0., figsize=None, ncols=1, nrows=1):
