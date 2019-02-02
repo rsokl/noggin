@@ -8,6 +8,9 @@ functionality, availabile via `liveplot.xarray`, permits users to seamlessly acc
 
 Please consult the [demo notebook](https://github.com/rsokl/LivePlot/blob/master/LivePlot_Demo.ipynb) for a summary of `liveplot`'s functionality.
 
+![liveplot](https://user-images.githubusercontent.com/29104956/52166468-bf425700-26db-11e9-9324-1fc83d4bc71d.gif)
+
+
 ## Installing liveplot
 Clone/download this repository, navigate to the `liveplot` directory, and run:
 ```shell
