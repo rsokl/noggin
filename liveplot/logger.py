@@ -17,9 +17,18 @@ class LiveMetric:
     """ Holds the relevant data for a train/test metric for live plotting. """
 
     def __init__(self, name: str):
-        """ Parameters
-            ----------
-            name : str """
+        """
+        Parameters
+        ----------
+        name : str
+
+        Raises
+        ------
+        TypeError
+            Invalid metric name (must be string)
+            """
+        if not isinstance(name, str):
+            raise TypeError("Metric names must be specified as strings. Got: {}".format(name))
         self.name = name
         self.batch_line = None  # ax object for batch data
         self.epoch_line = None  # ax object for epoch data
@@ -28,6 +37,7 @@ class LiveMetric:
         self._epoch_domain = []
         self._running_weighted_sum = 0.
         self._total_weighting = 0.
+        self._cnt_since_epoch = 0
 
     @property
     def batch_domain(self) -> ndarray:
@@ -69,17 +79,22 @@ class LiveMetric:
         self._batch_data.append(value)
         self._running_weighted_sum += weighting * value
         self._total_weighting += weighting
+        self._cnt_since_epoch += 1
 
     def set_epoch_datapoint(self, x: Optional[Real] = None):
         """ Parameters
             ----------
             x : Optional[Real]
                 Specify the domain-value to be set for this data point."""
-        if self._running_weighted_sum:
-            self._epoch_data.append(self._running_weighted_sum / self._total_weighting)
+        if self._cnt_since_epoch > 0:
+            mean = self._running_weighted_sum / (self._total_weighting
+                                                 if self._total_weighting > 0.
+                                                 else 1.)
+            self._epoch_data.append(mean)
             self._epoch_domain.append(x if x is not None else self.batch_domain[-1])
             self._running_weighted_sum = 0.
             self._total_weighting = 0.
+            self._cnt_since_epoch = 0
 
     def to_dict(self) -> Dict[str, ndarray]:
         """
