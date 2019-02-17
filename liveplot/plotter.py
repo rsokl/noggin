@@ -130,6 +130,14 @@ class LivePlot(LiveLogger):
         # input parameters
         self._metrics = (metrics,) if isinstance(metrics, str) else tuple(metrics)
 
+        if not len(self._metrics) == len(set(self._metrics)):
+            from collections import Counter
+            count = Counter(self._metrics)
+            _items = [name for name,cnt in count.most_common() if cnt > 1]
+            raise ValueError("`metrics` must specify mutually-unique names. "
+                             "\n `{}` {} specified redundantly".format(", ".join(_items),
+                                                                       "was" if len(_items) == 1 else "were"))
+
         if not self._metrics:
             raise ValueError("At least one metric must be specified")
 

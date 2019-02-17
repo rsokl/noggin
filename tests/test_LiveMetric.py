@@ -20,6 +20,25 @@ def test_badname(name: str):
         LiveMetric(name)
 
 
+def test_trivial_case():
+    """ Perform a trivial sanity check on live metric"""
+    metric = LiveMetric("a")
+    metric.add_datapoint(1., weighting=1.)
+    metric.add_datapoint(3., weighting=1.)
+    metric.set_epoch_datapoint(99)
+    assert_array_equal(metric.batch_domain, np.array([1, 2]))
+    assert_array_equal(metric.batch_data, np.array([1., 3.]))
+
+    assert_array_equal(metric.epoch_domain, np.array([99]))
+    assert_array_equal(metric.epoch_data, np.array([1. / 2. + 3. / 2.]))
+
+    dict_ = metric.to_dict()
+    for name in ("batch_data", "epoch_data", "epoch_domain"):
+        assert_array_equal(dict_[name], getattr(metric, name),
+                           err_msg=name + " does not map to the "
+                                          "correct value in the metric-dict")
+
+
 @settings(max_examples=500)
 class LiveMetricChecker(RuleBasedStateMachine):
     """ Ensures that exercising the api of LiveMetric produces
