@@ -82,8 +82,11 @@ def test_trivial_case():
 
 @settings(deadline=None)
 class LivePlotStateMachine(RuleBasedStateMachine):
-    """Ensures that LivePlot and LiveLogger log metrics information
-    identically"""
+    """Ensures that:
+    - LivePlot and LiveLogger log metrics information identically.
+    - Calling methods do not have unintended side-effects
+    - Metric IO is self-consistent
+    - Plot objects are produced as expected"""
     def __init__(self):
         super().__init__()
         self.train_metric_names = []
@@ -288,7 +291,7 @@ class LivePlotStateMachine(RuleBasedStateMachine):
                                                name=metric + ": Epoch Domain (test)"))
 
     def teardown(self):
-        if hasattr(self, "plotter") and hasattr(self.plotter, "_fig"):
+        if hasattr(self, "plotter") and self.plotter._fig is not None:
             from matplotlib.pyplot import close
             close(self.plotter._fig)
         super().teardown()
