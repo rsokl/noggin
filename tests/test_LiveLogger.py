@@ -6,13 +6,25 @@ from typing import List
 
 from numpy.testing import assert_array_equal, assert_allclose
 
-from hypothesis import settings
 import hypothesis.strategies as st
 from hypothesis.strategies import SearchStrategy
 from hypothesis.stateful import RuleBasedStateMachine, initialize, rule, precondition
 
+import numpy as np
 
-@settings(max_examples=500)
+
+def test_trivial_case():
+    """ Perform a trivial sanity check on live logger"""
+    logger = LiveLogger()
+    logger.set_train_batch(dict(a=1.), batch_size=1)
+    logger.set_train_batch(dict(a=3.), batch_size=1)
+    logger.set_train_epoch()
+
+    assert_array_equal(logger.train_metrics['a']['batch_data'], np.array([1., 3.]))
+    assert_array_equal(logger.train_metrics['a']['epoch_domain'], np.array([2]))
+    assert_array_equal(logger.train_metrics['a']['epoch_data'], np.array([1. / 2. + 3. / 2.]))
+
+
 class LiveLoggerStateMachine(RuleBasedStateMachine):
     """ Ensures that exercising the api of LiveLogger produces
     results that are consistent with a simplistic implementation"""

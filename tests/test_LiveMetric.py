@@ -9,7 +9,7 @@ import pytest
 import numpy as np
 from numpy.testing import assert_array_equal, assert_allclose
 
-from hypothesis import given, settings
+from hypothesis import given
 import hypothesis.strategies as st
 from hypothesis.stateful import RuleBasedStateMachine, initialize, rule
 
@@ -39,7 +39,6 @@ def test_trivial_case():
                                           "correct value in the metric-dict")
 
 
-@settings(max_examples=500)
 class LiveMetricChecker(RuleBasedStateMachine):
     """ Ensures that exercising the api of LiveMetric produces
     results that are consistent with a simplistic implementation"""
