@@ -14,6 +14,8 @@ from typing import Union, Sequence, Dict, Tuple, Optional
 from matplotlib.pyplot import Figure, Axes
 from liveplot.utils import ValidColor
 
+from warnings import warn
+
 Metrics = Union[str, Sequence[str], Dict[str, ValidColor], Dict[str, Dict[str, ValidColor]]]
 
 
@@ -61,11 +63,19 @@ class LivePlot(LiveLogger):
     def plot_objects(self) -> Union[Tuple[Figure, Axes], Tuple[Figure, np.ndarray]]:
         """ The figure-instance of the plot, and the axis-instance for each metric.
 
-            Returns
-            -------
-            Union[Tuple[Figure, Axes], Tuple[Figure, np.ndarray]]
-                If more than one set of axes are present in the figure, an array of
-                axes is returned instead."""
+        Notes
+        -----
+        Calling this method will initialize the plot window if it is not already
+        rendered.
+
+        Returns
+        -------
+        Union[Tuple[Figure, Axes], Tuple[Figure, np.ndarray]]
+            If more than one set of axes are present in the figure, an array of
+            axes is returned instead."""
+        if self._fig is None:
+            self._init_plot_window()
+
         if self._axes.size == 1:
             return self._fig, self._axes.item()
         else:
@@ -74,8 +84,8 @@ class LivePlot(LiveLogger):
     def __init__(self,
                  metrics: Metrics,
                  refresh: Real = 0.,
+                 nrows: Optional[int] = None,
                  ncols: int = 1,
-                 nrows: int = 1,
                  figsize: Optional[Tuple[int, int]] = None):
         """ Parameters
             ----------
@@ -96,7 +106,7 @@ class LivePlot(LiveLogger):
                    Call `self.plot()` to draw the static plot.
                    Call `self.show()` to open a window showing the static plot
 
-            nrows : int, optional, default: 1
+            nrows : Optional[int]
                 Number of rows of the subplot grid. Metrics are added in
                 row-major order to fill the grid.
 
@@ -119,13 +129,12 @@ class LivePlot(LiveLogger):
 
         self._backend = _matplotlib.get_backend()
         if 'nbAgg' not in self._backend and refresh >= 0:
-            _inline_msg = """ Warning: live plotting is not supported when matplotlib uses the '{}'
+            _inline_msg = """Live plotting is not supported when matplotlib uses the '{}'
                              backend. Instead, use the 'nbAgg' backend.
             
                              In a Jupyter notebook, this can be activated using the cell magic:
-            
                                 %matplotlib notebook."""
-            print(cleandoc(_inline_msg.format(self._backend)))
+            warn(cleandoc(_inline_msg.format(self._backend)))
 
         # input parameters
         self._metrics = (metrics,) if isinstance(metrics, str) else tuple(metrics)
@@ -144,6 +153,15 @@ class LivePlot(LiveLogger):
         if any(not isinstance(i, str) for i in self._metrics):
             raise TypeError("`metrics` must be a string or a collection of strings")
 
+        if nrows is None:
+            nrows = 1
+        
+        if 1 > nrows or not isinstance(nrows, Integral):
+            raise ValueError("`nrows` must integer-valued and be at least 1. Got {}".format(nrows))
+
+        if 1 > ncols or not isinstance(ncols, Integral):
+            raise ValueError("`ncols` must integer-valued and be at least 1. Got {}".format(ncols))
+        
         if len(self._metrics) > ncols * nrows:
             nrows = len(self._metrics)
 
@@ -171,8 +189,8 @@ class LivePlot(LiveLogger):
         self._legend = dict()
         self._axis_mapping = OrderedDict()  # metric name -> matplotlib axis object
         self._plot_batch = True
-        self._fig = None   # type: Figure
-        self._axes = None  # type: np.ndarray
+        self._fig = None   # type: Optional[Figure]
+        self._axes = None  # type: Union[None, Axes, np.ndarray]
 
         # attribute initialization
         self._start_time = None      # float: Time upon entering the training session

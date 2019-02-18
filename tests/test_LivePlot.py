@@ -3,8 +3,6 @@ from tests import err_msg
 from liveplot.logger import LiveLogger
 from liveplot.plotter import LivePlot
 
-import pytest
-
 from numpy.testing import assert_array_equal
 
 from hypothesis import settings, assume
@@ -12,6 +10,22 @@ import hypothesis.strategies as st
 from hypothesis.strategies import SearchStrategy
 from hypothesis.stateful import RuleBasedStateMachine, initialize, rule, precondition
 import numpy as np
+from matplotlib.pyplot import Figure, Axes
+
+from contextlib import contextmanager
+
+
+import pytest
+
+
+@contextmanager
+def close_fig(fig):
+    from matplotlib.pyplot import close
+    try:
+        yield None
+    finally:
+        close(fig)
+
 
 def test_redundant_metrics():
     with pytest.raises(ValueError):
@@ -19,6 +33,36 @@ def test_redundant_metrics():
 
     with pytest.raises(ValueError):
         LivePlot(["a", "b", "a", "c", "c"])
+
+
+def test_plot_grid():
+    """Ensure that axes have the right type/shape for a given grid spec"""
+    fig, ax = LivePlot(["metric a"]).plot_objects()
+    with close_fig(fig):
+        assert isinstance(ax, Axes)
+
+    fig, ax = LivePlot(["metric a"], nrows=1).plot_objects()
+    with close_fig(fig):
+        assert isinstance(ax, Axes)
+
+    fig, ax = LivePlot(["metric a"], ncols=1).plot_objects()
+    with close_fig(fig):
+        assert isinstance(ax, Axes)
+
+    fig, ax = LivePlot(["metric a", "metric_b", "metric_c"], nrows=2, ncols=2).plot_objects()
+    with close_fig(fig):
+        assert isinstance(ax, np.ndarray)
+        assert ax.shape == (2, 2)
+
+    fig, ax = LivePlot(["metric a", "metric_b", "metric_c"]).plot_objects()
+    with close_fig(fig):
+        assert isinstance(ax, np.ndarray)
+        assert ax.shape == (3,)
+
+    fig, ax = LivePlot(["metric a", "metric_b", "metric_c"], ncols=3).plot_objects()
+    with close_fig(fig):
+        assert isinstance(ax, np.ndarray)
+        assert ax.shape == (3,)
 
 
 def test_trivial_case():
@@ -61,6 +105,20 @@ class LivePlotStateMachine(RuleBasedStateMachine):
         """ Ensure no side effect """
         repr(self.logger)
         repr(self.plotter)
+
+    @rule()
+    def check_plt_objects(self):
+        """ Ensure no side effect """
+        fig, ax = self.plotter.plot_objects()
+
+        assert isinstance(fig, Figure)
+
+        if len(set(self.train_metric_names + self.test_metric_names)) > 1:
+            assert isinstance(ax, np.ndarray) and all(isinstance(a, Axes) for a in ax.flat), \
+                "An array of axes is expected when multiple metrics are specified."
+        else:
+            assert isinstance(ax, Axes), "A sole `Axes` instance is expected as the plot " \
+                                         "object when only one metric is specified"
 
     @rule(batch_size=st.integers(0, 2), data=st.data(), plot=st.booleans())
     def set_train_batch(self, batch_size: int, data: SearchStrategy, plot: bool):
@@ -153,6 +211,12 @@ class LivePlotStateMachine(RuleBasedStateMachine):
                                err_msg=err_msg(actual=plot_epoch_domain,
                                                desired=log_epoch_domain,
                                                name=metric + ": Epoch Domain"))
+
+    def teardown(self):
+        if hasattr(self, "plotter") and hasattr(self.plotter, "_fig"):
+            from matplotlib.pyplot import close
+            close(self.plotter._fig)
+        super().teardown()
 
 
 TestLivePlot = LivePlotStateMachine.TestCase
