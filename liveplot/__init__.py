@@ -60,6 +60,8 @@ def create_plot(metrics, refresh=0., figsize=None, ncols=1, nrows=1):
         ...         plotter.plot_test_epoch()
         ...
         ... plotter.plot()  # ensures final data gets plotted
+
+        Saving the logged metrics
         >>> save_metrics("./metrics.npz", plotter) # save metrics to numpy-archive
 
         Loading and recreating plot
@@ -69,7 +71,6 @@ def create_plot(metrics, refresh=0., figsize=None, ncols=1, nrows=1):
 
     from liveplot.plotter import LivePlot
     live_plotter = LivePlot(metrics, refresh, figsize=figsize, ncols=ncols, nrows=nrows)
-    live_plotter._init_plot_window()
     fig, ax = live_plotter.plot_objects()
     return live_plotter, fig, ax
 
@@ -151,7 +152,6 @@ def recreate_plot(liveplot=None, *, train_metrics=None, test_metrics=None, color
         new._train_colors = train_colors
         new._test_colors = test_colors
 
-    new._init_plot_window()
     fig, ax = new.plot_objects()
 
     if liveplot:
