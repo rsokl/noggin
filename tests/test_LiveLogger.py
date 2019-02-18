@@ -1,5 +1,6 @@
 from tests import err_msg
 
+from liveplot import save_metrics, load_metrics
 from liveplot.logger import LiveLogger, LiveMetric
 
 from typing import List
@@ -9,8 +10,11 @@ from numpy.testing import assert_array_equal, assert_allclose
 import hypothesis.strategies as st
 from hypothesis.strategies import SearchStrategy
 from hypothesis.stateful import RuleBasedStateMachine, initialize, rule, precondition
+from hypothesis import note
 
 import numpy as np
+
+import pytest
 
 
 def test_trivial_case():
@@ -42,13 +46,16 @@ class LiveLoggerStateMachine(RuleBasedStateMachine):
     def choose_metrics(self,
                        num_train_metrics: int,
                        num_test_metrics: int):
-        train_metric_names = ["a", "b", "c"][:num_train_metrics]
+        train_metric_names = ["metric-a", "metric-b", "metric-c"][:num_train_metrics]
         for name in train_metric_names:
             self.train_metrics.append(LiveMetric(name=name))
 
-        test_metric_names = ["a", "b", "c"][:num_test_metrics]
+        test_metric_names = ["metric-a", "metric-b", "metric-c"][:num_test_metrics]
         for name in test_metric_names:
             self.test_metrics.append(LiveMetric(name=name))
+
+        note("Train metric names: {}".format(train_metric_names))
+        note("Test metric names: {}".format(test_metric_names))
 
     @rule()
     def get_repr(self):
@@ -150,5 +157,76 @@ class LiveLoggerStateMachine(RuleBasedStateMachine):
                                             desired=metric.epoch_data,
                                             name=metric.name + ": Epoch Data"))
 
+    @rule(save_via_object=st.booleans())
+    def check_metric_io(self, save_via_object: bool):
+        """Ensure the saving/loading metrics always produces self-consistent
+        results with the logger"""
+        from uuid import uuid4
+        filename = str(uuid4())
+        if save_via_object:
+            save_metrics(filename, liveplot=self.logger)
+        else:
+            save_metrics(filename,
+                         train_metrics=self.logger.train_metrics,
+                         test_metrics=self.logger.test_metrics)
+        io_train_metrics, io_test_metrics = load_metrics(filename)
 
-TestLiveLogger = LiveLoggerStateMachine.TestCase
+        log_train_metrics = self.logger.train_metrics
+        log_test_metrics = self.logger.test_metrics
+
+        assert tuple(io_test_metrics) == tuple(log_test_metrics), "The io test metrics do not match those " \
+                                                                  "from the LiveLogger instance. Order matters " \
+                                                                  "for restoring plots."
+
+        for metric in io_train_metrics:
+            io_batch_data = io_train_metrics[metric]["batch_data"]
+            io_epoch_domain = io_train_metrics[metric]["epoch_domain"]
+            io_epoch_data = io_train_metrics[metric]["epoch_data"]
+
+            log_batch_data = log_train_metrics[metric]["batch_data"]
+            log_epoch_domain = log_train_metrics[metric]["epoch_domain"]
+            log_epoch_data = log_train_metrics[metric]["epoch_data"]
+
+            assert_array_equal(io_batch_data, log_batch_data,
+                               err_msg=err_msg(actual=log_batch_data,
+                                               desired=io_batch_data,
+                                               name=metric + ": Batch Data (train)"))
+
+            assert_array_equal(io_epoch_data, log_epoch_data,
+                               err_msg=err_msg(actual=log_epoch_data,
+                                               desired=io_epoch_data,
+                                               name=metric + ": Epoch Data (train)"))
+
+            assert_array_equal(io_epoch_domain, log_epoch_domain,
+                               err_msg=err_msg(actual=log_epoch_domain,
+                                               desired=io_epoch_domain,
+                                               name=metric + ": Epoch Domain (train)"))
+
+        for metric in io_test_metrics:
+            io_batch_data = io_test_metrics[metric]["batch_data"]
+            io_epoch_domain = io_test_metrics[metric]["epoch_domain"]
+            io_epoch_data = io_test_metrics[metric]["epoch_data"]
+
+            log_batch_data = log_test_metrics[metric]["batch_data"]
+            log_epoch_domain = log_test_metrics[metric]["epoch_domain"]
+            log_epoch_data = log_test_metrics[metric]["epoch_data"]
+
+            assert_array_equal(io_batch_data, log_batch_data,
+                               err_msg=err_msg(actual=log_batch_data,
+                                               desired=io_batch_data,
+                                               name=metric + ": Batch Data (test)"))
+
+            assert_array_equal(io_epoch_data, log_epoch_data,
+                               err_msg=err_msg(actual=log_epoch_data,
+                                               desired=io_epoch_data,
+                                               name=metric + ": Epoch Data (test)"))
+
+            assert_array_equal(io_epoch_domain, log_epoch_domain,
+                               err_msg=err_msg(actual=log_epoch_domain,
+                                               desired=io_epoch_domain,
+                                               name=metric + ": Epoch Domain (test)"))
+
+
+@pytest.mark.usefixtures("cleandir")
+class TestLiveLogger(LiveLoggerStateMachine.TestCase):
+    pass

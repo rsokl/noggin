@@ -1,14 +1,16 @@
 from tests import err_msg
 
+from liveplot import save_metrics, load_metrics
 from liveplot.logger import LiveLogger
 from liveplot.plotter import LivePlot
 
 from numpy.testing import assert_array_equal
 
-from hypothesis import settings, assume
+from hypothesis import settings, assume, note
 import hypothesis.strategies as st
 from hypothesis.strategies import SearchStrategy
 from hypothesis.stateful import RuleBasedStateMachine, initialize, rule, precondition
+
 import numpy as np
 from matplotlib.pyplot import Figure, Axes
 
@@ -28,6 +30,7 @@ def close_fig(fig):
 
 
 def test_redundant_metrics():
+    """Ensures that redundant metrics are not permitted"""
     with pytest.raises(ValueError):
         LivePlot(["a", "b", "a"])
 
@@ -94,11 +97,14 @@ class LivePlotStateMachine(RuleBasedStateMachine):
                        num_train_metrics: int,
                        num_test_metrics: int):
         assume(num_train_metrics + num_test_metrics > 0)
-        self.train_metric_names = ["a", "b", "c"][:num_train_metrics]
+        self.train_metric_names = ["metric-a", "metric-b", "metric-c"][:num_train_metrics]
 
-        self.test_metric_names = ["a", "b", "c"][:num_test_metrics]
+        self.test_metric_names = ["metric-a", "metric-b", "metric-c"][:num_test_metrics]
         self.plotter = LivePlot(sorted(set(self.train_metric_names + self.test_metric_names)), refresh=-1)
         self.logger = LiveLogger()
+
+        note("Train metric names: {}".format(self.train_metric_names))
+        note("Test metric names: {}".format(self.test_metric_names))
 
     @rule()
     def get_repr(self):
@@ -212,6 +218,75 @@ class LivePlotStateMachine(RuleBasedStateMachine):
                                                desired=log_epoch_domain,
                                                name=metric + ": Epoch Domain"))
 
+    @rule(save_via_object=st.booleans())
+    def check_metric_io(self, save_via_object: bool):
+        """Ensure the saving/loading metrics always produces self-consistent
+        results with the plotter"""
+        from uuid import uuid4
+        filename = str(uuid4())
+        if save_via_object:
+            save_metrics(filename, liveplot=self.plotter)
+        else:
+            save_metrics(filename,
+                         train_metrics=self.plotter.train_metrics,
+                         test_metrics=self.plotter.test_metrics)
+        io_train_metrics, io_test_metrics = load_metrics(filename)
+
+        plot_train_metrics = self.plotter.train_metrics
+        plot_test_metrics = self.plotter.test_metrics
+
+        assert tuple(io_test_metrics) == tuple(plot_test_metrics), "The io test metrics do not match those " \
+                                                                   "from the LivePlot instance. Order matters " \
+                                                                   "for reproducing the plot."
+
+        for metric in io_train_metrics:
+            io_batch_data = io_train_metrics[metric]["batch_data"]
+            io_epoch_domain = io_train_metrics[metric]["epoch_domain"]
+            io_epoch_data = io_train_metrics[metric]["epoch_data"]
+
+            plot_batch_data = plot_train_metrics[metric]["batch_data"]
+            plot_epoch_domain = plot_train_metrics[metric]["epoch_domain"]
+            plot_epoch_data = plot_train_metrics[metric]["epoch_data"]
+
+            assert_array_equal(io_batch_data, plot_batch_data,
+                               err_msg=err_msg(actual=plot_batch_data,
+                                               desired=io_batch_data,
+                                               name=metric + ": Batch Data (train)"))
+
+            assert_array_equal(io_epoch_data, plot_epoch_data,
+                               err_msg=err_msg(actual=plot_epoch_data,
+                                               desired=io_epoch_data,
+                                               name=metric + ": Epoch Data (train)"))
+
+            assert_array_equal(io_epoch_domain, plot_epoch_domain,
+                               err_msg=err_msg(actual=plot_epoch_domain,
+                                               desired=io_epoch_domain,
+                                               name=metric + ": Epoch Domain (train)"))
+
+        for metric in io_test_metrics:
+            io_batch_data = io_test_metrics[metric]["batch_data"]
+            io_epoch_domain = io_test_metrics[metric]["epoch_domain"]
+            io_epoch_data = io_test_metrics[metric]["epoch_data"]
+
+            plot_batch_data = plot_test_metrics[metric]["batch_data"]
+            plot_epoch_domain = plot_test_metrics[metric]["epoch_domain"]
+            plot_epoch_data = plot_test_metrics[metric]["epoch_data"]
+
+            assert_array_equal(io_batch_data, plot_batch_data,
+                               err_msg=err_msg(actual=plot_batch_data,
+                                               desired=io_batch_data,
+                                               name=metric + ": Batch Data (test)"))
+
+            assert_array_equal(io_epoch_data, plot_epoch_data,
+                               err_msg=err_msg(actual=plot_epoch_data,
+                                               desired=io_epoch_data,
+                                               name=metric + ": Epoch Data (test)"))
+
+            assert_array_equal(io_epoch_domain, plot_epoch_domain,
+                               err_msg=err_msg(actual=plot_epoch_domain,
+                                               desired=io_epoch_domain,
+                                               name=metric + ": Epoch Domain (test)"))
+
     def teardown(self):
         if hasattr(self, "plotter") and hasattr(self.plotter, "_fig"):
             from matplotlib.pyplot import close
@@ -219,4 +294,6 @@ class LivePlotStateMachine(RuleBasedStateMachine):
         super().teardown()
 
 
-TestLivePlot = LivePlotStateMachine.TestCase
+@pytest.mark.usefixtures("cleandir")
+class TestLivePlot(LivePlotStateMachine.TestCase):
+    pass
