@@ -1,8 +1,38 @@
 from tests.utils import err_msg, compare_all_metrics
+from liveplot.utils import check_valid_color
 
 import numpy as np
 
 import pytest
+
+
+@pytest.mark.parametrize(
+    "color", ("r",
+              "red",
+              "C0",
+              "#eeefff",
+              "burlywood",
+              "0.25",
+              (.1, .2, .3),
+              (.1, .2, .3, .2),
+              )
+)
+def test_valid_colors(color):
+    assert check_valid_color(color)
+
+
+@pytest.mark.parametrize(
+    "color", ("helloworld",
+              "",
+              "#fff",
+              None,
+              (.1, .1),
+              (.1, .2, .3, 1., 2.),
+              )
+)
+def test_invalid_colors(color):
+    with pytest.raises(ValueError):
+        check_valid_color(color)
 
 
 def test_err_msg():
