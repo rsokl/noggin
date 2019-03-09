@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Dict, Sequence
+from typing import Dict, Sequence, Tuple
 
 import numpy as np
 
@@ -7,8 +7,6 @@ import hypothesis.strategies as st
 import hypothesis.extra.numpy as hnp
 
 from liveplot.typing import LiveMetrics
-
-names = ["metric_a", "metric_b", "metric_c"]
 
 
 def finite_array(size):
@@ -18,7 +16,7 @@ def finite_array(size):
                                          allow_nan=False))
 
 
-def choices(seq: Sequence, size: int):
+def choices(seq: Sequence, size: int) -> st.SearchStrategy[Tuple]:
     strat = st.permutations(tuple(range(len(seq))))
     return strat.map(lambda x: tuple(seq[i] for i in x[:size]))
 
@@ -31,7 +29,7 @@ def metrics(draw) -> st.SearchStrategy[LiveMetrics]:
     epoch_domain = draw(choices(np.arange(1, num_batch_data + 1), size=num_epoch_data))
 
     out = defaultdict(dict)  # type: Dict[str, Dict[str, np.ndarray]]
-    for name in names[:num_metrics]:
+    for name in ["metric_a", "metric_b", "metric_c"][:num_metrics]:
         out[name]["batch_data"] = draw(finite_array(num_batch_data))  # type: np.ndarray
         out[name]["epoch_data"] = draw(finite_array(num_epoch_data))  # type: np.ndarray
         out[name]["epoch_domain"] = np.asarray(epoch_domain)
