@@ -1,4 +1,4 @@
-from tests.utils import err_msg, compare_all_metrics
+from tests.utils import compare_all_metrics
 
 from liveplot import save_metrics, load_metrics
 from liveplot.logger import LiveLogger
@@ -88,6 +88,8 @@ class LivePlotStateMachine(RuleBasedStateMachine):
         self.test_metric_names = []
         self.train_batch_set = False
         self.test_batch_set = False
+        self.plotter = None  # type: LivePlot
+        self.logger = None  # type: LiveLogger
 
     @initialize(num_train_metrics=st.integers(0, 3),
                 num_test_metrics=st.integers(0, 3))
