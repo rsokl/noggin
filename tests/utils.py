@@ -1,4 +1,5 @@
 from numpy.testing import assert_array_equal
+from liveplot.typing import LiveMetrics
 
 
 def err_msg(actual, desired, name):
@@ -9,7 +10,7 @@ def err_msg(actual, desired, name):
             f"\n\t{repr(actual)}")
 
 
-def compare_all_metrics(x: Metrics, y: Metrics):
+def compare_all_metrics(x: LiveMetrics, y: LiveMetrics):
     assert isinstance(x, dict)
     assert isinstance(y, dict)
     assert sorted(x) == sorted(y), "The metric names do not match"

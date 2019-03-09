@@ -1,10 +1,6 @@
-import numpy as np
-
 from numpy import ndarray
-from liveplot.plotter import LivePlot
-from liveplot.logger import LiveLogger
 
-from typing import Dict, Tuple, Union, Sequence
+from typing import Dict, Union, Sequence
 from numbers import Real
 
 ValidColor = Union[str, Real, Sequence[Real], None]
