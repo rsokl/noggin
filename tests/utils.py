@@ -1,8 +1,6 @@
-from typing import Dict, Sequence
+from typing import Dict
+
 from numpy import ndarray
-
-from liveplot.logger import LiveMetric
-
 from numpy.testing import assert_array_equal
 
 Metrics = Dict[str, Dict[str, ndarray]]
@@ -17,7 +15,19 @@ def err_msg(actual, desired, name):
 
 
 def compare_all_metrics(x: Metrics, y: Metrics):
+    assert isinstance(x, dict)
+    assert isinstance(y, dict)
     assert sorted(x) == sorted(y), "The metric names do not match"
+
+    for name, dictionary in x.items():
+        assert "batch_data" in dictionary
+        assert "epoch_domain" in dictionary
+        assert "epoch_data" in dictionary
+
+    for name, dictionary in y.items():
+        assert "batch_data" in dictionary
+        assert "epoch_domain" in dictionary
+        assert "epoch_data" in dictionary
 
     for metric_name in x:
         x_batch_data = x[metric_name]["batch_data"]
