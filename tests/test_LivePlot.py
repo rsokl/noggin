@@ -195,7 +195,7 @@ class LivePlotStateMachine(RuleBasedStateMachine):
         compare_all_metrics(plot_test_metrics, io_test_metrics)
 
     def teardown(self):
-        if hasattr(self, "plotter"):
+        if self.plotter is not None:
             fig, _ = self.plotter.plot_objects()
             if fig is not None:
                 close(fig)
