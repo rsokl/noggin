@@ -1,11 +1,7 @@
-from numbers import Real
-from typing import Union, Sequence
+from liveplot.typing import ValidColor
 
 
 __all__ = ["check_valid_color"]
-
-
-ValidColor = Union[str, Real, Sequence[Real], None]
 
 
 def check_valid_color(c: ValidColor) -> bool:

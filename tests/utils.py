@@ -1,9 +1,4 @@
-from typing import Dict
-
-from numpy import ndarray
 from numpy.testing import assert_array_equal
-
-Metrics = Dict[str, Dict[str, ndarray]]
 
 
 def err_msg(actual, desired, name):

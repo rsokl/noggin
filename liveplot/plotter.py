@@ -8,15 +8,13 @@ import warnings
 
 from liveplot.utils import check_valid_color
 from liveplot.logger import LiveMetric, LiveLogger
+from liveplot.typing import Metrics
 
-from typing import Union, Sequence, Dict, Tuple, Optional
+from typing import Union, Dict, Tuple, Optional
 
 from matplotlib.pyplot import Figure, Axes
-from liveplot.utils import ValidColor
 
 from warnings import warn
-
-Metrics = Union[str, Sequence[str], Dict[str, ValidColor], Dict[str, Dict[str, ValidColor]]]
 
 
 __all__ = ["LivePlot"]
