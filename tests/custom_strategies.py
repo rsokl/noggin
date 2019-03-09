@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Dict
+from typing import Dict, Sequence
 
 import numpy as np
 
@@ -18,8 +18,8 @@ def finite_array(size):
                                          allow_nan=False))
 
 
-def choices(seq, size):
-    strat = st.permutations(tuple(range(seq)))
+def choices(seq: Sequence, size: int):
+    strat = st.permutations(tuple(range(len(seq))))
     return strat.map(lambda x: tuple(seq[i] for i in x[:size]))
 
 
@@ -28,12 +28,12 @@ def metrics(draw) -> st.SearchStrategy[LiveMetrics]:
     num_metrics = draw(st.integers(0, 3))
     num_batch_data = draw(st.integers(0, 5))
     num_epoch_data = draw(st.integers(0, num_batch_data))
+    epoch_domain = draw(choices(np.arange(1, num_batch_data + 1), size=num_epoch_data))
 
     out = defaultdict(dict)  # type: Dict[str, Dict[str, np.ndarray]]
     for name in names[:num_metrics]:
         out[name]["batch_data"] = draw(finite_array(num_batch_data))  # type: np.ndarray
         out[name]["epoch_data"] = draw(finite_array(num_epoch_data))  # type: np.ndarray
-        out[name]["epoch_domain"] = np.asarray(draw(choices(np.arange(1, num_batch_data + 1),
-                                                            size=num_epoch_data)))
-    return out
+        out[name]["epoch_domain"] = np.asarray(epoch_domain)
+    return dict(out.items())
 
