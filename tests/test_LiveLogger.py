@@ -1,11 +1,11 @@
-from tests import err_msg
+from tests.utils import compare_all_metrics
 
 from liveplot import save_metrics, load_metrics
 from liveplot.logger import LiveLogger, LiveMetric
 
 from typing import List
 
-from numpy.testing import assert_array_equal, assert_allclose
+from numpy.testing import assert_array_equal
 
 import hypothesis.strategies as st
 from hypothesis.strategies import SearchStrategy
@@ -106,64 +106,24 @@ class LiveLoggerStateMachine(RuleBasedStateMachine):
     @precondition(lambda self: self.train_batch_set)
     @rule()
     def compare_train_metrics(self):
-        metrics = self.logger.train_metrics
-        assert sorted(metrics) == sorted(m.name for m in self.train_metrics), \
-            "The logged train metrics do not match"
-
-        for metric in self.train_metrics:
-            batch_data = metrics[metric.name]["batch_data"]
-            epoch_domain = metrics[metric.name]["epoch_domain"]
-            epoch_data = metrics[metric.name]["epoch_data"]
-
-            assert_array_equal(metric.batch_data, batch_data,
-                               err_msg=err_msg(actual=batch_data,
-                                               desired=metric.batch_data,
-                                               name=metric.name + ": Batch Data"))
-            assert_array_equal(metric.epoch_domain, epoch_domain,
-                               err_msg=err_msg(actual=epoch_domain,
-                                               desired=metric.epoch_domain,
-                                               name=metric.name + ": Epoch Domain"))
-
-            assert_allclose(actual=epoch_data,
-                            desired=metric.epoch_data,
-                            err_msg=err_msg(actual=epoch_data,
-                                            desired=metric.epoch_data,
-                                            name=metric.name + ": Epoch Data"))
+        logged_metrics = self.logger.train_metrics
+        expected_metrics = dict((metric.name, metric.to_dict()) for metric in self.train_metrics)
+        compare_all_metrics(logged_metrics, expected_metrics)
 
     @precondition(lambda self: self.test_batch_set)
     @rule()
     def compare_test_metrics(self):
-        metrics = self.logger.test_metrics
-        assert sorted(metrics) == sorted(m.name for m in self.test_metrics), \
-            "The logged test metrics do not match"
+        logged_metrics = self.logger.test_metrics
+        expected_metrics = dict((metric.name, metric.to_dict()) for metric in self.test_metrics)
+        compare_all_metrics(logged_metrics, expected_metrics)
 
-        for metric in self.test_metrics:
-            batch_data = metrics[metric.name]["batch_data"]
-            epoch_domain = metrics[metric.name]["epoch_domain"]
-            epoch_data = metrics[metric.name]["epoch_data"]
-
-            assert_array_equal(metric.batch_data, batch_data,
-                               err_msg=err_msg(actual=batch_data,
-                                               desired=metric.batch_data,
-                                               name=metric.name + ": Batch Data"))
-            assert_array_equal(metric.epoch_domain, epoch_domain,
-                               err_msg=err_msg(actual=epoch_domain,
-                                               desired=metric.epoch_domain,
-                                               name=metric.name + ": Epoch Domain"))
-
-            assert_allclose(actual=epoch_data,
-                            desired=metric.epoch_data,
-                            err_msg=err_msg(actual=epoch_data,
-                                            desired=metric.epoch_data,
-                                            name=metric.name + ": Epoch Data"))
-
-    @rule(save_via_object=st.booleans())
-    def check_metric_io(self, save_via_object: bool):
+    @rule(save_via_plot_object=st.booleans())
+    def check_metric_io(self, save_via_plot_object: bool):
         """Ensure the saving/loading metrics always produces self-consistent
         results with the logger"""
         from uuid import uuid4
         filename = str(uuid4())
-        if save_via_object:
+        if save_via_plot_object:
             save_metrics(filename, liveplot=self.logger)
         else:
             save_metrics(filename,
@@ -171,60 +131,8 @@ class LiveLoggerStateMachine(RuleBasedStateMachine):
                          test_metrics=self.logger.test_metrics)
         io_train_metrics, io_test_metrics = load_metrics(filename)
 
-        log_train_metrics = self.logger.train_metrics
-        log_test_metrics = self.logger.test_metrics
-
-        assert tuple(io_test_metrics) == tuple(log_test_metrics), "The io test metrics do not match those " \
-                                                                  "from the LiveLogger instance. Order matters " \
-                                                                  "for restoring plots."
-
-        for metric in io_train_metrics:
-            io_batch_data = io_train_metrics[metric]["batch_data"]
-            io_epoch_domain = io_train_metrics[metric]["epoch_domain"]
-            io_epoch_data = io_train_metrics[metric]["epoch_data"]
-
-            log_batch_data = log_train_metrics[metric]["batch_data"]
-            log_epoch_domain = log_train_metrics[metric]["epoch_domain"]
-            log_epoch_data = log_train_metrics[metric]["epoch_data"]
-
-            assert_array_equal(io_batch_data, log_batch_data,
-                               err_msg=err_msg(actual=log_batch_data,
-                                               desired=io_batch_data,
-                                               name=metric + ": Batch Data (train)"))
-
-            assert_array_equal(io_epoch_data, log_epoch_data,
-                               err_msg=err_msg(actual=log_epoch_data,
-                                               desired=io_epoch_data,
-                                               name=metric + ": Epoch Data (train)"))
-
-            assert_array_equal(io_epoch_domain, log_epoch_domain,
-                               err_msg=err_msg(actual=log_epoch_domain,
-                                               desired=io_epoch_domain,
-                                               name=metric + ": Epoch Domain (train)"))
-
-        for metric in io_test_metrics:
-            io_batch_data = io_test_metrics[metric]["batch_data"]
-            io_epoch_domain = io_test_metrics[metric]["epoch_domain"]
-            io_epoch_data = io_test_metrics[metric]["epoch_data"]
-
-            log_batch_data = log_test_metrics[metric]["batch_data"]
-            log_epoch_domain = log_test_metrics[metric]["epoch_domain"]
-            log_epoch_data = log_test_metrics[metric]["epoch_data"]
-
-            assert_array_equal(io_batch_data, log_batch_data,
-                               err_msg=err_msg(actual=log_batch_data,
-                                               desired=io_batch_data,
-                                               name=metric + ": Batch Data (test)"))
-
-            assert_array_equal(io_epoch_data, log_epoch_data,
-                               err_msg=err_msg(actual=log_epoch_data,
-                                               desired=io_epoch_data,
-                                               name=metric + ": Epoch Data (test)"))
-
-            assert_array_equal(io_epoch_domain, log_epoch_domain,
-                               err_msg=err_msg(actual=log_epoch_domain,
-                                               desired=io_epoch_domain,
-                                               name=metric + ": Epoch Domain (test)"))
+        compare_all_metrics(io_train_metrics, self.logger.train_metrics)
+        compare_all_metrics(io_test_metrics, self.logger.test_metrics)
 
 
 @pytest.mark.usefixtures("cleandir")

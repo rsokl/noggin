@@ -1,8 +1,8 @@
-from tests import err_msg
+from tests.utils import err_msg
 
 from liveplot.logger import LiveMetric
 
-from typing import Optional
+from typing import Optional, Any
 
 import pytest
 
@@ -15,7 +15,7 @@ from hypothesis.stateful import RuleBasedStateMachine, initialize, rule
 
 
 @given(name=st.sampled_from([1, None, np.array([1]), ["moo"]]))
-def test_badname(name: str):
+def test_badname(name: Any):
     with pytest.raises(TypeError):
         LiveMetric(name)
 
@@ -49,6 +49,8 @@ class LiveMetricChecker(RuleBasedStateMachine):
         self._weights = []
         self.epoch_data = []
         self.epoch_domain = []
+        self.livemetric = None  # type: LiveMetric
+        self.name = None  # type: str
 
     @initialize(name=st.sampled_from(["a", "b", "c"]))
     def init_metric(self, name: str):
@@ -95,15 +97,18 @@ class LiveMetricChecker(RuleBasedStateMachine):
         epoch_data = np.asarray(self.epoch_data)
         epoch_domain = np.asarray(self.epoch_domain)
 
-        assert_array_equal(batch_data, self.livemetric.batch_data,
+        assert_array_equal(batch_data,
+                           self.livemetric.batch_data,
                            err_msg=err_msg(actual=batch_data,
                                            desired=self.livemetric.batch_data,
                                            name="Batch Data"))
-        assert_array_equal(epoch_domain, self.livemetric.epoch_domain,
+        assert_array_equal(epoch_domain,
+                           self.livemetric.epoch_domain,
                            err_msg=err_msg(actual=epoch_domain,
                                            desired=self.livemetric.epoch_domain,
                                            name="Epoch Domain"))
-        assert_array_equal(self.livemetric.batch_domain, batch_domain,
+        assert_array_equal(self.livemetric.batch_domain,
+                           batch_domain,
                            err_msg=err_msg(actual=batch_domain,
                                            desired=self.livemetric.batch_domain,
                                            name="Batch Domain"))
@@ -114,5 +119,6 @@ class LiveMetricChecker(RuleBasedStateMachine):
                                         name="Epoch Data"))
 
         assert self.livemetric.name == self.name
+
 
 TestLiveMetricChecker = LiveMetricChecker.TestCase
