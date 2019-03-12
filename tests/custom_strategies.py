@@ -7,13 +7,16 @@ import hypothesis.strategies as st
 import hypothesis.extra.numpy as hnp
 
 from liveplot.typing import LiveMetrics
+from liveplot.plotter import LivePlot, LiveLogger
+from liveplot import recreate_plot
 
 
 def finite_array(size):
-    return hnp.arrays(shape=(size,),
-                      dtype=np.float64,
-                      elements=st.floats(allow_infinity=False,
-                                         allow_nan=False))
+    return hnp.arrays(
+        shape=(size,),
+        dtype=np.float64,
+        elements=st.floats(allow_infinity=False, allow_nan=False),
+    )
 
 
 def choices(seq: Sequence, size: int) -> st.SearchStrategy[Tuple]:
@@ -22,7 +25,20 @@ def choices(seq: Sequence, size: int) -> st.SearchStrategy[Tuple]:
 
 
 @st.composite
-def metrics(draw) -> st.SearchStrategy[LiveMetrics]:
+def metric_dict(draw) -> st.SearchStrategy[Dict[str, np.ndarray]]:
+    num_batch_data = draw(st.integers(0, 5))
+    num_epoch_data = draw(st.integers(0, num_batch_data))
+    epoch_domain = draw(choices(np.arange(1, num_batch_data + 1), size=num_epoch_data))
+
+    out = {}  # type: Dict[str, np.ndarray]
+    out["batch_data"] = draw(finite_array(num_batch_data))  # type: np.ndarray
+    out["epoch_data"] = draw(finite_array(num_epoch_data))  # type: np.ndarray
+    out["epoch_domain"] = np.asarray(epoch_domain)
+    return out
+
+
+@st.composite
+def live_metrics(draw) -> st.SearchStrategy[LiveMetrics]:
     num_metrics = draw(st.integers(0, 3))
     num_batch_data = draw(st.integers(0, 5))
     num_epoch_data = draw(st.integers(0, num_batch_data))
