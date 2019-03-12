@@ -117,13 +117,13 @@ class LiveLoggerStateMachine(RuleBasedStateMachine):
         expected_metrics = dict((metric.name, metric.to_dict()) for metric in self.test_metrics)
         compare_all_metrics(logged_metrics, expected_metrics)
 
-    @rule(save_via_plot_object=st.booleans())
-    def check_metric_io(self, save_via_plot_object: bool):
+    @rule(save_via_live_object=st.booleans())
+    def check_metric_io(self, save_via_live_object: bool):
         """Ensure the saving/loading metrics always produces self-consistent
         results with the logger"""
         from uuid import uuid4
         filename = str(uuid4())
-        if save_via_plot_object:
+        if save_via_live_object:
             save_metrics(filename, liveplot=self.logger)
         else:
             save_metrics(filename,
