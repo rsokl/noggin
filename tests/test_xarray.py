@@ -1,4 +1,4 @@
-from liveplot.xarray import metrics_to_xarrays
+from liveplot.xarray import metrics_to_xarrays, get_xarrays
 from liveplot.typing import LiveMetrics
 
 import tests.custom_strategies as cst
@@ -8,7 +8,7 @@ from numpy.testing import assert_array_equal
 from hypothesis import given
 
 
-@given(metrics=cst.metrics())
+@given(metrics=cst.live_metrics())
 def test_metrics_to_xarrays(metrics: LiveMetrics):
     batch_xr, epoch_xr = metrics_to_xarrays(metrics)
     if not metrics:
@@ -22,9 +22,11 @@ def test_metrics_to_xarrays(metrics: LiveMetrics):
     assert_array_equal(batch_xr.coords["iterations"], np.arange(1, num_iterations + 1))
 
     for name, data in metrics.items():
-        assert_array_equal(getattr(batch_xr, name), data["batch_data"],
-                           err_msg="(batch) {name} data does not match between the "
-                                   "xarray and the original metric")
+        assert_array_equal(
+            getattr(batch_xr, name),
+            data["batch_data"],
+            err_msg="(batch) {name} data does not match between the "
+                    "xarray and the original metric".format(name=name))
 
     # tests for batch-level data
     assert list(epoch_xr.data_vars) == list(metrics)
@@ -33,7 +35,8 @@ def test_metrics_to_xarrays(metrics: LiveMetrics):
     assert_array_equal(epoch_xr.coords["iterations"], epoch_iterations)
 
     for name, data in metrics.items():
-        assert_array_equal(getattr(epoch_xr, name), data["epoch_data"],
-                           err_msg="(epoch) {name} data does not match between the "
-                                   "xarray and the original metric")
-
+        assert_array_equal(
+            getattr(epoch_xr, name),
+            data["epoch_data"],
+            err_msg="(epoch) {name} data does not match between the "
+                    "xarray and the original metric".format(name=name))
