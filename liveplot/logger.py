@@ -9,7 +9,6 @@ from collections import OrderedDict
 from numpy import ndarray
 from typing import Dict, Optional, Tuple
 
-
 __all__ = ["LiveLogger", "LiveMetric"]
 
 
@@ -101,11 +100,57 @@ class LiveMetric:
         Returns the batch data, epoch domain, and epoch data
         in a dictionary.
 
+        Additionally, running statistics are included in order to
+        preserve the state of the metric.
+
         Returns
         -------
         Dict[str, ndarray]
         """
-        return {attr: getattr(self, attr) for attr in ("batch_data", "epoch_data", "epoch_domain")}
+        out = {attr: getattr(self, attr)
+               for attr in ("batch_data", "epoch_data", "epoch_domain")}
+        out.update((attr, getattr(self, "_" + attr))
+                   for attr in ("cnt_since_epoch", "total_weighting", "running_weighted_sum"))
+        return out
+
+    @classmethod
+    def from_dict(cls, name: str, metrics_dict: Dict[str, ndarray]):
+        array_keys = ("batch_data", "epoch_data", "epoch_domain")
+        running_stats_keys = ("running_weighted_sum", "total_weighting", "cnt_since_epoch")
+        required_keys = array_keys + running_stats_keys
+
+        if not isinstance(metrics_dict, dict):
+            raise TypeError(
+                "`live_metrics` must be a dictionary, "
+                "got type {}".format(type(metrics_dict))
+            )
+
+        if not set(required_keys) <= set(metrics_dict):
+            raise ValueError(
+                "`live_metrics` is missing the following keys: "
+                "'{}'".format(", ".join(set(required_keys) - set(metrics_dict)))
+            )
+
+        out = cls(name)
+        for k in required_keys:
+            v = metrics_dict[k]
+            if k in array_keys:
+                if not isinstance(v, np.ndarray) and v.ndim == 1:
+                    raise ValueError(
+                        "'{}' must map to a 1D numpy arrays".format(k)
+                    )
+                setattr(out, "_" + k, v.tolist())
+            else:
+                if not isinstance(v, Real):
+                    raise ValueError(
+                        "'{}' must map to a real number".format(k)
+                    )
+                if k == "cnt_since_epoch" and (not isinstance(v, Integral) or v < 0):
+                    raise ValueError(
+                        "{} must map to a non-negative value".format(k)
+                    )
+                setattr(out, "_" + k, v)
+        return out
 
 
 class LiveLogger:
@@ -125,7 +170,8 @@ class LiveLogger:
 
        '<metric-name>' -> {"batch_data":   array,
                            "epoch_data":   array,
-                           "epoch_domain": array} """
+                           "epoch_domain": array,
+                           ...} """
         out = OrderedDict()
         for k, v in self._train_metrics.items():
             out[k] = v.to_dict()
@@ -142,7 +188,8 @@ class LiveLogger:
 
        '<metric-name>' -> {"batch_data":   array,
                            "epoch_data":   array,
-                           "epoch_domain": array} """
+                           "epoch_domain": array,
+                           ...} """
         out = OrderedDict()
         for k, v in self._test_metrics.items():
             out[k] = v.to_dict()
@@ -158,7 +205,7 @@ class LiveLogger:
 
         # stores batch/epoch-level training statistics and plot objects for training/testing
         self._train_metrics = OrderedDict()  # type: Dict[str, LiveMetric]
-        self._test_metrics = OrderedDict()   # type: Dict[str, LiveMetric]
+        self._test_metrics = OrderedDict()  # type: Dict[str, LiveMetric]
 
     def __repr__(self) -> str:
         msg = "{}({})\n\n".format(type(self).__name__, ", ".join(self._metrics))
@@ -242,4 +289,39 @@ class LiveLogger:
             self._test_metrics[key].set_epoch_datapoint(x)
 
         self._test_epoch_num += 1
+
+    @classmethod
+    def from_metrics(cls,
+                     train_metrics: Optional[Dict[str, Dict[str, ndarray]]],
+                     test_metrics: Optional[Dict[str, Dict[str, ndarray]]]):
+        if train_metrics is None:
+            train_metrics = {}
+
+        if test_metrics is None:
+            test_metrics = {}
+
+        new = cls()
+        # initializing LiveMetrics and setting data
+        new._train_metrics.update((key, LiveMetric.from_dict(key, metric))
+                                  for key, metric in train_metrics.items()
+                                  if key in new._metrics)
+        new._test_metrics.update((key, LiveMetric.from_dict(key, metric))
+                                 for key, metric in test_metrics.items()
+                                 if key in new._metrics)
+
+        # setting num_batch/num_epoch values
+        num_name = ["_train_epoch_num", "_train_batch_num", "_test_epoch_num", "_test_batch_num"]
+        vals = [0, 0, 0, 0]
+
+        if train_metrics:
+            vals[0] = max(len(v["epoch_data"]) for v in train_metrics.values())
+            vals[1] = max(len(v["batch_data"]) for v in train_metrics.values())
+        if test_metrics:
+            vals[2] = max(len(v["epoch_data"]) for v in test_metrics.values())
+            vals[3] = max(len(v["batch_data"]) for v in test_metrics.values())
+
+        for name, val in zip(num_name, vals):
+            setattr(new, name, val)
+        return new
+
 
