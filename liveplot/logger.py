@@ -290,38 +290,38 @@ class LiveLogger:
 
         self._test_epoch_num += 1
 
-    @classmethod
-    def from_metrics(cls,
-                     train_metrics: Optional[Dict[str, Dict[str, ndarray]]],
-                     test_metrics: Optional[Dict[str, Dict[str, ndarray]]]):
-        if train_metrics is None:
-            train_metrics = {}
-
-        if test_metrics is None:
-            test_metrics = {}
-
-        new = cls()
-        # initializing LiveMetrics and setting data
-        new._train_metrics.update((key, LiveMetric.from_dict(key, metric))
-                                  for key, metric in train_metrics.items()
-                                  if key in new._metrics)
-        new._test_metrics.update((key, LiveMetric.from_dict(key, metric))
-                                 for key, metric in test_metrics.items()
-                                 if key in new._metrics)
-
-        # setting num_batch/num_epoch values
-        num_name = ["_train_epoch_num", "_train_batch_num", "_test_epoch_num", "_test_batch_num"]
-        vals = [0, 0, 0, 0]
-
-        if train_metrics:
-            vals[0] = max(len(v["epoch_data"]) for v in train_metrics.values())
-            vals[1] = max(len(v["batch_data"]) for v in train_metrics.values())
-        if test_metrics:
-            vals[2] = max(len(v["epoch_data"]) for v in test_metrics.values())
-            vals[3] = max(len(v["batch_data"]) for v in test_metrics.values())
-
-        for name, val in zip(num_name, vals):
-            setattr(new, name, val)
-        return new
+    # @classmethod
+    # def from_metrics(cls,
+    #                  train_metrics: Optional[Dict[str, Dict[str, ndarray]]],
+    #                  test_metrics: Optional[Dict[str, Dict[str, ndarray]]]):
+    #     if train_metrics is None:
+    #         train_metrics = {}
+    #
+    #     if test_metrics is None:
+    #         test_metrics = {}
+    #
+    #     new = cls()
+    #     # initializing LiveMetrics and setting data
+    #     new._train_metrics.update((key, LiveMetric.from_dict(key, metric))
+    #                               for key, metric in train_metrics.items()
+    #                               if key in new._metrics)
+    #     new._test_metrics.update((key, LiveMetric.from_dict(key, metric))
+    #                              for key, metric in test_metrics.items()
+    #                              if key in new._metrics)
+    #
+    #     # setting num_batch/num_epoch values
+    #     num_name = ["_train_epoch_num", "_train_batch_num", "_test_epoch_num", "_test_batch_num"]
+    #     vals = [0, 0, 0, 0]
+    #
+    #     if train_metrics:
+    #         vals[0] = max(len(v["epoch_data"]) for v in train_metrics.values())
+    #         vals[1] = max(len(v["batch_data"]) for v in train_metrics.values())
+    #     if test_metrics:
+    #         vals[2] = max(len(v["epoch_data"]) for v in test_metrics.values())
+    #         vals[3] = max(len(v["batch_data"]) for v in test_metrics.values())
+    #
+    #     for name, val in zip(num_name, vals):
+    #         setattr(new, name, val)
+    #     return new
 
 
