@@ -15,6 +15,7 @@ from hypothesis.stateful import RuleBasedStateMachine, initialize, rule
 
 import tests.custom_strategies as cst
 
+
 @given(name=st.sampled_from([1, None, np.array([1]), ["moo"]]))
 def test_badname(name: Any):
     with pytest.raises(TypeError):
@@ -129,7 +130,8 @@ TestLiveMetricChecker = LiveMetricChecker.TestCase
 def test_dict_interchange(metrics_dict, name):
     """Ensures that LiveMetric.from_dict and LiveMetric.to_dict are inverses"""
     out_dict = LiveMetric.from_dict(name=name, metrics_dict=metrics_dict).to_dict()
-    assert tuple(metrics_dict) == tuple(out_dict)
+    assert sorted(metrics_dict) == sorted(out_dict)
+
     for k in metrics_dict:
         assert_array_equal(
             metrics_dict[k],

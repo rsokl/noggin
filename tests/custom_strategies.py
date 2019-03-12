@@ -25,15 +25,25 @@ def choices(seq: Sequence, size: int) -> st.SearchStrategy[Tuple]:
 
 
 @st.composite
-def metric_dict(draw) -> st.SearchStrategy[Dict[str, np.ndarray]]:
-    num_batch_data = draw(st.integers(0, 5))
-    num_epoch_data = draw(st.integers(0, num_batch_data))
+def metric_dict(draw, num_batch_data=None, num_epoch_data=None) -> st.SearchStrategy[Dict[str, np.ndarray]]:
+    if all(x is not None for x in (num_batch_data, num_epoch_data)):
+        assert num_batch_data >= num_epoch_data
+
+    if num_batch_data is None:
+        num_batch_data = draw(st.integers(0, 5))
+
+    if num_epoch_data is None:
+        num_epoch_data = draw(st.integers(0, num_batch_data))
+
     epoch_domain = draw(choices(np.arange(1, num_batch_data + 1), size=num_epoch_data))
 
     out = {}  # type: Dict[str, np.ndarray]
     out["batch_data"] = draw(finite_array(num_batch_data))  # type: np.ndarray
     out["epoch_data"] = draw(finite_array(num_epoch_data))  # type: np.ndarray
     out["epoch_domain"] = np.asarray(epoch_domain)
+    out["cnt_since_epoch"] = draw(st.integers(0, num_batch_data - num_epoch_data))
+    out["total_weighting"] = draw(st.floats(0., 10.)) if out["cnt_since_epoch"] else 0.
+    out["running_weighted_sum"] = draw(st.floats(-10., 10.)) if out["cnt_since_epoch"] else 0.
     return out
 
 
