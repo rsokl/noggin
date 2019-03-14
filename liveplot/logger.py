@@ -171,11 +171,11 @@ class LiveMetric:
         for k in required_keys:
             v = metrics_dict[k]
             if k in array_keys:
-                if not isinstance(v, np.ndarray) and v.ndim == 1:
+                if not isinstance(v, np.ndarray) or v.ndim != 1:
                     raise ValueError(
                         "'{}' must map to a 1D numpy arrays".format(k)
                     )
-                setattr(out, "_" + k, v.tolist())
+                v = v.tolist()
             else:
                 if not isinstance(v, Real):
                     raise ValueError(
@@ -185,7 +185,7 @@ class LiveMetric:
                     raise ValueError(
                         "{} must map to a non-negative value".format(k)
                     )
-                setattr(out, "_" + k, v)
+            setattr(out, "_" + k, v)
         return out
 
 
