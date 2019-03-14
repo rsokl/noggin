@@ -11,7 +11,7 @@ from numpy.testing import assert_array_equal, assert_allclose
 
 from hypothesis import given
 import hypothesis.strategies as st
-from hypothesis.stateful import RuleBasedStateMachine, initialize, rule
+from hypothesis.stateful import RuleBasedStateMachine, initialize, rule, invariant, precondition
 
 import tests.custom_strategies as cst
 
@@ -92,7 +92,8 @@ class LiveMetricChecker(RuleBasedStateMachine):
         """ Ensure no side effects of calling `to_dict()`"""
         self.livemetric.to_dict()
 
-    @rule()
+    @precondition(lambda self: self.livemetric is not None)
+    @invariant()
     def compare(self):
         batch_domain = np.arange(1, len(self.batch_data) + 1)
         batch_data = np.asarray(self.batch_data)
