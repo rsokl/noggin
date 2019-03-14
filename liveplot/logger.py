@@ -103,6 +103,17 @@ class LiveMetric:
         Additionally, running statistics are included in order to
         preserve the state of the metric.
 
+        Notes
+        -----
+        The encoded dictionary stores:
+
+        'batch_data' -> ndarray, shape-(N,)
+        'epoch_data' -> ndarray, shape-(M,)
+        'epoch_domain' -> ndarray, shape-(M,)
+        'cnt_since_epoch' -> ndarray, shape-()
+        'total_weighting' -> ndarray, shape-()
+        'running_weighted_sum' -> ndarray, shape-()
+
         Returns
         -------
         Dict[str, ndarray]
@@ -115,6 +126,32 @@ class LiveMetric:
 
     @classmethod
     def from_dict(cls, name: str, metrics_dict: Dict[str, ndarray]):
+        """ The inverse of `LiveMetric.to_dict`. Given a dictionary of
+        live-metric data, constructs an instance of `LiveMetric`.
+
+        Parameters
+        ----------
+        name : str
+            The name of the live-metric instance
+
+        metrics_dict: Dict[str, ndarray]
+            Stores the state of the live-metric instance being created.
+
+        Returns
+        -------
+        LiveMetric
+
+        Notes
+        -----
+        The encoded dictionary stores:
+
+        'batch_data' -> ndarray, shape-(N,)
+        'epoch_data' -> ndarray, shape-(M,)
+        'epoch_domain' -> ndarray, shape-(M,)
+        'cnt_since_epoch' -> ndarray, shape-()
+        'total_weighting' -> ndarray, shape-()
+        'running_weighted_sum' -> ndarray, shape-()
+        """
         array_keys = ("batch_data", "epoch_data", "epoch_domain")
         running_stats_keys = ("running_weighted_sum", "total_weighting", "cnt_since_epoch")
         required_keys = array_keys + running_stats_keys
