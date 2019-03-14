@@ -117,6 +117,23 @@ class LiveLoggerStateMachine(RuleBasedStateMachine):
         expected_metrics = dict((metric.name, metric.to_dict()) for metric in self.test_metrics)
         compare_all_metrics(logged_metrics, expected_metrics)
 
+    @invariant()
+    def check_from_dict_roundtrip(self):
+        logger_dict = self.logger.to_dict()
+        new_logger = LiveLogger.from_dict(logger_dict)
+
+        for attr in ["_num_train_epoch", "_num_train_batch",
+                     "_num_test_epoch", "_num_test_batch"]:
+            desired = getattr(self.logger, attr)
+            actual = getattr(new_logger, attr)
+            assert actual == desired, \
+                "LiveLogger.from_metrics did not round-trip successfully.\n" \
+                "logger.{} does not match.\nGot: {}\nExpected: {}" \
+                "".format(attr, actual, desired)
+
+        compare_all_metrics(self.logger.train_metrics, new_logger.train_metrics)
+        compare_all_metrics(self.logger.test_metrics, new_logger.test_metrics)
+
     @rule(save_via_live_object=st.booleans())
     def check_metric_io(self, save_via_live_object: bool):
         """Ensure the saving/loading metrics always produces self-consistent
