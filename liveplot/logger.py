@@ -96,12 +96,15 @@ class LiveMetric:
             self._cnt_since_epoch = 0
 
     def to_dict(self) -> Dict[str, ndarray]:
-        """
-        Returns the batch data, epoch domain, and epoch data
+        """ Returns the batch data, epoch domain, and epoch data
         in a dictionary.
 
         Additionally, running statistics are included in order to
         preserve the state of the metric.
+
+        Returns
+        -------
+        Dict[str, ndarray]
 
         Notes
         -----
@@ -110,13 +113,9 @@ class LiveMetric:
         'batch_data' -> ndarray, shape-(N,)
         'epoch_data' -> ndarray, shape-(M,)
         'epoch_domain' -> ndarray, shape-(M,)
-        'cnt_since_epoch' -> ndarray, shape-()
-        'total_weighting' -> ndarray, shape-()
-        'running_weighted_sum' -> ndarray, shape-()
-
-        Returns
-        -------
-        Dict[str, ndarray]
+        'cnt_since_epoch' -> int
+        'total_weighting' -> float
+        'running_weighted_sum' -> float
         """
         out = {attr: getattr(self, attr)
                for attr in ("batch_data", "epoch_data", "epoch_domain")}
@@ -148,9 +147,9 @@ class LiveMetric:
         'batch_data' -> ndarray, shape-(N,)
         'epoch_data' -> ndarray, shape-(M,)
         'epoch_domain' -> ndarray, shape-(M,)
-        'cnt_since_epoch' -> ndarray, shape-()
-        'total_weighting' -> ndarray, shape-()
-        'running_weighted_sum' -> ndarray, shape-()
+        'cnt_since_epoch' -> int
+        'total_weighting' -> float
+        'running_weighted_sum' -> float
         """
         array_keys = ("batch_data", "epoch_data", "epoch_domain")
         running_stats_keys = ("running_weighted_sum", "total_weighting", "cnt_since_epoch")
