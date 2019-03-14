@@ -3,11 +3,13 @@ Provides functionality for logging training and testing batch-level & epoch-leve
 """
 
 from numbers import Integral, Real
-import numpy as np
+from itertools import product
 from collections import OrderedDict
+from typing import Dict, Optional, Tuple
+
+import numpy as np
 
 from numpy import ndarray
-from typing import Dict, Optional, Tuple
 
 __all__ = ["LiveLogger", "LiveMetric"]
 
@@ -224,6 +226,29 @@ class LiveLogger:
                            "epoch_domain": array,
                            ...} """
         return OrderedDict((k, v.to_dict()) for k, v in self._test_metrics.items())
+
+    def to_dict(self):
+        return dict(train_metrics=self.train_metrics,
+                    test_metrics=self.test_metrics,
+                    num_train_epoch=self._num_train_epoch,
+                    num_train_batch=self._num_train_batch,
+                    num_test_batch=self._num_test_batch,
+                    num_test_epoch=self._num_test_epoch,
+                    )
+
+    @classmethod
+    def from_dict(cls, logger_dict):
+        new = cls()
+        # initializing LiveMetrics and setting data
+        new._train_metrics.update((key, LiveMetric.from_dict(key, metric))
+                                  for key, metric in logger_dict["train_metrics"].items())
+        new._test_metrics.update((key, LiveMetric.from_dict(key, metric))
+                                 for key, metric in logger_dict["test_metrics"].items())
+
+        for train_mode, stat_mode in product(["train", "test"], ["batch", "epoch"]):
+            item = "num_{}_{}".format(train_mode, stat_mode)
+            setattr(new, "_" + item, logger_dict[item])
+        return new
 
     def __init__(self):
         self._metrics = tuple()  # type: Tuple[str, ...]
