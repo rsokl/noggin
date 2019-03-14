@@ -9,7 +9,7 @@ from numpy.testing import assert_array_equal
 
 import hypothesis.strategies as st
 from hypothesis.strategies import SearchStrategy
-from hypothesis.stateful import RuleBasedStateMachine, initialize, rule, precondition
+from hypothesis.stateful import RuleBasedStateMachine, initialize, rule, precondition, invariant
 from hypothesis import note
 
 import numpy as np
@@ -104,14 +104,14 @@ class LiveLoggerStateMachine(RuleBasedStateMachine):
             metric.set_epoch_datapoint(x)
             
     @precondition(lambda self: self.train_batch_set)
-    @rule()
+    @invariant()
     def compare_train_metrics(self):
         logged_metrics = self.logger.train_metrics
         expected_metrics = dict((metric.name, metric.to_dict()) for metric in self.train_metrics)
         compare_all_metrics(logged_metrics, expected_metrics)
 
     @precondition(lambda self: self.test_batch_set)
-    @rule()
+    @invariant()
     def compare_test_metrics(self):
         logged_metrics = self.logger.test_metrics
         expected_metrics = dict((metric.name, metric.to_dict()) for metric in self.test_metrics)
