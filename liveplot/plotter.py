@@ -211,7 +211,7 @@ class LivePlot(LiveLogger):
                 If True, plot the batch-metrics (adhering to the refresh rate)"""
         self._plot_batch = plot
 
-        if not self._train_batch_num:
+        if not self._num_train_batch:
             self._init_plot_window()
 
             unreg_metrics = set(metrics).difference(self._metrics)
@@ -241,13 +241,13 @@ class LivePlot(LiveLogger):
         if self._plot_batch:
             self._do_liveplot()
 
-        self._train_batch_num += 1
+        self._num_train_batch += 1
 
     def plot_train_epoch(self):
         """
         Compute the epoch-level train statistics and plot the data point.
         """
-        if not self._train_epoch_num:
+        if not self._num_train_epoch:
             # initialize batch-level plot objects
             for key in self._train_metrics:
                 ax = self._axis_mapping[key]
@@ -260,7 +260,7 @@ class LivePlot(LiveLogger):
             self._train_metrics[key].set_epoch_datapoint()
 
         self._do_liveplot()
-        self._train_epoch_num += 1
+        self._num_train_epoch += 1
 
     def set_test_batch(self, metrics: Dict[str, Real], batch_size: Integral):
         """ Provide the batch-level metric values to be recorded, and (optionally) plotted.
@@ -276,7 +276,7 @@ class LivePlot(LiveLogger):
                 Used to weight the metrics to produce epoch-level statistics.
             """
         # initialize live plot objects for testing
-        if not self._test_batch_num:
+        if not self._num_test_batch:
             self._test_metrics.update((key, LiveMetric(key)) for key in metrics if key in self._metrics)
 
             unreg_metrics = set(metrics).difference(self._metrics)
@@ -291,13 +291,13 @@ class LivePlot(LiveLogger):
             except KeyError:
                 pass
 
-        self._test_batch_num += 1
+        self._num_test_batch += 1
 
     def plot_test_epoch(self):
         """
         Compute the epoch-level test statistics and plot the data point.
         """
-        if not self._test_epoch_num:
+        if not self._num_test_epoch:
             self._init_plot_window()
 
             # initialize epoch-level plot objects
@@ -320,7 +320,7 @@ class LivePlot(LiveLogger):
             self._test_metrics[key].set_epoch_datapoint(x)
 
         self._do_liveplot()
-        self._test_epoch_num += 1
+        self._num_test_epoch += 1
     
     def _init_plot_window(self):
         if self._pyplot is None or self._fig is not None:

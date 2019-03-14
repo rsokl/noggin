@@ -208,10 +208,7 @@ class LiveLogger:
                            "epoch_data":   array,
                            "epoch_domain": array,
                            ...} """
-        out = OrderedDict()
-        for k, v in self._train_metrics.items():
-            out[k] = v.to_dict()
-        return out
+        return OrderedDict((k, v.to_dict()) for k, v in self._train_metrics.items())
 
     @property
     def test_metrics(self) -> Dict[str, Dict[str, ndarray]]:
@@ -226,18 +223,15 @@ class LiveLogger:
                            "epoch_data":   array,
                            "epoch_domain": array,
                            ...} """
-        out = OrderedDict()
-        for k, v in self._test_metrics.items():
-            out[k] = v.to_dict()
-        return out
+        return OrderedDict((k, v.to_dict()) for k, v in self._test_metrics.items())
 
     def __init__(self):
         self._metrics = tuple()  # type: Tuple[str, ...]
 
-        self._train_epoch_num = 0  # int: Current number of epochs trained
-        self._train_batch_num = 0  # int: Current number of batches trained
-        self._test_epoch_num = 0  # int: Current number of epochs tested
-        self._test_batch_num = 0  # int: Current number of batches tested
+        self._num_train_epoch = 0  # int: Current number of epochs trained
+        self._num_train_batch = 0  # int: Current number of batches trained
+        self._num_test_epoch = 0  # int: Current number of epochs tested
+        self._num_test_batch = 0  # int: Current number of batches tested
 
         # stores batch/epoch-level training statistics and plot objects for training/testing
         self._train_metrics = OrderedDict()  # type: Dict[str, LiveMetric]
@@ -247,8 +241,8 @@ class LiveLogger:
         msg = "{}({})\n\n".format(type(self).__name__, ", ".join(self._metrics))
 
         words = ("training batches", "training epochs", "testing batches", "testing epochs")
-        things = (self._train_batch_num, self._train_epoch_num,
-                  self._test_batch_num, self._test_epoch_num)
+        things = (self._num_train_batch, self._num_train_epoch,
+                  self._num_test_batch, self._num_test_epoch)
 
         for word, thing in zip(words, things):
             msg += "number of {word} set: {thing}\n".format(word=word, thing=thing)
@@ -267,7 +261,7 @@ class LiveLogger:
             The number of samples in the batch used to produce the metrics.
             Used to weight the metrics to produce epoch-level statistics. """
 
-        if not self._train_batch_num:
+        if not self._num_train_batch:
             # initialize batch-level metrics
             self._train_metrics.update((key, LiveMetric(key)) for key in metrics)
 
@@ -278,7 +272,7 @@ class LiveLogger:
             except KeyError:
                 pass
 
-        self._train_batch_num += 1
+        self._num_train_batch += 1
 
     def set_train_epoch(self):
         """
@@ -289,7 +283,7 @@ class LiveLogger:
         for key in self._train_metrics:
             self._train_metrics[key].set_epoch_datapoint()
 
-        self._train_epoch_num += 1
+        self._num_train_epoch += 1
 
     def set_test_batch(self, metrics: Dict[str, Real], batch_size: Integral):
         """
@@ -303,7 +297,7 @@ class LiveLogger:
             The number of samples in the batch used to produce the metrics.
             Used to weight the metrics to produce epoch-level statistics.
             """
-        if not self._test_batch_num:
+        if not self._num_test_batch:
             self._test_metrics.update((key, LiveMetric(key)) for key in metrics)
 
         # record each incoming batch metric
@@ -313,7 +307,7 @@ class LiveLogger:
             except KeyError:
                 pass
 
-        self._test_batch_num += 1
+        self._num_test_batch += 1
 
     def set_test_epoch(self):
         # compute epoch-mean metrics
@@ -324,7 +318,14 @@ class LiveLogger:
                 x = None
             self._test_metrics[key].set_epoch_datapoint(x)
 
-        self._test_epoch_num += 1
+        self._num_test_epoch += 1
+
+    @classmethod
+    def from_metrics(cls,
+                     train_metrics: Optional[Dict[str, Dict[str, ndarray]]],
+                     test_metrics: Optional[Dict[str, Dict[str, ndarray]]]):
+        if train_metrics is None:
+            train_metrics = {}
 
     # @classmethod
     # def from_metrics(cls,
