@@ -87,10 +87,28 @@ class LiveMetricChecker(RuleBasedStateMachine):
         """ Ensure no side effects of calling `repr()`"""
         repr(self.livemetric)
 
-    @rule()
+    @precondition(lambda self: self.livemetric is not None)
+    @invariant()
     def to_dict(self):
-        """ Ensure no side effects of calling `to_dict()`"""
+        """Ensure `from_dict(to_dict())` round trip is successful"""
         self.livemetric.to_dict()
+        metrics_dict = self.livemetric.to_dict()
+        new_metrics = LiveMetric.from_dict(metrics_dict=metrics_dict)
+
+        for attr in ["name",
+                     "_batch_data",
+                     "_epoch_data",
+                     "_epoch_domain",
+                     "_running_weighted_sum",
+                     "_total_weighting",
+                     "_cnt_since_epoch",
+                     ]:
+            desired = getattr(self.livemetric, attr)
+            actual = getattr(new_metrics, attr)
+            assert actual == desired, \
+                "`LiveMetric.from_dict` did not round-trip successfully.\n" \
+                "livemetric.{} does not match.\nGot: {}\nExpected: {}" \
+                "".format(attr, actual, desired)
 
     @precondition(lambda self: self.livemetric is not None)
     @invariant()
@@ -125,16 +143,3 @@ class LiveMetricChecker(RuleBasedStateMachine):
 
 
 TestLiveMetricChecker = LiveMetricChecker.TestCase
-
-
-@given(metrics_dict=cst.metric_dict(), name=st.sampled_from(["metric-a", "metric-b"]))
-def test_dict_interchange(metrics_dict, name):
-    """Ensures that LiveMetric.from_dict and LiveMetric.to_dict are inverses"""
-    out_dict = LiveMetric.from_dict(name=name, metrics_dict=metrics_dict).to_dict()
-    assert sorted(metrics_dict) == sorted(out_dict)
-
-    for k in metrics_dict:
-        assert_array_equal(
-            metrics_dict[k],
-            out_dict[k],
-            err_msg="Mismatch for: metric_dict['{}']".format(k))

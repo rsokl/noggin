@@ -30,7 +30,7 @@ class LiveMetric:
             """
         if not isinstance(name, str):
             raise TypeError("Metric names must be specified as strings. Got: {}".format(name))
-        self.name = name
+        self._name = name
         self.batch_line = None  # ax object for batch data
         self.epoch_line = None  # ax object for epoch data
         self._batch_data = []  # metric data for consecutive batches
@@ -39,6 +39,10 @@ class LiveMetric:
         self._running_weighted_sum = 0.
         self._total_weighting = 0.
         self._cnt_since_epoch = 0
+
+    @property
+    def name(self):
+        return self._name
 
     @property
     def batch_domain(self) -> ndarray:
@@ -118,23 +122,26 @@ class LiveMetric:
         'cnt_since_epoch' -> int
         'total_weighting' -> float
         'running_weighted_sum' -> float
+        'name' -> str
         """
         out = {attr: getattr(self, attr)
                for attr in ("batch_data", "epoch_data", "epoch_domain")}
         out.update((attr, getattr(self, "_" + attr))
-                   for attr in ("cnt_since_epoch", "total_weighting", "running_weighted_sum"))
+                   for attr in ("cnt_since_epoch",
+                                "total_weighting",
+                                "running_weighted_sum",
+                                "name",
+                                )
+                   )
         return out
 
     @classmethod
-    def from_dict(cls, name: str, metrics_dict: Dict[str, ndarray]):
+    def from_dict(cls, metrics_dict: Dict[str, ndarray]):
         """ The inverse of `LiveMetric.to_dict`. Given a dictionary of
         live-metric data, constructs an instance of `LiveMetric`.
 
         Parameters
         ----------
-        name : str
-            The name of the live-metric instance
-
         metrics_dict: Dict[str, ndarray]
             Stores the state of the live-metric instance being created.
 
@@ -152,6 +159,7 @@ class LiveMetric:
         'cnt_since_epoch' -> int
         'total_weighting' -> float
         'running_weighted_sum' -> float
+        'name' -> str
         """
         array_keys = ("batch_data", "epoch_data", "epoch_domain")
         running_stats_keys = ("running_weighted_sum", "total_weighting", "cnt_since_epoch")
@@ -169,7 +177,7 @@ class LiveMetric:
                 "'{}'".format(", ".join(set(required_keys) - set(metrics_dict)))
             )
 
-        out = cls(name)
+        out = cls(metrics_dict["name"])
         for k in required_keys:
             v = metrics_dict[k]
             if k in array_keys:
@@ -240,9 +248,9 @@ class LiveLogger:
     def from_dict(cls, logger_dict):
         new = cls()
         # initializing LiveMetrics and setting data
-        new._train_metrics.update((key, LiveMetric.from_dict(key, metric))
+        new._train_metrics.update((key, LiveMetric.from_dict(metric))
                                   for key, metric in logger_dict["train_metrics"].items())
-        new._test_metrics.update((key, LiveMetric.from_dict(key, metric))
+        new._test_metrics.update((key, LiveMetric.from_dict(metric))
                                  for key, metric in logger_dict["test_metrics"].items())
 
         for train_mode, stat_mode in product(["train", "test"], ["batch", "epoch"]):
