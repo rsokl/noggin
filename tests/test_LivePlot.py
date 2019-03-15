@@ -11,7 +11,7 @@ from numpy import ndarray
 from hypothesis import settings, assume, note
 import hypothesis.strategies as st
 from hypothesis.strategies import SearchStrategy
-from hypothesis.stateful import RuleBasedStateMachine, initialize, rule, precondition
+from hypothesis.stateful import RuleBasedStateMachine, initialize, rule, precondition, invariant
 
 from matplotlib.pyplot import Figure, Axes, close
 
@@ -157,14 +157,14 @@ class LivePlotStateMachine(RuleBasedStateMachine):
         self.plotter.plot_test_epoch()
 
     @precondition(lambda self: self.train_batch_set)
-    @rule()
+    @invariant()
     def compare_train_metrics(self):
         log_metrics = self.logger.train_metrics
         plot_metrics = self.plotter.train_metrics
         compare_all_metrics(log_metrics, plot_metrics)
 
     @precondition(lambda self: self.test_batch_set)
-    @rule()
+    @invariant()
     def compare_test_metrics(self):
         log_metrics = self.logger.test_metrics
         plot_metrics = self.plotter.test_metrics
@@ -193,6 +193,24 @@ class LivePlotStateMachine(RuleBasedStateMachine):
 
         compare_all_metrics(plot_train_metrics, io_train_metrics)
         compare_all_metrics(plot_test_metrics, io_test_metrics)
+
+    @precondition(lambda self: self.plotter is not None)
+    @invariant()
+    def check_from_dict_roundtrip(self):
+        plotter_dict = self.plotter.to_dict()
+        new_plotter = LivePlot.from_dict(plotter_dict)
+
+        for attr in ["_num_train_epoch", "_num_train_batch", "_num_test_epoch", "_num_test_batch",
+                     "refresh", "_metrics", "_pltkwargs"]:
+            desired = getattr(self.plotter, attr)
+            actual = getattr(new_plotter, attr)
+            assert actual == desired, \
+                "LiveLogger.from_metrics did not round-trip successfully.\n" \
+                "logger.{} does not match.\nGot: {}\nExpected: {}" \
+                "".format(attr, actual, desired)
+
+        compare_all_metrics(self.plotter.train_metrics, new_plotter.train_metrics)
+        compare_all_metrics(self.plotter.test_metrics, new_plotter.test_metrics)
 
     def teardown(self):
         if self.plotter is not None:

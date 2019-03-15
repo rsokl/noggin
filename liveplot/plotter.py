@@ -1,4 +1,5 @@
 from numbers import Integral, Real
+from itertools import product
 import time
 import importlib
 import numpy as np
@@ -194,6 +195,36 @@ class LivePlot(LiveLogger):
         self._start_time = None      # float: Time upon entering the training session
         self._last_plot_time = None  # float: Time of last plot
 
+    def to_dict(self):
+        out = super().to_dict()
+        out.update(dict(refresh=self.refresh,
+                        pltkwargs=self._pltkwargs,
+                        train_colors=self._train_colors,
+                        test_colors=self._test_colors,
+                        metric_names=self._metrics,
+                        )
+                   )
+        return out
+
+    @classmethod
+    def from_dict(cls, plotter_dict):
+        new = cls(metrics=plotter_dict["metric_names"], refresh=plotter_dict["refresh"])
+
+        new._train_metrics.update((key, LiveMetric.from_dict(key, metric))
+                                  for key, metric in plotter_dict["train_metrics"].items())
+
+        new._test_metrics.update((key, LiveMetric.from_dict(key, metric))
+                                 for key, metric in plotter_dict["test_metrics"].items())
+
+        for train_mode, stat_mode in product(["train", "test"], ["batch", "epoch"]):
+            item = "num_{}_{}".format(train_mode, stat_mode)
+            setattr(new, "_" + item, plotter_dict[item])
+
+        for attr in ("pltkwargs", "train_colors", "test_colors"):
+            setattr(new, "_" + attr, plotter_dict[attr])
+
+        return new
+
     def set_train_batch(self, metrics: Dict[str, Real], batch_size: Integral, plot: bool = True):
         """ Provide the batch-level metric values to be recorded, and (optionally) plotted.
 
@@ -219,8 +250,10 @@ class LivePlot(LiveLogger):
                 msg = "\nThe following training metrics are not registered for live-plotting:\n\t" + "\n\t"
                 warnings.warn(cleandoc(msg.join(sorted(unreg_metrics))),)
 
-            # initialize batch-level plot objects
-            self._train_metrics.update((key, LiveMetric(key)) for key in metrics if key in self._metrics)
+            if not self._train_metrics:
+                # initialize batch-level plot objects
+                self._train_metrics.update((key, LiveMetric(key)) for key in metrics if key in self._metrics)
+
             for key, metric in self._train_metrics.items():
                 try:
                     ax = self._axis_mapping[key]
@@ -276,7 +309,7 @@ class LivePlot(LiveLogger):
                 Used to weight the metrics to produce epoch-level statistics.
             """
         # initialize live plot objects for testing
-        if not self._num_test_batch:
+        if not self._test_metrics:
             self._test_metrics.update((key, LiveMetric(key)) for key in metrics if key in self._metrics)
 
             unreg_metrics = set(metrics).difference(self._metrics)
