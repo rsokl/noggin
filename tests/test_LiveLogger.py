@@ -127,7 +127,7 @@ class LiveLoggerStateMachine(RuleBasedStateMachine):
             desired = getattr(self.logger, attr)
             actual = getattr(new_logger, attr)
             assert actual == desired, \
-                "LiveLogger.from_metrics did not round-trip successfully.\n" \
+                "`LiveLogger.from_dict` did not round-trip successfully.\n" \
                 "logger.{} does not match.\nGot: {}\nExpected: {}" \
                 "".format(attr, actual, desired)
 

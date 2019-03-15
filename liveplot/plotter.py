@@ -210,10 +210,10 @@ class LivePlot(LiveLogger):
     def from_dict(cls, plotter_dict):
         new = cls(metrics=plotter_dict["metric_names"], refresh=plotter_dict["refresh"])
 
-        new._train_metrics.update((key, LiveMetric.from_dict(key, metric))
+        new._train_metrics.update((key, LiveMetric.from_dict(metric))
                                   for key, metric in plotter_dict["train_metrics"].items())
 
-        new._test_metrics.update((key, LiveMetric.from_dict(key, metric))
+        new._test_metrics.update((key, LiveMetric.from_dict(metric))
                                  for key, metric in plotter_dict["test_metrics"].items())
 
         for train_mode, stat_mode in product(["train", "test"], ["batch", "epoch"]):
