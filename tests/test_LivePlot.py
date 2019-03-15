@@ -200,8 +200,15 @@ class LivePlotStateMachine(RuleBasedStateMachine):
         plotter_dict = self.plotter.to_dict()
         new_plotter = LivePlot.from_dict(plotter_dict)
 
-        for attr in ["_num_train_epoch", "_num_train_batch", "_num_test_epoch", "_num_test_batch",
-                     "refresh", "_metrics", "_pltkwargs"]:
+        for attr in ["_num_train_epoch",
+                     "_num_train_batch",
+                     "_num_test_epoch",
+                     "_num_test_batch",
+                     "refresh",
+                     "_metrics",
+                     "_pltkwargs",
+                     "metric_colors",
+                     ]:
             desired = getattr(self.plotter, attr)
             actual = getattr(new_plotter, attr)
             assert actual == desired, \
