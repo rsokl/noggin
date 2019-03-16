@@ -7,9 +7,10 @@ import hypothesis.strategies as st
 import hypothesis.extra.numpy as hnp
 
 from liveplot.typing import LiveMetrics
-from liveplot.plotter import LivePlot, LiveLogger
-from liveplot import recreate_plot
+from liveplot.plotter import LiveLogger
 from itertools import combinations
+
+import pprint
 
 
 def finite_array(size):
@@ -67,11 +68,28 @@ def live_metrics(draw) -> st.SearchStrategy[LiveMetrics]:
     return dict(out.items())
 
 
+class VerboseLogger(LiveLogger):
+    def __repr__(self):
+        metrics = sorted(set(self._train_metrics).union(set(self._test_metrics)))
+        msg = "{}({})\n".format("LiveLogger", ", ".join(metrics))
+
+        words = ("training batches", "training epochs", "testing batches", "testing epochs")
+        things = (self._num_train_batch, self._num_train_epoch,
+                  self._num_test_batch, self._num_test_epoch)
+
+        for word, thing in zip(words, things):
+            msg += "number of {word} set: {thing}\n".format(word=word, thing=thing)
+
+        msg += "train metrics:\n{}\n".format(pprint.pformat(dict(self.train_metrics)))
+        msg += "test metrics:\n{}".format(pprint.pformat(dict(self.test_metrics)))
+        return msg
+
+
 @st.composite
 def logger(draw) -> st.SearchStrategy[LiveLogger]:
     train_metrics = draw(live_metrics())
     test_metrics = draw(live_metrics())
-    return LiveLogger.from_dict(
+    return VerboseLogger.from_dict(
         dict(train_metrics=train_metrics,
              test_metrics=test_metrics,
              num_train_epoch=max((len(v["epoch_data"]) for v in train_metrics.values()), default=0),
