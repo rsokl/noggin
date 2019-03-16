@@ -259,8 +259,6 @@ class LiveLogger:
         return new
 
     def __init__(self):
-        self._metrics = tuple()  # type: Tuple[str, ...]
-
         self._num_train_epoch = 0  # int: Current number of epochs trained
         self._num_train_batch = 0  # int: Current number of batches trained
         self._num_test_epoch = 0  # int: Current number of epochs tested
@@ -271,7 +269,8 @@ class LiveLogger:
         self._test_metrics = OrderedDict()  # type: Dict[str, LiveMetric]
 
     def __repr__(self) -> str:
-        msg = "{}({})\n\n".format(type(self).__name__, ", ".join(self._metrics))
+        metrics = sorted(set(self._train_metrics).union(set(self._test_metrics)))
+        msg = "{}({})\n\n".format(type(self).__name__, ", ".join(metrics))
 
         words = ("training batches", "training epochs", "testing batches", "testing epochs")
         things = (self._num_train_batch, self._num_train_epoch,
