@@ -1,6 +1,7 @@
 from liveplot.xarray import metrics_to_xarrays
 from liveplot.typing import LiveMetrics
 from liveplot.logger import LiveLogger
+from liveplot.plotter import LivePlot
 
 import tests.custom_strategies as cst
 
@@ -72,3 +73,14 @@ def test_logger_xarray(logger: LiveLogger):
 def test_logger_xarray_validate_inputs(logger: LiveLogger):
     with pytest.raises(ValueError):
         logger.to_xarray('traintest')
+
+
+@given(plotter=cst.plotters())
+def test_plotter_xarray(plotter: LivePlot):
+    tr_batch, tr_epoch = plotter.to_xarray('train')
+    te_batch, te_epoch = plotter.to_xarray('test')
+
+    check_batch_xarray(plotter.train_metrics, tr_batch)
+    check_epoch_xarray(plotter.train_metrics, tr_epoch)
+    check_batch_xarray(plotter.test_metrics, te_batch)
+    check_epoch_xarray(plotter.test_metrics, te_epoch)
