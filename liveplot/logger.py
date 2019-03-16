@@ -5,11 +5,16 @@ Provides functionality for logging training and testing batch-level & epoch-leve
 from numbers import Integral, Real
 from itertools import product
 from collections import OrderedDict
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Any, Tuple
 
 import numpy as np
 
 from numpy import ndarray
+
+try:
+    from xarray import Dataset
+except ImportError:
+    Dataset = Any
 
 __all__ = ["LiveLogger", "LiveMetric"]
 
@@ -235,6 +240,43 @@ class LiveLogger:
                            ...} """
         return OrderedDict((k, v.to_dict()) for k, v in self._test_metrics.items())
 
+    def to_xarray(self, train_or_test: str) -> Tuple[Dataset, Dataset]:
+        """
+        Given liveplot metrics, returns xarray datasets for the batch-level and epoch-level
+        metrics, respectively.
+
+        Parameters
+        ----------
+        train_or_test : str
+            Either 'train' or 'test' - specifies which measurements to be returned
+
+        Returns
+        -------
+        Tuple[xarray.Dataset, xarray.Dataset]
+            The batch-level and epoch-level datasets. The metrics are reported as
+            data variables in the dataset, and the coordinates corresponds to
+            the batch-iteration count.
+
+        Notes
+        -----
+        The layout of the resulting data sets are:
+
+        Dimensions:     (iterations: num_iterations)
+        Coordinates:
+          * iterations  (iterations) int64 1 2 3 ...
+        Data variables:
+            metric0      (iterations) float64 val_0 val_1 ...
+            metric1      (iterations) float64 val_0 val_1 ...
+            ...
+        """
+        from .xarray import metrics_to_xarrays
+        if train_or_test not in ["train", "test"]:
+            raise ValueError(
+                "`train_or_test` must be 'train' or 'test',"
+                "\nGot:{}".format(train_or_test))
+        metrics = self.train_metrics if train_or_test == "train" else self.test_metrics
+        return metrics_to_xarrays(metrics)
+
     def to_dict(self):
         return dict(train_metrics=self.train_metrics,
                     test_metrics=self.test_metrics,
@@ -351,5 +393,3 @@ class LiveLogger:
             self._test_metrics[key].set_epoch_datapoint(x)
 
         self._num_test_epoch += 1
-
-
