@@ -270,7 +270,7 @@ class LiveLogger:
 
     def __repr__(self) -> str:
         metrics = sorted(set(self._train_metrics).union(set(self._test_metrics)))
-        msg = "{}({})\n\n".format(type(self).__name__, ", ".join(metrics))
+        msg = "{}({})\n".format(type(self).__name__, ", ".join(metrics))
 
         words = ("training batches", "training epochs", "testing batches", "testing epochs")
         things = (self._num_train_batch, self._num_train_epoch,
