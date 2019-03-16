@@ -2,6 +2,7 @@ import tests.custom_strategies as cst
 from hypothesis import given
 
 from liveplot.logger import LiveLogger, LiveMetric
+from liveplot.plotter import LivePlot
 from itertools import combinations
 
 
@@ -14,6 +15,12 @@ def test_choices(choice):
 def test_loggers(logger: LiveLogger):
     """Ensure that loggers() can produce a Logger that can round-trip"""
     LiveLogger.from_dict(logger.to_dict())
+
+
+@given(plotter=cst.plotters())
+def test_plotters(plotter: LivePlot):
+    """Ensure that loggers() can produce a Logger that can round-trip"""
+    LivePlot.from_dict(plotter.to_dict())
 
 
 @given(metrics_dict=cst.metric_dict("metric-a"))

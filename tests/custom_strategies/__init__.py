@@ -7,7 +7,7 @@ import hypothesis.strategies as st
 import hypothesis.extra.numpy as hnp
 
 from liveplot.typing import LiveMetrics
-from liveplot.plotter import LiveLogger
+from liveplot.plotter import LiveLogger, LivePlot
 from itertools import combinations
 
 import pprint
@@ -57,8 +57,8 @@ def metric_dict(draw, name,
 
 
 @st.composite
-def live_metrics(draw) -> st.SearchStrategy[LiveMetrics]:
-    num_metrics = draw(st.integers(0, 3))
+def live_metrics(draw, min_num_metrics=0) -> st.SearchStrategy[LiveMetrics]:
+    num_metrics = draw(st.integers(min_num_metrics, 3))
     num_batch_data = draw(st.integers(0, 5))
     num_epoch_data = draw(st.integers(0, num_batch_data))
 
@@ -71,21 +71,28 @@ def live_metrics(draw) -> st.SearchStrategy[LiveMetrics]:
     return dict(out.items())
 
 
+def verbose_repr(self):
+    metrics = sorted(set(self._train_metrics).union(set(self._test_metrics)))
+    msg = "{}({})\n".format(type(self).__name__, ", ".join(metrics))
+
+    words = ("training batches", "training epochs", "testing batches", "testing epochs")
+    things = (self._num_train_batch, self._num_train_epoch,
+              self._num_test_batch, self._num_test_epoch)
+
+    for word, thing in zip(words, things):
+        msg += "number of {word} set: {thing}\n".format(word=word, thing=thing)
+
+    msg += "train metrics:\n{}\n".format(pprint.pformat(dict(self.train_metrics)))
+    msg += "test metrics:\n{}".format(pprint.pformat(dict(self.test_metrics)))
+    return msg
+
+
 class VerboseLogger(LiveLogger):
-    def __repr__(self):
-        metrics = sorted(set(self._train_metrics).union(set(self._test_metrics)))
-        msg = "{}({})\n".format("LiveLogger", ", ".join(metrics))
+    def __repr__(self): return verbose_repr(self)
 
-        words = ("training batches", "training epochs", "testing batches", "testing epochs")
-        things = (self._num_train_batch, self._num_train_epoch,
-                  self._num_test_batch, self._num_test_epoch)
 
-        for word, thing in zip(words, things):
-            msg += "number of {word} set: {thing}\n".format(word=word, thing=thing)
-
-        msg += "train metrics:\n{}\n".format(pprint.pformat(dict(self.train_metrics)))
-        msg += "test metrics:\n{}".format(pprint.pformat(dict(self.test_metrics)))
-        return msg
+class VerbosePlotter(LivePlot):
+    def __repr__(self): return verbose_repr(self)
 
 
 @st.composite
@@ -99,5 +106,33 @@ def loggers(draw) -> st.SearchStrategy[LiveLogger]:
              num_train_batch=max((len(v["batch_data"]) for v in train_metrics.values()), default=0),
              num_test_epoch=max((len(v["epoch_data"]) for v in test_metrics.values()), default=0),
              num_test_batch=max((len(v["batch_data"]) for v in test_metrics.values()), default=0),
+             )
+    )
+
+
+@st.composite
+def plotters(draw) -> st.SearchStrategy[LivePlot]:
+    train_metrics = draw(live_metrics())
+    min_num_test = 1 if not train_metrics else 0
+    test_metrics = draw(live_metrics(min_num_metrics=min_num_test))
+
+    refresh = draw(st.one_of(st.just(-1), st.floats(0, 2)))
+    metric_names = sorted(set(train_metrics).union(set(test_metrics)))
+    nrows = len(metric_names)
+    train_colors = {k: None for k in train_metrics}
+    test_colors = {k: None for k in test_metrics}
+
+    return LivePlot.from_dict(
+        dict(train_metrics=train_metrics,
+             test_metrics=test_metrics,
+             num_train_epoch=max((len(v["epoch_data"]) for v in train_metrics.values()), default=0),
+             num_train_batch=max((len(v["batch_data"]) for v in train_metrics.values()), default=0),
+             num_test_epoch=max((len(v["epoch_data"]) for v in test_metrics.values()), default=0),
+             num_test_batch=max((len(v["batch_data"]) for v in test_metrics.values()), default=0),
+             refresh=refresh,
+             pltkwargs=dict(figsize=(3, 2), nrows=nrows, ncols=1),
+             train_colors=train_colors,
+             test_colors=test_colors,
+             metric_names=metric_names,
              )
     )
