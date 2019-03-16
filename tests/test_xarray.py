@@ -55,7 +55,7 @@ def test_metrics_to_xarrays(metrics: LiveMetrics):
     check_epoch_xarray(metrics_dict=metrics, metrics_xarray=epoch_xr)
 
 
-@given(logger=cst.logger())
+@given(logger=cst.loggers())
 def test_get_xarray(logger: LiveLogger):
     out = get_xarrays(logger)
     tr_xr = out['train']

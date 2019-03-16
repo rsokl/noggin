@@ -13,7 +13,10 @@ from itertools import combinations
 import pprint
 
 
-def finite_array(size):
+__all__ = ["finite_arrays", "choices", "metric_dict", "live_metrics", "loggers"]
+
+
+def finite_arrays(size):
     return hnp.arrays(
         shape=(size,),
         dtype=np.float64,
@@ -44,8 +47,8 @@ def metric_dict(draw, name,
         epoch_domain = draw(choices(np.arange(1, num_batch_data + 1), size=num_epoch_data))
 
     out = dict(name=name)  # type: Dict[str, np.ndarray]
-    out["batch_data"] = draw(finite_array(num_batch_data))  # type: np.ndarray
-    out["epoch_data"] = draw(finite_array(num_epoch_data))  # type: np.ndarray
+    out["batch_data"] = draw(finite_arrays(num_batch_data))  # type: np.ndarray
+    out["epoch_data"] = draw(finite_arrays(num_epoch_data))  # type: np.ndarray
     out["epoch_domain"] = np.asarray(sorted(epoch_domain))
     out["cnt_since_epoch"] = draw(st.integers(0, num_batch_data - num_epoch_data))
     out["total_weighting"] = draw(st.floats(0., 10.)) if out["cnt_since_epoch"] else 0.
@@ -86,7 +89,7 @@ class VerboseLogger(LiveLogger):
 
 
 @st.composite
-def logger(draw) -> st.SearchStrategy[LiveLogger]:
+def loggers(draw) -> st.SearchStrategy[LiveLogger]:
     train_metrics = draw(live_metrics())
     test_metrics = draw(live_metrics())
     return VerboseLogger.from_dict(
