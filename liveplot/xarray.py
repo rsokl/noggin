@@ -20,7 +20,7 @@ from typing import Dict, Tuple, Union
 
 LiveObject = Union[LivePlot, LiveLogger]
 
-__all__ = ['metrics_to_xarrays', 'get_xarrays', 'concat_experiments']
+__all__ = ['metrics_to_xarrays', 'concat_experiments']
 
 
 def metrics_to_xarrays(metrics: Dict[str, Dict[str, ndarray]]) -> Tuple[Dataset, Dataset]:
@@ -72,38 +72,6 @@ def metrics_to_xarrays(metrics: Dict[str, Dict[str, ndarray]]) -> Tuple[Dataset,
         epoch_arrays.append(at)
 
     return xr.merge(batch_arrays), xr.merge(epoch_arrays)
-
-
-def get_xarrays(logger: LiveObject) -> Dict[str, Dict[str, Dataset]]:
-    """
-    Given a LiveLogger or LivePlot instance, returns xarray data sets for
-    its train & test, batch-level & epoch-level metrics, respectively.
-
-    Parameters
-    ----------
-    logger : Union[LivePlot, LiveLogger]
-
-    Returns
-    -------
-    Dict[str, Dict[str, Dataset]]
-        'train/test' -> 'batch/epoch' -> Dataset
-
-    Notes
-    -----
-    The layout of the resulting data sets are:
-
-    Dimensions:     (iterations: num_iterations)
-    Coordinates:
-      * iterations  (iterations) int64 1 2 3 ...
-    Data variables:
-        metric0      (iterations) float64 val_0 val_1 ...
-        metric1      (iterations) float64 val_0 val_1 ...
-        ...
-    """
-    tr_batch, tr_epoch = metrics_to_xarrays(logger.train_metrics)
-    te_batch, te_epoch = metrics_to_xarrays(logger.test_metrics)
-    return dict(train=dict(batch=tr_batch, epoch=tr_epoch),
-                test=dict(batch=te_batch, epoch=te_epoch))
 
 
 def concat_experiments(*exps: Dataset) -> Dataset:

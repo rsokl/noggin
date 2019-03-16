@@ -1,4 +1,4 @@
-from liveplot.xarray import metrics_to_xarrays, get_xarrays
+from liveplot.xarray import metrics_to_xarrays
 from liveplot.typing import LiveMetrics
 from liveplot.logger import LiveLogger
 
@@ -6,7 +6,9 @@ import tests.custom_strategies as cst
 
 import numpy as np
 from numpy.testing import assert_array_equal
+
 from hypothesis import given
+import pytest
 
 
 def check_batch_xarray(metrics_dict, metrics_xarray):
@@ -56,12 +58,17 @@ def test_metrics_to_xarrays(metrics: LiveMetrics):
 
 
 @given(logger=cst.loggers())
-def test_get_xarray(logger: LiveLogger):
-    out = get_xarrays(logger)
-    tr_xr = out['train']
-    te_xr = out['test']
+def test_logger_xarray(logger: LiveLogger):
+    tr_batch, tr_epoch = logger.to_xarray('train')
+    te_batch, te_epoch = logger.to_xarray('test')
 
-    check_batch_xarray(logger.train_metrics, tr_xr["batch"])
-    check_epoch_xarray(logger.train_metrics, tr_xr["epoch"])
-    check_batch_xarray(logger.test_metrics, te_xr["batch"])
-    check_epoch_xarray(logger.test_metrics, te_xr["epoch"])
+    check_batch_xarray(logger.train_metrics, tr_batch)
+    check_epoch_xarray(logger.train_metrics, tr_epoch)
+    check_batch_xarray(logger.test_metrics, te_batch)
+    check_epoch_xarray(logger.test_metrics, te_epoch)
+
+
+@given(logger=cst.loggers())
+def test_logger_xarray_validate_inputs(logger: LiveLogger):
+    with pytest.raises(ValueError):
+        logger.to_xarray('traintest')
