@@ -10,6 +10,8 @@ except ImportError:
         "The Python package `xarray` must be installed "
         "in order to access this functionality in liveplot."
     )
+from typing import Dict, Union, Tuple
+from collections import namedtuple
 
 import numpy as np
 
@@ -18,11 +20,13 @@ from liveplot.plotter import LivePlot
 from liveplot.logger import LiveLogger
 from xarray import Dataset
 
-from typing import Dict, Tuple, Union
 
 LiveObject = Union[LivePlot, LiveLogger]
 
 __all__ = ["metrics_to_xarrays", "concat_experiments"]
+
+
+MetricArrays = namedtuple("MetricArrays", ("batch", "epoch"))
 
 
 def metrics_to_xarrays(
@@ -40,8 +44,8 @@ def metrics_to_xarrays(
 
     Returns
     -------
-    Tuple[xarray.Dataset, xarray.Dataset]
-        The batch-level and epoch-level datasets. The metrics are reported as 
+    MetricArrays[xarray.Dataset, xarray.Dataset]
+        The batch-level and epoch-level datasets. The metrics are reported as
         data variables in the dataset, and the coordinates corresponds to
         the batch-iteration count.
 
@@ -79,7 +83,7 @@ def metrics_to_xarrays(
         )
         epoch_arrays.append(at)
 
-    return xr.merge(batch_arrays), xr.merge(epoch_arrays)
+    return MetricArrays(batch=xr.merge(batch_arrays), epoch=xr.merge(epoch_arrays))
 
 
 def concat_experiments(*exps: Dataset) -> Dataset:

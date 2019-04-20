@@ -24,7 +24,7 @@ def test_valid_colors(color):
 
 
 @pytest.mark.parametrize(
-    "color", ("helloworld", "", "#fff", None, (0.1, 0.1), (0.1, 0.2, 0.3, 1.0, 2.0))
+    "color", ("helloworld", "", "#fff", (0.1, 0.1), (0.1, 0.2, 0.3, 1.0, 2.0))
 )
 def test_invalid_colors(color):
     with pytest.raises(ValueError):
