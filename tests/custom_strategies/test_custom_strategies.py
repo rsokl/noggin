@@ -1,9 +1,12 @@
-import tests.custom_strategies as cst
+from itertools import combinations
+
 from hypothesis import given
 
 from liveplot.logger import LiveLogger, LiveMetric
 from liveplot.plotter import LivePlot
-from itertools import combinations
+from liveplot.utils import check_valid_color
+
+import tests.custom_strategies as cst
 
 
 @given(cst.choices("abcdefg", 3))
@@ -34,3 +37,8 @@ def test_livemetrics(live_metrics: dict):
     """Ensure that each entry in live_metrics() can round-trip via LiveMetric"""
     for metric_name, metrics_dict in live_metrics.items():
         LiveMetric.from_dict(metrics_dict).to_dict()
+
+
+@given(cst.matplotlib_colors())
+def test_colors(color):
+    check_valid_color(color)

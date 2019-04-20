@@ -83,6 +83,13 @@ def test_trivial_case():
     )
 
 
+def test_metric_colors():
+    p = LivePlot(dict(acc="red"))
+    print(p.metric_colors)
+    p = LivePlot(dict(acc=dict(train="red", test="blue")))
+    print(p.metric_colors)
+
+
 @settings(deadline=None)
 class LivePlotStateMachine(RuleBasedStateMachine):
     """Ensures that:
