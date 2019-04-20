@@ -136,7 +136,7 @@ class LivePlot(LiveLogger):
         if "nbAgg" not in self._backend and refresh >= 0:
             _inline_msg = """Live plotting is not supported when matplotlib uses the '{}'
                              backend. Instead, use the 'nbAgg' backend.
-            
+
                              In a Jupyter notebook, this can be activated using the cell magic:
                                 %matplotlib notebook."""
             warn(cleandoc(_inline_msg.format(self._backend)))

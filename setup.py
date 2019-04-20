@@ -2,14 +2,18 @@ from setuptools import setup, find_packages
 
 
 def do_setup():
+    import versioneer
+
     setup(
+        version=versioneer.get_version(),
+        cmdclass=versioneer.get_cmdclass(),
         name="LivePlot",
-        version="0.1",
         author="Ryan Soklaski",
         license="MIT",
         platforms=["Windows", "Linux", "Mac OS-X", "Unix"],
-        packages=find_packages(),
-        install_requires=["matplotlib>=1.5"],
+        package_dir={"": "src"},
+        packages=find_packages(where="src", exclude=["tests", "tests.*"]),
+        python_requires=">=3.6",
     )
 
 
