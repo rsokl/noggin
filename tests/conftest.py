@@ -2,6 +2,7 @@ import tempfile
 import os
 import pytest
 
+
 @pytest.fixture()
 def cleandir() -> str:
     """ This fixture will use the stdlib `tempfile` module to

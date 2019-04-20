@@ -9,7 +9,13 @@ from numpy.testing import assert_array_equal
 
 import hypothesis.strategies as st
 from hypothesis.strategies import SearchStrategy
-from hypothesis.stateful import RuleBasedStateMachine, initialize, rule, precondition, invariant
+from hypothesis.stateful import (
+    RuleBasedStateMachine,
+    initialize,
+    rule,
+    precondition,
+    invariant,
+)
 from hypothesis import note
 
 import numpy as np
@@ -20,18 +26,21 @@ import pytest
 def test_trivial_case():
     """ Perform a trivial sanity check on live logger"""
     logger = LiveLogger()
-    logger.set_train_batch(dict(a=1.), batch_size=1)
-    logger.set_train_batch(dict(a=3.), batch_size=1)
+    logger.set_train_batch(dict(a=1.0), batch_size=1)
+    logger.set_train_batch(dict(a=3.0), batch_size=1)
     logger.set_train_epoch()
 
-    assert_array_equal(logger.train_metrics['a']['batch_data'], np.array([1., 3.]))
-    assert_array_equal(logger.train_metrics['a']['epoch_domain'], np.array([2]))
-    assert_array_equal(logger.train_metrics['a']['epoch_data'], np.array([1. / 2. + 3. / 2.]))
+    assert_array_equal(logger.train_metrics["a"]["batch_data"], np.array([1.0, 3.0]))
+    assert_array_equal(logger.train_metrics["a"]["epoch_domain"], np.array([2]))
+    assert_array_equal(
+        logger.train_metrics["a"]["epoch_data"], np.array([1.0 / 2.0 + 3.0 / 2.0])
+    )
 
 
 class LiveLoggerStateMachine(RuleBasedStateMachine):
     """ Ensures that exercising the api of LiveLogger produces
     results that are consistent with a simplistic implementation"""
+
     def __init__(self):
         super().__init__()
         self.train_metrics = []  # type: List[LiveMetric]
@@ -41,11 +50,8 @@ class LiveLoggerStateMachine(RuleBasedStateMachine):
         self.test_batch_set = False
         self.num_train_batch = 0
 
-    @initialize(num_train_metrics=st.integers(0, 3),
-                num_test_metrics=st.integers(0, 3))
-    def choose_metrics(self,
-                       num_train_metrics: int,
-                       num_test_metrics: int):
+    @initialize(num_train_metrics=st.integers(0, 3), num_test_metrics=st.integers(0, 3))
+    def choose_metrics(self, num_train_metrics: int, num_test_metrics: int):
         train_metric_names = ["metric-a", "metric-b", "metric-c"][:num_train_metrics]
         for name in train_metric_names:
             self.train_metrics.append(LiveMetric(name=name))
@@ -68,8 +74,10 @@ class LiveLoggerStateMachine(RuleBasedStateMachine):
             self.num_train_batch += 1
 
         self.train_batch_set = True
-        batch = {metric.name: data.draw(st.floats(-1, 1), label=metric.name)
-                 for metric in self.train_metrics}
+        batch = {
+            metric.name: data.draw(st.floats(-1, 1), label=metric.name)
+            for metric in self.train_metrics
+        }
         self.logger.set_train_batch(metrics=batch, batch_size=batch_size)
 
         for metric in self.train_metrics:
@@ -80,12 +88,14 @@ class LiveLoggerStateMachine(RuleBasedStateMachine):
         self.logger.set_train_epoch()
         for metric in self.train_metrics:
             metric.set_epoch_datapoint()
-            
+
     @rule(batch_size=st.integers(0, 2), data=st.data())
     def set_test_batch(self, batch_size: int, data: SearchStrategy):
         self.test_batch_set = True
-        batch = {metric.name: data.draw(st.floats(-1, 1), label=metric.name)
-                 for metric in self.test_metrics}
+        batch = {
+            metric.name: data.draw(st.floats(-1, 1), label=metric.name)
+            for metric in self.test_metrics
+        }
         self.logger.set_test_batch(metrics=batch, batch_size=batch_size)
 
         for metric in self.test_metrics:
@@ -102,19 +112,23 @@ class LiveLoggerStateMachine(RuleBasedStateMachine):
             else:
                 x = None
             metric.set_epoch_datapoint(x)
-            
+
     @precondition(lambda self: self.train_batch_set)
     @invariant()
     def compare_train_metrics(self):
         logged_metrics = self.logger.train_metrics
-        expected_metrics = dict((metric.name, metric.to_dict()) for metric in self.train_metrics)
+        expected_metrics = dict(
+            (metric.name, metric.to_dict()) for metric in self.train_metrics
+        )
         compare_all_metrics(logged_metrics, expected_metrics)
 
     @precondition(lambda self: self.test_batch_set)
     @invariant()
     def compare_test_metrics(self):
         logged_metrics = self.logger.test_metrics
-        expected_metrics = dict((metric.name, metric.to_dict()) for metric in self.test_metrics)
+        expected_metrics = dict(
+            (metric.name, metric.to_dict()) for metric in self.test_metrics
+        )
         compare_all_metrics(logged_metrics, expected_metrics)
 
     @invariant()
@@ -122,14 +136,19 @@ class LiveLoggerStateMachine(RuleBasedStateMachine):
         logger_dict = self.logger.to_dict()
         new_logger = LiveLogger.from_dict(logger_dict)
 
-        for attr in ["_num_train_epoch", "_num_train_batch",
-                     "_num_test_epoch", "_num_test_batch"]:
+        for attr in [
+            "_num_train_epoch",
+            "_num_train_batch",
+            "_num_test_epoch",
+            "_num_test_batch",
+        ]:
             desired = getattr(self.logger, attr)
             actual = getattr(new_logger, attr)
-            assert actual == desired, \
-                "`LiveLogger.from_dict` did not round-trip successfully.\n" \
-                "logger.{} does not match.\nGot: {}\nExpected: {}" \
+            assert actual == desired, (
+                "`LiveLogger.from_dict` did not round-trip successfully.\n"
+                "logger.{} does not match.\nGot: {}\nExpected: {}"
                 "".format(attr, actual, desired)
+            )
 
         compare_all_metrics(self.logger.train_metrics, new_logger.train_metrics)
         compare_all_metrics(self.logger.test_metrics, new_logger.test_metrics)
@@ -139,13 +158,16 @@ class LiveLoggerStateMachine(RuleBasedStateMachine):
         """Ensure the saving/loading metrics always produces self-consistent
         results with the logger"""
         from uuid import uuid4
+
         filename = str(uuid4())
         if save_via_live_object:
             save_metrics(filename, liveplot=self.logger)
         else:
-            save_metrics(filename,
-                         train_metrics=self.logger.train_metrics,
-                         test_metrics=self.logger.test_metrics)
+            save_metrics(
+                filename,
+                train_metrics=self.logger.train_metrics,
+                test_metrics=self.logger.test_metrics,
+            )
         io_train_metrics, io_test_metrics = load_metrics(filename)
 
         compare_all_metrics(io_train_metrics, self.logger.train_metrics)
