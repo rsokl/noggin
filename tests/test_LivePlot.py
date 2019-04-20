@@ -231,10 +231,12 @@ class LivePlotStateMachine(RuleBasedStateMachine):
         ]:
             desired = getattr(self.plotter, attr)
             actual = getattr(new_plotter, attr)
-            assert actual == desired, (
-                "LiveLogger.from_metrics did not round-trip successfully.\n"
+            assert_array_equal(
+                actual,
+                desired,
+                err_msg="LiveLogger.from_metrics did not round-trip successfully.\n"
                 "logger.{} does not match.\nGot: {}\nExpected: {}"
-                "".format(attr, actual, desired)
+                "".format(attr, actual, desired),
             )
 
         compare_all_metrics(self.plotter.train_metrics, new_plotter.train_metrics)

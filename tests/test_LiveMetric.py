@@ -19,8 +19,6 @@ from hypothesis.stateful import (
     precondition,
 )
 
-import tests.custom_strategies as cst
-
 
 @given(name=st.sampled_from([1, None, np.array([1]), ["moo"]]))
 def test_badname(name: Any):
@@ -45,7 +43,7 @@ def test_trivial_case():
         assert_array_equal(
             dict_[name],
             getattr(metric, name),
-            err_msg=name + " does not map to the " "correct value in the metric-dict",
+            err_msg=name + " does not map to the correct value in the metric-dict",
         )
 
 
@@ -99,7 +97,6 @@ class LiveMetricChecker(RuleBasedStateMachine):
     @invariant()
     def to_dict(self):
         """Ensure `from_dict(to_dict())` round trip is successful"""
-        self.livemetric.to_dict()
         metrics_dict = self.livemetric.to_dict()
         new_metrics = LiveMetric.from_dict(metrics_dict=metrics_dict)
 
@@ -114,10 +111,12 @@ class LiveMetricChecker(RuleBasedStateMachine):
         ]:
             desired = getattr(self.livemetric, attr)
             actual = getattr(new_metrics, attr)
-            assert actual == desired, (
-                "`LiveMetric.from_dict` did not round-trip successfully.\n"
+            assert_array_equal(
+                actual,
+                desired,
+                err_msg="`LiveMetric.from_dict` did not round-trip successfully.\n"
                 "livemetric.{} does not match.\nGot: {}\nExpected: {}"
-                "".format(attr, actual, desired)
+                "".format(attr, actual, desired),
             )
 
     @precondition(lambda self: self.livemetric is not None)
