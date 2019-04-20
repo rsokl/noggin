@@ -1,14 +1,12 @@
-from tests.utils import compare_all_metrics
-
-from liveplot import save_metrics, load_metrics
-from liveplot.logger import LiveLogger
-from liveplot.plotter import LivePlot
+from contextlib import contextmanager
+from string import ascii_letters
+from collections import OrderedDict
 
 import numpy as np
 from numpy.testing import assert_array_equal
 from numpy import ndarray
 
-from hypothesis import settings, assume, note
+from hypothesis import settings, assume, note, given
 import hypothesis.strategies as st
 from hypothesis.strategies import SearchStrategy
 from hypothesis.stateful import (
@@ -21,10 +19,14 @@ from hypothesis.stateful import (
 
 from matplotlib.pyplot import Figure, Axes, close
 
-from contextlib import contextmanager
-from string import ascii_letters
-
 import pytest
+
+from liveplot import save_metrics, load_metrics
+from liveplot.logger import LiveLogger
+from liveplot.plotter import LivePlot
+
+from tests.utils import compare_all_metrics
+import tests.custom_strategies as cst
 
 
 @contextmanager
@@ -83,11 +85,11 @@ def test_trivial_case():
     )
 
 
-def test_metric_colors():
-    p = LivePlot(dict(acc="red"))
-    print(p.metric_colors)
-    p = LivePlot(dict(acc=dict(train="red", test="blue")))
-    print(p.metric_colors)
+@given(colors=st.lists(cst.matplotlib_colors(), min_size=1, max_size=4))
+def test_flat_color_syntax(colors: list):
+    metric_names = ascii_letters[: len(colors)]
+    p = LivePlot({n: c for n, c in zip(metric_names, colors)})
+    assert p.metric_colors == {n: dict(train=c) for n, c in zip(metric_names, colors)}
 
 
 @settings(deadline=None)
@@ -107,17 +109,50 @@ class LivePlotStateMachine(RuleBasedStateMachine):
         self.plotter = None  # type: LivePlot
         self.logger = None  # type: LiveLogger
 
-    @initialize(num_train_metrics=st.integers(0, 3), num_test_metrics=st.integers(0, 3))
-    def choose_metrics(self, num_train_metrics: int, num_test_metrics: int):
+    @initialize(
+        num_train_metrics=st.integers(0, 3),
+        num_test_metrics=st.integers(0, 3),
+        data=st.data(),
+    )
+    def choose_metrics(
+        self, num_train_metrics: int, num_test_metrics: int, data: st.SearchStrategy
+    ):
         assume(num_train_metrics + num_test_metrics > 0)
         self.train_metric_names = ["metric-a", "metric-b", "metric-c"][
             :num_train_metrics
         ]
 
         self.test_metric_names = ["metric-a", "metric-b", "metric-c"][:num_test_metrics]
-        self.plotter = LivePlot(
-            sorted(set(self.train_metric_names + self.test_metric_names)), refresh=-1
+        train_colors = data.draw(
+            st.lists(
+                cst.matplotlib_colors(),
+                min_size=num_train_metrics,
+                max_size=num_train_metrics,
+            ),
+            label="train_colors",
         )
+
+        test_colors = data.draw(
+            st.lists(
+                cst.matplotlib_colors(),
+                min_size=num_test_metrics,
+                max_size=num_test_metrics,
+            ),
+            label="test_colors",
+        )
+
+        metrics = OrderedDict(
+            (n, dict())
+            for n in sorted(set(self.train_metric_names + self.test_metric_names))
+        )
+
+        for metric, color in zip(self.train_metric_names, train_colors):
+            metrics[metric]["train"] = color
+
+        for metric, color in zip(self.test_metric_names, test_colors):
+            metrics[metric]["test"] = color
+
+        self.plotter = LivePlot(metrics, refresh=-1)
         self.logger = LiveLogger()
 
         note("Train metric names: {}".format(self.train_metric_names))
