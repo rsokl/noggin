@@ -1,7 +1,7 @@
 __all__ = ["create_plot", "recreate_plot", "save_metrics", "load_metrics"]
 
 
-def create_plot(metrics, refresh=0.0, figsize=None, ncols=1, nrows=1):
+def create_plot(metrics, refresh=0.001, figsize=None, ncols=1, nrows=1):
     """ Create matplotlib figure/axes, and a live-plotter, which publishes
         "live" training/testing metric data, at a batch and epoch level, to
         the figure.
@@ -16,10 +16,10 @@ def create_plot(metrics, refresh=0.0, figsize=None, ncols=1, nrows=1):
                 - '<metric-name>' -> color-value  (specifies train-metric color only)
                 - '<metric-name>' -> {'train'/'test' : color-value}
 
-        refresh : float, optional (default=0.)
-            Sets the plot refresh rate in seconds.
+        refresh : float, optional (default=0.001)
+            Sets the plot refresh rate in redraws-per-seconds.
 
-            A refresh rate of 0. updates the once every 1/1000 seconds.
+            The lowest permissible refresh rate is 1/1000 redraws per second.
 
         figsize : Optional[Sequence[int, int]]
             Specifies the width and height, respectively, of the figure.
