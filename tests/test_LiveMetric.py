@@ -11,7 +11,13 @@ from numpy.testing import assert_array_equal, assert_allclose
 
 from hypothesis import given
 import hypothesis.strategies as st
-from hypothesis.stateful import RuleBasedStateMachine, initialize, rule, invariant, precondition
+from hypothesis.stateful import (
+    RuleBasedStateMachine,
+    initialize,
+    rule,
+    invariant,
+    precondition,
+)
 
 import tests.custom_strategies as cst
 
@@ -25,25 +31,28 @@ def test_badname(name: Any):
 def test_trivial_case():
     """ Perform a trivial sanity check on live metric"""
     metric = LiveMetric("a")
-    metric.add_datapoint(1., weighting=1.)
-    metric.add_datapoint(3., weighting=1.)
+    metric.add_datapoint(1.0, weighting=1.0)
+    metric.add_datapoint(3.0, weighting=1.0)
     metric.set_epoch_datapoint(99)
     assert_array_equal(metric.batch_domain, np.array([1, 2]))
-    assert_array_equal(metric.batch_data, np.array([1., 3.]))
+    assert_array_equal(metric.batch_data, np.array([1.0, 3.0]))
 
     assert_array_equal(metric.epoch_domain, np.array([99]))
-    assert_array_equal(metric.epoch_data, np.array([1. / 2. + 3. / 2.]))
+    assert_array_equal(metric.epoch_data, np.array([1.0 / 2.0 + 3.0 / 2.0]))
 
     dict_ = metric.to_dict()
     for name in ("batch_data", "epoch_data", "epoch_domain"):
-        assert_array_equal(dict_[name], getattr(metric, name),
-                           err_msg=name + " does not map to the "
-                                          "correct value in the metric-dict")
+        assert_array_equal(
+            dict_[name],
+            getattr(metric, name),
+            err_msg=name + " does not map to the " "correct value in the metric-dict",
+        )
 
 
 class LiveMetricChecker(RuleBasedStateMachine):
     """ Ensures that exercising the api of LiveMetric produces
     results that are consistent with a simplistic implementation"""
+
     def __init__(self):
         super().__init__()
 
@@ -59,22 +68,21 @@ class LiveMetricChecker(RuleBasedStateMachine):
         self.livemetric = LiveMetric(name)
         self.name = name
 
-    @rule(value=st.floats(-1e6, 1e6),
-          weighting=st.one_of(st.none(), st.floats(0, 2)))
+    @rule(value=st.floats(-1e6, 1e6), weighting=st.one_of(st.none(), st.floats(0, 2)))
     def add_datapoint(self, value: float, weighting: Optional[float]):
         if weighting is not None:
             self.livemetric.add_datapoint(value=value, weighting=weighting)
         else:
             self.livemetric.add_datapoint(value=value)
         self.batch_data.append(value)
-        self._weights.append(weighting if weighting is not None else 1.)
+        self._weights.append(weighting if weighting is not None else 1.0)
 
     @rule()
     def set_epoch_datapoint(self):
         self.livemetric.set_epoch_datapoint()
 
         if self._weights:
-            batch_dat = np.array(self.batch_data)[-len(self._weights):]
+            batch_dat = np.array(self.batch_data)[-len(self._weights) :]
             weights = np.array(self._weights) / sum(self._weights)
             weights = np.nan_to_num(weights)
             epoch_mean = batch_dat @ weights
@@ -95,20 +103,22 @@ class LiveMetricChecker(RuleBasedStateMachine):
         metrics_dict = self.livemetric.to_dict()
         new_metrics = LiveMetric.from_dict(metrics_dict=metrics_dict)
 
-        for attr in ["name",
-                     "_batch_data",
-                     "_epoch_data",
-                     "_epoch_domain",
-                     "_running_weighted_sum",
-                     "_total_weighting",
-                     "_cnt_since_epoch",
-                     ]:
+        for attr in [
+            "name",
+            "_batch_data",
+            "_epoch_data",
+            "_epoch_domain",
+            "_running_weighted_sum",
+            "_total_weighting",
+            "_cnt_since_epoch",
+        ]:
             desired = getattr(self.livemetric, attr)
             actual = getattr(new_metrics, attr)
-            assert actual == desired, \
-                "`LiveMetric.from_dict` did not round-trip successfully.\n" \
-                "livemetric.{} does not match.\nGot: {}\nExpected: {}" \
+            assert actual == desired, (
+                "`LiveMetric.from_dict` did not round-trip successfully.\n"
+                "livemetric.{} does not match.\nGot: {}\nExpected: {}"
                 "".format(attr, actual, desired)
+            )
 
     @precondition(lambda self: self.livemetric is not None)
     @invariant()
@@ -118,26 +128,38 @@ class LiveMetricChecker(RuleBasedStateMachine):
         epoch_data = np.asarray(self.epoch_data)
         epoch_domain = np.asarray(self.epoch_domain)
 
-        assert_array_equal(batch_data,
-                           self.livemetric.batch_data,
-                           err_msg=err_msg(actual=batch_data,
-                                           desired=self.livemetric.batch_data,
-                                           name="Batch Data"))
-        assert_array_equal(epoch_domain,
-                           self.livemetric.epoch_domain,
-                           err_msg=err_msg(actual=epoch_domain,
-                                           desired=self.livemetric.epoch_domain,
-                                           name="Epoch Domain"))
-        assert_array_equal(self.livemetric.batch_domain,
-                           batch_domain,
-                           err_msg=err_msg(actual=batch_domain,
-                                           desired=self.livemetric.batch_domain,
-                                           name="Batch Domain"))
-        assert_allclose(actual=self.livemetric.epoch_data,
-                        desired=epoch_data,
-                        err_msg=err_msg(actual=epoch_data,
-                                        desired=self.livemetric.epoch_data,
-                                        name="Epoch Data"))
+        assert_array_equal(
+            batch_data,
+            self.livemetric.batch_data,
+            err_msg=err_msg(
+                actual=batch_data, desired=self.livemetric.batch_data, name="Batch Data"
+            ),
+        )
+        assert_array_equal(
+            epoch_domain,
+            self.livemetric.epoch_domain,
+            err_msg=err_msg(
+                actual=epoch_domain,
+                desired=self.livemetric.epoch_domain,
+                name="Epoch Domain",
+            ),
+        )
+        assert_array_equal(
+            self.livemetric.batch_domain,
+            batch_domain,
+            err_msg=err_msg(
+                actual=batch_domain,
+                desired=self.livemetric.batch_domain,
+                name="Batch Domain",
+            ),
+        )
+        assert_allclose(
+            actual=self.livemetric.epoch_data,
+            desired=epoch_data,
+            err_msg=err_msg(
+                actual=epoch_data, desired=self.livemetric.epoch_data, name="Epoch Data"
+            ),
+        )
 
         assert self.livemetric.name == self.name
 

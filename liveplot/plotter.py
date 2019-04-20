@@ -40,7 +40,7 @@ class LivePlot(LiveLogger):
         out = defaultdict(dict)
         for k, v in self._train_colors.items():
             out[k]["train"] = v
-        
+
         for k, v in self._test_colors.items():
             out[k]["test"] = v
         return dict(out)
@@ -57,7 +57,7 @@ class LivePlot(LiveLogger):
             turns off static plotting."""
         assert isinstance(value, Real)
         self._refresh = 0.001 if 0 <= value < 0.001 else value
-        self._liveplot = self._refresh >= 0. and 'nbAgg' in self._backend
+        self._liveplot = self._refresh >= 0.0 and "nbAgg" in self._backend
 
     def plot_objects(self) -> Union[Tuple[Figure, Axes], Tuple[Figure, np.ndarray]]:
         """ The figure-instance of the plot, and the axis-instance for each metric.
@@ -80,12 +80,14 @@ class LivePlot(LiveLogger):
         else:
             return self._fig, self._axes
 
-    def __init__(self,
-                 metrics: Metrics,
-                 refresh: Real = 0.,
-                 nrows: Optional[int] = None,
-                 ncols: int = 1,
-                 figsize: Optional[Tuple[int, int]] = None):
+    def __init__(
+        self,
+        metrics: Metrics,
+        refresh: Real = 0.0,
+        nrows: Optional[int] = None,
+        ncols: int = 1,
+        figsize: Optional[Tuple[int, int]] = None,
+    ):
         """ Parameters
             ----------
             metrics : Union[str, Sequence[str], Dict[str, valid-color], Dict[str, Dict['train'/'test', valid-color]]]
@@ -120,14 +122,18 @@ class LivePlot(LiveLogger):
         super().__init__()
 
         assert isinstance(refresh, Real)
-        assert figsize is None or len(figsize) == 2 and all(isinstance(i, Integral) for i in figsize)
+        assert (
+            figsize is None
+            or len(figsize) == 2
+            and all(isinstance(i, Integral) for i in figsize)
+        )
 
         # import matplotlib and check backend
-        self._pyplot = importlib.import_module('matplotlib.pyplot')
-        _matplotlib = importlib.import_module('matplotlib')
+        self._pyplot = importlib.import_module("matplotlib.pyplot")
+        _matplotlib = importlib.import_module("matplotlib")
 
         self._backend = _matplotlib.get_backend()
-        if 'nbAgg' not in self._backend and refresh >= 0:
+        if "nbAgg" not in self._backend and refresh >= 0:
             _inline_msg = """Live plotting is not supported when matplotlib uses the '{}'
                              backend. Instead, use the 'nbAgg' backend.
             
@@ -140,11 +146,15 @@ class LivePlot(LiveLogger):
 
         if not len(self._metrics) == len(set(self._metrics)):
             from collections import Counter
+
             count = Counter(self._metrics)
-            _items = [name for name,cnt in count.most_common() if cnt > 1]
-            raise ValueError("`metrics` must specify mutually-unique names. "
-                             "\n `{}` {} specified redundantly".format(", ".join(_items),
-                                                                       "was" if len(_items) == 1 else "were"))
+            _items = [name for name, cnt in count.most_common() if cnt > 1]
+            raise ValueError(
+                "`metrics` must specify mutually-unique names. "
+                "\n `{}` {} specified redundantly".format(
+                    ", ".join(_items), "was" if len(_items) == 1 else "were"
+                )
+            )
 
         if not self._metrics:
             raise ValueError("At least one metric must be specified")
@@ -154,13 +164,17 @@ class LivePlot(LiveLogger):
 
         if nrows is None:
             nrows = 1
-        
+
         if 1 > nrows or not isinstance(nrows, Integral):
-            raise ValueError("`nrows` must integer-valued and be at least 1. Got {}".format(nrows))
+            raise ValueError(
+                "`nrows` must integer-valued and be at least 1. Got {}".format(nrows)
+            )
 
         if 1 > ncols or not isinstance(ncols, Integral):
-            raise ValueError("`ncols` must integer-valued and be at least 1. Got {}".format(ncols))
-        
+            raise ValueError(
+                "`ncols` must integer-valued and be at least 1. Got {}".format(ncols)
+            )
+
         if len(self._metrics) > ncols * nrows:
             nrows = len(self._metrics)
 
@@ -183,38 +197,46 @@ class LivePlot(LiveLogger):
         sum(check_valid_color(c) for c in self._train_colors.values())
         sum(check_valid_color(c) for c in self._test_colors.values())
 
-        self._batch_ax = dict(ls='-', alpha=0.5)  # plot settings for batch-data
-        self._epoch_ax = dict(ls='-', marker='o', markersize=6, lw=3)  # plot settings for epoch-data
+        self._batch_ax = dict(ls="-", alpha=0.5)  # plot settings for batch-data
+        self._epoch_ax = dict(
+            ls="-", marker="o", markersize=6, lw=3
+        )  # plot settings for epoch-data
         self._legend = dict()
         self._axis_mapping = OrderedDict()  # metric name -> matplotlib axis object
         self._plot_batch = True
-        self._fig = None   # type: Optional[Figure]
+        self._fig = None  # type: Optional[Figure]
         self._axes = None  # type: Union[None, Axes, np.ndarray]
 
         # attribute initialization
-        self._start_time = None      # float: Time upon entering the training session
+        self._start_time = None  # float: Time upon entering the training session
         self._last_plot_time = None  # float: Time of last plot
 
     def to_dict(self):
         out = super().to_dict()
-        out.update(dict(refresh=self.refresh,
-                        pltkwargs=self._pltkwargs,
-                        train_colors=self._train_colors,
-                        test_colors=self._test_colors,
-                        metric_names=self._metrics,
-                        )
-                   )
+        out.update(
+            dict(
+                refresh=self.refresh,
+                pltkwargs=self._pltkwargs,
+                train_colors=self._train_colors,
+                test_colors=self._test_colors,
+                metric_names=self._metrics,
+            )
+        )
         return out
 
     @classmethod
     def from_dict(cls, plotter_dict):
         new = cls(metrics=plotter_dict["metric_names"], refresh=plotter_dict["refresh"])
 
-        new._train_metrics.update((key, LiveMetric.from_dict(metric))
-                                  for key, metric in plotter_dict["train_metrics"].items())
+        new._train_metrics.update(
+            (key, LiveMetric.from_dict(metric))
+            for key, metric in plotter_dict["train_metrics"].items()
+        )
 
-        new._test_metrics.update((key, LiveMetric.from_dict(metric))
-                                 for key, metric in plotter_dict["test_metrics"].items())
+        new._test_metrics.update(
+            (key, LiveMetric.from_dict(metric))
+            for key, metric in plotter_dict["test_metrics"].items()
+        )
 
         for train_mode, stat_mode in product(["train", "test"], ["batch", "epoch"]):
             item = "num_{}_{}".format(train_mode, stat_mode)
@@ -225,7 +247,9 @@ class LivePlot(LiveLogger):
 
         return new
 
-    def set_train_batch(self, metrics: Dict[str, Real], batch_size: Integral, plot: bool = True):
+    def set_train_batch(
+        self, metrics: Dict[str, Real], batch_size: Integral, plot: bool = True
+    ):
         """ Provide the batch-level metric values to be recorded, and (optionally) plotted.
 
             Parameters
@@ -247,18 +271,28 @@ class LivePlot(LiveLogger):
 
             unreg_metrics = set(metrics).difference(self._metrics)
             if unreg_metrics:
-                msg = "\nThe following training metrics are not registered for live-plotting:\n\t" + "\n\t"
-                warnings.warn(cleandoc(msg.join(sorted(unreg_metrics))),)
+                msg = (
+                    "\nThe following training metrics are not registered for live-plotting:\n\t"
+                    + "\n\t"
+                )
+                warnings.warn(cleandoc(msg.join(sorted(unreg_metrics))))
 
             if not self._train_metrics:
                 # initialize batch-level plot objects
-                self._train_metrics.update((key, LiveMetric(key)) for key in metrics if key in self._metrics)
+                self._train_metrics.update(
+                    (key, LiveMetric(key)) for key in metrics if key in self._metrics
+                )
 
             for key, metric in self._train_metrics.items():
                 try:
                     ax = self._axis_mapping[key]
-                    metric.batch_line, = ax.plot([], [], label="train",
-                                                 color=self._train_colors.get(key), **self._batch_ax)
+                    metric.batch_line, = ax.plot(
+                        [],
+                        [],
+                        label="train",
+                        color=self._train_colors.get(key),
+                        **self._batch_ax
+                    )
                     ax.set_title(key)
                     ax.legend()
                 except KeyError:
@@ -285,7 +319,9 @@ class LivePlot(LiveLogger):
             for key in self._train_metrics:
                 ax = self._axis_mapping[key]
                 batch_color = self._train_metrics[key].batch_line.get_color()
-                self._train_metrics[key].epoch_line, = ax.plot([], [], color=batch_color, **self._epoch_ax)
+                self._train_metrics[key].epoch_line, = ax.plot(
+                    [], [], color=batch_color, **self._epoch_ax
+                )
                 ax.legend(**self._legend)
 
         # compute epoch-mean metrics
@@ -310,12 +346,17 @@ class LivePlot(LiveLogger):
             """
         # initialize live plot objects for testing
         if not self._test_metrics:
-            self._test_metrics.update((key, LiveMetric(key)) for key in metrics if key in self._metrics)
+            self._test_metrics.update(
+                (key, LiveMetric(key)) for key in metrics if key in self._metrics
+            )
 
             unreg_metrics = set(metrics).difference(self._metrics)
             if unreg_metrics:
-                msg = "\nThe following testing metrics are not registered for live-plotting:\n\t" + "\n\t"
-                warnings.warn(cleandoc(msg.join(sorted(unreg_metrics))),)
+                msg = (
+                    "\nThe following testing metrics are not registered for live-plotting:\n\t"
+                    + "\n\t"
+                )
+                warnings.warn(cleandoc(msg.join(sorted(unreg_metrics))))
 
         # record each incoming batch metric
         for key, value in metrics.items():
@@ -337,8 +378,13 @@ class LivePlot(LiveLogger):
             for key, metric in self._test_metrics.items():
                 try:
                     ax = self._axis_mapping[key]
-                    metric.epoch_line, = ax.plot([], [], label="test",
-                                                 color=self._test_colors.get(key), **self._epoch_ax)
+                    metric.epoch_line, = ax.plot(
+                        [],
+                        [],
+                        label="test",
+                        color=self._test_colors.get(key),
+                        **self._epoch_ax
+                    )
                     ax.set_title(key)
                     ax.legend(**self._legend)
                 except KeyError:
@@ -347,14 +393,18 @@ class LivePlot(LiveLogger):
         # compute epoch-mean metrics
         for key in self._test_metrics:
             try:
-                x = self._train_metrics[key].batch_domain[-1] if self._train_metrics else None
+                x = (
+                    self._train_metrics[key].batch_domain[-1]
+                    if self._train_metrics
+                    else None
+                )
             except KeyError:
                 x = None
             self._test_metrics[key].set_epoch_datapoint(x)
 
         self._do_liveplot()
         self._num_test_epoch += 1
-    
+
     def _init_plot_window(self):
         if self._pyplot is None or self._fig is not None:
             return None
@@ -403,13 +453,17 @@ class LivePlot(LiveLogger):
                     livedata.batch_line.set_xdata(livedata.batch_domain)
                     livedata.batch_line.set_ydata(livedata._batch_data)
                     if livedata._epoch_data:
-                        livedata.batch_line.set_label("train: {:.2e}".format(livedata._epoch_data[-1]))
+                        livedata.batch_line.set_label(
+                            "train: {:.2e}".format(livedata._epoch_data[-1])
+                        )
 
                 if livedata.epoch_line is not None:
                     livedata.epoch_line.set_xdata(livedata._epoch_domain)
                     livedata.epoch_line.set_ydata(livedata._epoch_data)
                     if i == 1 and livedata._epoch_data:
-                        livedata.epoch_line.set_label("test: " + "{:.2e}".format(livedata._epoch_data[-1]))
+                        livedata.epoch_line.set_label(
+                            "test: " + "{:.2e}".format(livedata._epoch_data[-1])
+                        )
 
         self._update_text()
         self._resize()

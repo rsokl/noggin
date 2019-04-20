@@ -21,6 +21,7 @@ def check_valid_color(c: ValidColor) -> bool:
     ------
     ValueError"""
     from matplotlib.colors import is_color_like
+
     if not is_color_like(c):
         raise ValueError("{} is not a valid matplotlib color".format(repr(c)))
     else:

@@ -34,15 +34,17 @@ class LiveMetric:
             Invalid metric name (must be string)
             """
         if not isinstance(name, str):
-            raise TypeError("Metric names must be specified as strings. Got: {}".format(name))
+            raise TypeError(
+                "Metric names must be specified as strings. Got: {}".format(name)
+            )
         self._name = name
         self.batch_line = None  # ax object for batch data
         self.epoch_line = None  # ax object for epoch data
         self._batch_data = []  # metric data for consecutive batches
         self._epoch_data = []  # accuracies
         self._epoch_domain = []
-        self._running_weighted_sum = 0.
-        self._total_weighting = 0.
+        self._running_weighted_sum = 0.0
+        self._total_weighting = 0.0
         self._cnt_since_epoch = 0
 
     @property
@@ -77,7 +79,7 @@ class LiveMetric:
         numpy.ndarray, shape=(N_epoch, )"""
         return np.array(self._epoch_data)
 
-    def add_datapoint(self, value: Real, weighting: Real = 1.):
+    def add_datapoint(self, value: Real, weighting: Real = 1.0):
         """
         Parameters
         ----------
@@ -97,13 +99,13 @@ class LiveMetric:
             x : Optional[Real]
                 Specify the domain-value to be set for this data point."""
         if self._cnt_since_epoch > 0:
-            mean = self._running_weighted_sum / (self._total_weighting
-                                                 if self._total_weighting > 0.
-                                                 else 1.)
+            mean = self._running_weighted_sum / (
+                self._total_weighting if self._total_weighting > 0.0 else 1.0
+            )
             self._epoch_data.append(mean)
             self._epoch_domain.append(x if x is not None else self.batch_domain[-1])
-            self._running_weighted_sum = 0.
-            self._total_weighting = 0.
+            self._running_weighted_sum = 0.0
+            self._total_weighting = 0.0
             self._cnt_since_epoch = 0
 
     def to_dict(self) -> Dict[str, ndarray]:
@@ -129,15 +131,19 @@ class LiveMetric:
         'running_weighted_sum' -> float
         'name' -> str
         """
-        out = {attr: getattr(self, attr)
-               for attr in ("batch_data", "epoch_data", "epoch_domain")}
-        out.update((attr, getattr(self, "_" + attr))
-                   for attr in ("cnt_since_epoch",
-                                "total_weighting",
-                                "running_weighted_sum",
-                                "name",
-                                )
-                   )
+        out = {
+            attr: getattr(self, attr)
+            for attr in ("batch_data", "epoch_data", "epoch_domain")
+        }
+        out.update(
+            (attr, getattr(self, "_" + attr))
+            for attr in (
+                "cnt_since_epoch",
+                "total_weighting",
+                "running_weighted_sum",
+                "name",
+            )
+        )
         return out
 
     @classmethod
@@ -167,7 +173,11 @@ class LiveMetric:
         'name' -> str
         """
         array_keys = ("batch_data", "epoch_data", "epoch_domain")
-        running_stats_keys = ("running_weighted_sum", "total_weighting", "cnt_since_epoch")
+        running_stats_keys = (
+            "running_weighted_sum",
+            "total_weighting",
+            "cnt_since_epoch",
+        )
         required_keys = array_keys + running_stats_keys
 
         if not isinstance(metrics_dict, dict):
@@ -187,19 +197,13 @@ class LiveMetric:
             v = metrics_dict[k]
             if k in array_keys:
                 if not isinstance(v, np.ndarray) or v.ndim != 1:
-                    raise ValueError(
-                        "'{}' must map to a 1D numpy arrays".format(k)
-                    )
+                    raise ValueError("'{}' must map to a 1D numpy arrays".format(k))
                 v = v.tolist()
             else:
                 if not isinstance(v, Real):
-                    raise ValueError(
-                        "'{}' must map to a real number".format(k)
-                    )
+                    raise ValueError("'{}' must map to a real number".format(k))
                 if k == "cnt_since_epoch" and (not isinstance(v, Integral) or v < 0):
-                    raise ValueError(
-                        "{} must map to a non-negative value".format(k)
-                    )
+                    raise ValueError("{} must map to a non-negative value".format(k))
             setattr(out, "_" + k, v)
         return out
 
@@ -270,30 +274,37 @@ class LiveLogger:
             ...
         """
         from .xarray import metrics_to_xarrays
+
         if train_or_test not in ["train", "test"]:
             raise ValueError(
                 "`train_or_test` must be 'train' or 'test',"
-                "\nGot:{}".format(train_or_test))
+                "\nGot:{}".format(train_or_test)
+            )
         metrics = self.train_metrics if train_or_test == "train" else self.test_metrics
         return metrics_to_xarrays(metrics)
 
     def to_dict(self):
-        return dict(train_metrics=self.train_metrics,
-                    test_metrics=self.test_metrics,
-                    num_train_epoch=self._num_train_epoch,
-                    num_train_batch=self._num_train_batch,
-                    num_test_batch=self._num_test_batch,
-                    num_test_epoch=self._num_test_epoch,
-                    )
+        return dict(
+            train_metrics=self.train_metrics,
+            test_metrics=self.test_metrics,
+            num_train_epoch=self._num_train_epoch,
+            num_train_batch=self._num_train_batch,
+            num_test_batch=self._num_test_batch,
+            num_test_epoch=self._num_test_epoch,
+        )
 
     @classmethod
     def from_dict(cls, logger_dict):
         new = cls()
         # initializing LiveMetrics and setting data
-        new._train_metrics.update((key, LiveMetric.from_dict(metric))
-                                  for key, metric in logger_dict["train_metrics"].items())
-        new._test_metrics.update((key, LiveMetric.from_dict(metric))
-                                 for key, metric in logger_dict["test_metrics"].items())
+        new._train_metrics.update(
+            (key, LiveMetric.from_dict(metric))
+            for key, metric in logger_dict["train_metrics"].items()
+        )
+        new._test_metrics.update(
+            (key, LiveMetric.from_dict(metric))
+            for key, metric in logger_dict["test_metrics"].items()
+        )
 
         for train_mode, stat_mode in product(["train", "test"], ["batch", "epoch"]):
             item = "num_{}_{}".format(train_mode, stat_mode)
@@ -314,9 +325,18 @@ class LiveLogger:
         metrics = sorted(set(self._train_metrics).union(set(self._test_metrics)))
         msg = "{}({})\n".format(type(self).__name__, ", ".join(metrics))
 
-        words = ("training batches", "training epochs", "testing batches", "testing epochs")
-        things = (self._num_train_batch, self._num_train_epoch,
-                  self._num_test_batch, self._num_test_epoch)
+        words = (
+            "training batches",
+            "training epochs",
+            "testing batches",
+            "testing epochs",
+        )
+        things = (
+            self._num_train_batch,
+            self._num_train_epoch,
+            self._num_test_batch,
+            self._num_test_epoch,
+        )
 
         for word, thing in zip(words, things):
             msg += "number of {word} set: {thing}\n".format(word=word, thing=thing)
@@ -387,7 +407,11 @@ class LiveLogger:
         # compute epoch-mean metrics
         for key in self._test_metrics:
             try:
-                x = self._train_metrics[key].batch_domain[-1] if self._train_metrics else None
+                x = (
+                    self._train_metrics[key].batch_domain[-1]
+                    if self._train_metrics
+                    else None
+                )
             except KeyError:
                 x = None
             self._test_metrics[key].set_epoch_datapoint(x)
