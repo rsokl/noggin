@@ -8,5 +8,6 @@ repos:
     rev: v2.1.0
     hooks:
     - id: flake8
-      args: [--ignore, "F811,D1,D205,D209,D213,D400,D401,D999,D202,E203,E501,W503"]
+      args: [--ignore, "F811,D1,D205,D209,D213,D400,D401,D999,D202,E203,E501,W503",
+      --exclude, "versioneer.py"]
 
