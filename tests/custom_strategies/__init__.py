@@ -1,19 +1,40 @@
+import pprint
 from collections import defaultdict
+from itertools import combinations
 from typing import Dict, Sequence, Tuple
 
 import numpy as np
+
+from matplotlib import colors
 
 import hypothesis.strategies as st
 import hypothesis.extra.numpy as hnp
 
 from liveplot.typing import LiveMetrics
 from liveplot.plotter import LiveLogger, LivePlot
-from itertools import combinations
+from liveplot.typing import ValidColor
 
-import pprint
+__all__ = [
+    "finite_arrays",
+    "choices",
+    "metric_dict",
+    "live_metrics",
+    "loggers",
+    "matplotlib_colors",
+]
 
 
-__all__ = ["finite_arrays", "choices", "metric_dict", "live_metrics", "loggers"]
+a_bunch_of_colors = list(colors.BASE_COLORS.keys())
+a_bunch_of_colors.extend(colors.BASE_COLORS.values())
+a_bunch_of_colors.extend(colors.CSS4_COLORS.keys())
+a_bunch_of_colors.extend(colors.CSS4_COLORS.values())
+a_bunch_of_colors.extend(["C{}".format(i) for i in range(10)])
+a_bunch_of_colors.append((1.0, 0.0, 0.0, 0.5))
+a_bunch_of_colors.append(None)
+
+
+def matplotlib_colors() -> st.SearchStrategy[ValidColor]:
+    return st.sampled_from(a_bunch_of_colors)
 
 
 def finite_arrays(size):
