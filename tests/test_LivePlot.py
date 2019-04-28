@@ -284,6 +284,14 @@ class LivePlotStateMachine(RuleBasedStateMachine):
         compare_all_metrics(self.plotter.train_metrics, new_plotter.train_metrics)
         compare_all_metrics(self.plotter.test_metrics, new_plotter.test_metrics)
 
+        assert isinstance(new_plotter._test_colors, type(self.plotter._test_colors))
+        assert self.plotter._test_colors == new_plotter._test_colors
+        assert self.plotter._test_colors[None] is new_plotter._test_colors[None]
+
+        assert isinstance(self.plotter._train_colors, type(new_plotter._train_colors))
+        assert self.plotter._train_colors == new_plotter._train_colors
+        assert self.plotter._train_colors[None] is new_plotter._train_colors[None]
+
     def teardown(self):
         if self.plotter is not None:
             fig, _ = self.plotter.plot_objects()

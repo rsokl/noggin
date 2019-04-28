@@ -217,8 +217,8 @@ class LivePlot(LiveLogger):
             dict(
                 refresh=self.refresh,
                 pltkwargs=self._pltkwargs,
-                train_colors=self._train_colors,
-                test_colors=self._test_colors,
+                train_colors=dict(self._train_colors),
+                test_colors=dict(self._test_colors),
                 metric_names=self._metrics,
             )
         )
@@ -245,6 +245,12 @@ class LivePlot(LiveLogger):
         for attr in ("pltkwargs", "train_colors", "test_colors"):
             setattr(new, "_" + attr, plotter_dict[attr])
 
+        train_colors = defaultdict(lambda: None)
+        test_colors = defaultdict(lambda: None)
+        train_colors.update(new._train_colors)
+        test_colors.update(new._test_colors)
+        new._train_colors = train_colors
+        new._test_colors = test_colors
         return new
 
     def set_train_batch(
