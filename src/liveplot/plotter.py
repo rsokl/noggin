@@ -56,6 +56,7 @@ class LivePlot(LiveLogger):
         """ Set the refresh rate (per second). A negative refresh rate
             turns off static plotting."""
         assert isinstance(value, Real)
+        # TODO: Proper input validation
         self._refresh = 0.001 if 0 <= value < 0.001 else value
         self._liveplot = self._refresh >= 0.0 and "nbAgg" in self._backend
 
@@ -289,21 +290,6 @@ class LivePlot(LiveLogger):
                     (key, LiveMetric(key)) for key in metrics if key in self._metrics
                 )
 
-            for key, metric in self._train_metrics.items():
-                try:
-                    ax = self._axis_mapping[key]
-                    metric.batch_line, = ax.plot(
-                        [],
-                        [],
-                        label="train",
-                        color=self._train_colors.get(key),
-                        **self._batch_ax
-                    )
-                    ax.set_title(key)
-                    ax.legend()
-                except KeyError:
-                    pass
-
         # record each incoming batch metric
         for key, value in metrics.items():
             try:
@@ -320,16 +306,6 @@ class LivePlot(LiveLogger):
         """
         Compute the epoch-level train statistics and plot the data point.
         """
-        if not self._num_train_epoch:
-            # initialize batch-level plot objects
-            for key in self._train_metrics:
-                ax = self._axis_mapping[key]
-                batch_color = self._train_metrics[key].batch_line.get_color()
-                self._train_metrics[key].epoch_line, = ax.plot(
-                    [], [], color=batch_color, **self._epoch_ax
-                )
-                ax.legend(**self._legend)
-
         # compute epoch-mean metrics
         for key in self._train_metrics:
             self._train_metrics[key].set_epoch_datapoint()
@@ -362,7 +338,7 @@ class LivePlot(LiveLogger):
                     "\nThe following testing metrics are not registered for live-plotting:\n\t"
                     + "\n\t"
                 )
-                warnings.warn(cleandoc(msg.join(sorted(unreg_metrics))))
+                warnings.warn(cleandoc(msg + "\n\t".join(sorted(unreg_metrics))))
 
         # record each incoming batch metric
         for key, value in metrics.items():
@@ -379,22 +355,6 @@ class LivePlot(LiveLogger):
         """
         if not self._num_test_epoch:
             self._init_plot_window()
-
-            # initialize epoch-level plot objects
-            for key, metric in self._test_metrics.items():
-                try:
-                    ax = self._axis_mapping[key]
-                    metric.epoch_line, = ax.plot(
-                        [],
-                        [],
-                        label="test",
-                        color=self._test_colors.get(key),
-                        **self._epoch_ax
-                    )
-                    ax.set_title(key)
-                    ax.legend(**self._legend)
-                except KeyError:
-                    pass
 
         # compute epoch-mean metrics
         for key in self._test_metrics:
@@ -454,6 +414,20 @@ class LivePlot(LiveLogger):
         # plot update all train/test line objects with latest x/y data
         for i, mode_metrics in enumerate([self._train_metrics, self._test_metrics]):
             for key, livedata in mode_metrics.items():
+                if livedata._batch_data and livedata.batch_line is None:
+                    try:
+                        ax = self._axis_mapping[key]
+                        livedata.batch_line, = ax.plot(
+                            [],
+                            [],
+                            label="train",
+                            color=self._train_colors.get(key),
+                            **self._batch_ax
+                        )
+                        ax.set_title(key)
+                        ax.legend()
+                    except KeyError:
+                        pass
 
                 if self._plot_batch and livedata.batch_line is not None:
                     livedata.batch_line.set_xdata(livedata.batch_domain)
@@ -462,6 +436,31 @@ class LivePlot(LiveLogger):
                         livedata.batch_line.set_label(
                             "train: {:.2e}".format(livedata._epoch_data[-1])
                         )
+
+                if i == 0 and livedata.epoch_line is None:
+                    # initialize batch-level plot objects
+                    ax = self._axis_mapping[key]
+                    batch_color = self._train_metrics[key].batch_line.get_color()
+                    livedata.epoch_line, = ax.plot(
+                        [], [], color=batch_color, **self._epoch_ax
+                    )
+                    ax.legend(**self._legend)
+
+                # initialize epoch-level plot objects
+                if i == 1 and livedata.epoch_line is None:
+                    try:
+                        ax = self._axis_mapping[key]
+                        livedata.epoch_line, = ax.plot(
+                            [],
+                            [],
+                            label="test",
+                            color=self._test_colors.get(key),
+                            **self._epoch_ax
+                        )
+                        ax.set_title(key)
+                        ax.legend(**self._legend)
+                    except KeyError:
+                        pass
 
                 if livedata.epoch_line is not None:
                     livedata.epoch_line.set_xdata(livedata._epoch_domain)
