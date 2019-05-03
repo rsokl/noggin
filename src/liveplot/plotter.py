@@ -271,7 +271,6 @@ class LivePlot(LiveLogger):
 
             plot : bool
                 If True, plot the batch-metrics (adhering to the refresh rate)"""
-        self._plot_batch = plot
 
         if not self._num_train_batch:
             self._init_plot_window()
@@ -284,23 +283,15 @@ class LivePlot(LiveLogger):
                 )
                 warnings.warn(cleandoc(msg.join(sorted(unreg_metrics))))
 
-            if not self._train_metrics:
-                # initialize batch-level plot objects
-                self._train_metrics.update(
-                    (key, LiveMetric(key)) for key in metrics if key in self._metrics
-                )
+        super().set_train_batch(
+            {k: v for k, v in metrics.items() if k in self._metrics},
+            batch_size=batch_size,
+        )
 
-        # record each incoming batch metric
-        for key, value in metrics.items():
-            try:
-                self._train_metrics[key].add_datapoint(value, weighting=batch_size)
-            except KeyError:
-                pass
+        self._plot_batch = plot
 
         if self._plot_batch:
             self._do_liveplot()
-
-        self._num_train_batch += 1
 
     def plot_train_epoch(self):
         """
