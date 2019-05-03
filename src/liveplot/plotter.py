@@ -5,17 +5,14 @@ import importlib
 import numpy as np
 from inspect import cleandoc
 from collections import OrderedDict, defaultdict
-import warnings
-
-from liveplot.utils import check_valid_color
-from liveplot.logger import LiveMetric, LiveLogger
-from liveplot.typing import Metrics
-
+from warnings import warn
 from typing import Union, Dict, Tuple, Optional
 
 from matplotlib.pyplot import Figure, Axes
 
-from warnings import warn
+from liveplot.utils import check_valid_color
+from liveplot.logger import LiveMetric, LiveLogger
+from liveplot.typing import Metrics
 
 
 __all__ = ["LivePlot"]
@@ -281,7 +278,7 @@ class LivePlot(LiveLogger):
                     "\nThe following training metrics are not registered for live-plotting:\n\t"
                     + "\n\t"
                 )
-                warnings.warn(cleandoc(msg.join(sorted(unreg_metrics))))
+                warn(cleandoc(msg.join(sorted(unreg_metrics))))
 
         super().set_train_batch(
             {k: v for k, v in metrics.items() if k in self._metrics},
@@ -297,12 +294,8 @@ class LivePlot(LiveLogger):
         """
         Compute the epoch-level train statistics and plot the data point.
         """
-        # compute epoch-mean metrics
-        for key in self._train_metrics:
-            self._train_metrics[key].set_epoch_datapoint()
-
+        super().set_train_epoch()
         self._do_liveplot()
-        self._num_train_epoch += 1
 
     def set_test_batch(self, metrics: Dict[str, Real], batch_size: Integral):
         """ Provide the batch-level metric values to be recorded, and (optionally) plotted.
@@ -319,26 +312,18 @@ class LivePlot(LiveLogger):
             """
         # initialize live plot objects for testing
         if not self._test_metrics:
-            self._test_metrics.update(
-                (key, LiveMetric(key)) for key in metrics if key in self._metrics
-            )
-
             unreg_metrics = set(metrics).difference(self._metrics)
             if unreg_metrics:
                 msg = (
                     "\nThe following testing metrics are not registered for live-plotting:\n\t"
                     + "\n\t"
                 )
-                warnings.warn(cleandoc(msg + "\n\t".join(sorted(unreg_metrics))))
+                warn(cleandoc(msg + "\n\t".join(sorted(unreg_metrics))))
 
-        # record each incoming batch metric
-        for key, value in metrics.items():
-            try:
-                self._test_metrics[key].add_datapoint(value, weighting=batch_size)
-            except KeyError:
-                pass
-
-        self._num_test_batch += 1
+        super().set_test_batch(
+            {k: v for k, v in metrics.items() if k in self._metrics},
+            batch_size=batch_size,
+        )
 
     def plot_test_epoch(self):
         """
@@ -347,20 +332,8 @@ class LivePlot(LiveLogger):
         if not self._num_test_epoch:
             self._init_plot_window()
 
-        # compute epoch-mean metrics
-        for key in self._test_metrics:
-            try:
-                x = (
-                    self._train_metrics[key].batch_domain[-1]
-                    if self._train_metrics
-                    else None
-                )
-            except KeyError:
-                x = None
-            self._test_metrics[key].set_epoch_datapoint(x)
-
+        super().set_test_epoch()
         self._do_liveplot()
-        self._num_test_epoch += 1
 
     def _init_plot_window(self):
         if self._pyplot is None or self._fig is not None:
@@ -405,7 +378,7 @@ class LivePlot(LiveLogger):
         # plot update all train/test line objects with latest x/y data
         for i, mode_metrics in enumerate([self._train_metrics, self._test_metrics]):
             for key, livedata in mode_metrics.items():
-                if livedata._batch_data and livedata.batch_line is None:
+                if i == 0 and livedata._batch_data and livedata.batch_line is None:
                     try:
                         ax = self._axis_mapping[key]
                         livedata.batch_line, = ax.plot(
