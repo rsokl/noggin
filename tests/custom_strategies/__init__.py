@@ -161,8 +161,8 @@ def plotters(draw) -> st.SearchStrategy[LivePlot]:
     refresh = draw(st.one_of(st.just(-1), st.floats(0, 2)))
     metric_names = sorted(set(train_metrics).union(set(test_metrics)))
     nrows = len(metric_names)
-    train_colors = {k: None for k in train_metrics}
-    test_colors = {k: None for k in test_metrics}
+    train_colors = {k: draw(matplotlib_colors()) for k in train_metrics}
+    test_colors = {k: draw(matplotlib_colors()) for k in test_metrics}
 
     return LivePlot.from_dict(
         dict(
