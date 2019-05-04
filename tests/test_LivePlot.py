@@ -1,28 +1,21 @@
+from tests.base_state_machines import LivePlotStateMachine
 from contextlib import contextmanager
 from string import ascii_letters
-from collections import OrderedDict
 
 import numpy as np
 from numpy.testing import assert_array_equal
 from numpy import ndarray
 
-from hypothesis import settings, assume, note, given
+from hypothesis import given
 import hypothesis.strategies as st
-from hypothesis.strategies import SearchStrategy
-from hypothesis.stateful import (
-    RuleBasedStateMachine,
-    initialize,
-    rule,
-    precondition,
-    invariant,
-)
+from hypothesis.stateful import rule, precondition, invariant
 
-from matplotlib.pyplot import Figure, Axes, close
+from matplotlib.pyplot import Figure, Axes
+from matplotlib.pyplot import close
 
 import pytest
 
 from liveplot import save_metrics, load_metrics
-from liveplot.logger import LiveLogger
 from liveplot.plotter import LivePlot
 
 from tests.utils import compare_all_metrics
@@ -85,6 +78,21 @@ def test_trivial_case():
     )
 
 
+@given(refresh=st.floats(min_value=-1, max_value=100, exclude_min=True))
+def test_init_refresh(refresh: float):
+    plotter = LivePlot("loss", refresh=refresh)
+    refresh = 0.001 if 0 <= refresh < 0.001 else refresh
+    assert plotter.refresh == refresh
+
+
+@given(refresh=st.floats(min_value=-1, max_value=100, exclude_min=True))
+def test_setter_refresh(refresh: float):
+    plotter = LivePlot("loss")
+    plotter.refresh = refresh
+    refresh = 0.001 if 0 <= refresh < 0.001 else refresh
+    assert plotter.refresh == refresh
+
+
 @given(colors=st.lists(cst.matplotlib_colors(), min_size=1, max_size=4))
 def test_flat_color_syntax(colors: list):
     metric_names = ascii_letters[: len(colors)]
@@ -92,71 +100,15 @@ def test_flat_color_syntax(colors: list):
     assert p.metric_colors == {n: dict(train=c) for n, c in zip(metric_names, colors)}
 
 
-@settings(deadline=None)
-class LivePlotStateMachine(RuleBasedStateMachine):
+class LivePlotStateChecker(LivePlotStateMachine):
     """Ensures that:
     - LivePlot and LiveLogger log metrics information identically.
     - Calling methods do not have unintended side-effects
     - Metric IO is self-consistent
-    - Plot objects are produced as expected"""
+    - Plot objects are produced as expected
 
-    def __init__(self):
-        super().__init__()
-        self.train_metric_names = []
-        self.test_metric_names = []
-        self.train_batch_set = False
-        self.test_batch_set = False
-        self.plotter = None  # type: LivePlot
-        self.logger = None  # type: LiveLogger
-
-    @initialize(
-        num_train_metrics=st.integers(0, 3),
-        num_test_metrics=st.integers(0, 3),
-        data=st.data(),
-    )
-    def choose_metrics(
-        self, num_train_metrics: int, num_test_metrics: int, data: st.SearchStrategy
-    ):
-        assume(num_train_metrics + num_test_metrics > 0)
-        self.train_metric_names = ["metric-a", "metric-b", "metric-c"][
-            :num_train_metrics
-        ]
-
-        self.test_metric_names = ["metric-a", "metric-b", "metric-c"][:num_test_metrics]
-        train_colors = data.draw(
-            st.lists(
-                cst.matplotlib_colors(),
-                min_size=num_train_metrics,
-                max_size=num_train_metrics,
-            ),
-            label="train_colors",
-        )
-
-        test_colors = data.draw(
-            st.lists(
-                cst.matplotlib_colors(),
-                min_size=num_test_metrics,
-                max_size=num_test_metrics,
-            ),
-            label="test_colors",
-        )
-
-        metrics = OrderedDict(
-            (n, dict())
-            for n in sorted(set(self.train_metric_names + self.test_metric_names))
-        )
-
-        for metric, color in zip(self.train_metric_names, train_colors):
-            metrics[metric]["train"] = color
-
-        for metric, color in zip(self.test_metric_names, test_colors):
-            metrics[metric]["test"] = color
-
-        self.plotter = LivePlot(metrics, refresh=-1)
-        self.logger = LiveLogger()
-
-        note("Train metric names: {}".format(self.train_metric_names))
-        note("Test metric names: {}".format(self.test_metric_names))
+    Note that this inherits from the base rule-based state machine for
+    `LivePlot`"""
 
     @rule()
     def get_repr(self):
@@ -180,38 +132,6 @@ class LivePlotStateMachine(RuleBasedStateMachine):
                 "A sole `Axes` instance is expected as the plot "
                 "object when only one metric is specified"
             )
-
-    @rule(batch_size=st.integers(0, 2), data=st.data(), plot=st.booleans())
-    def set_train_batch(self, batch_size: int, data: SearchStrategy, plot: bool):
-        self.train_batch_set = True
-
-        batch = {
-            name: data.draw(st.floats(-1, 1), label=name)
-            for name in self.train_metric_names
-        }
-        self.logger.set_train_batch(metrics=batch, batch_size=batch_size)
-        self.plotter.set_train_batch(metrics=batch, batch_size=batch_size, plot=plot)
-
-    @rule()
-    def set_train_epoch(self):
-        self.logger.set_train_epoch()
-        self.plotter.plot_train_epoch()
-
-    @rule(batch_size=st.integers(0, 2), data=st.data())
-    def set_test_batch(self, batch_size: int, data: SearchStrategy):
-        self.test_batch_set = True
-
-        batch = {
-            name: data.draw(st.floats(-1, 1), label=name)
-            for name in self.test_metric_names
-        }
-        self.logger.set_test_batch(metrics=batch, batch_size=batch_size)
-        self.plotter.set_test_batch(metrics=batch, batch_size=batch_size)
-
-    @rule()
-    def set_test_epoch(self):
-        self.logger.set_test_epoch()
-        self.plotter.plot_test_epoch()
 
     @precondition(lambda self: self.train_batch_set)
     @invariant()
@@ -292,14 +212,7 @@ class LivePlotStateMachine(RuleBasedStateMachine):
         assert self.plotter._train_colors == new_plotter._train_colors
         assert self.plotter._train_colors[None] is new_plotter._train_colors[None]
 
-    def teardown(self):
-        if self.plotter is not None:
-            fig, _ = self.plotter.plot_objects()
-            if fig is not None:
-                close(fig)
-        super().teardown()
-
 
 @pytest.mark.usefixtures("cleandir")
-class TestLivePlot(LivePlotStateMachine.TestCase):
+class TestLivePlot(LivePlotStateChecker.TestCase):
     pass
