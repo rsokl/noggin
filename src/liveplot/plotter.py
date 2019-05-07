@@ -181,8 +181,8 @@ class LivePlot(LiveLogger):
         if len(self._metrics) > ncols * nrows:
             nrows = len(self._metrics)
 
-        self._refresh = None
-        self._liveplot = None
+        self._refresh = None  # type: Optional[float]
+        self._liveplot = None  # type: Optional[bool]
         self.refresh = refresh  # sets _refresh and _liveplot
 
         self._pltkwargs = dict(figsize=figsize, nrows=nrows, ncols=ncols)
@@ -200,19 +200,19 @@ class LivePlot(LiveLogger):
         sum(check_valid_color(c) for c in self._train_colors.values())
         sum(check_valid_color(c) for c in self._test_colors.values())
 
-        self._batch_ax = dict(ls="-", alpha=0.5)  # plot settings for batch-data
-        self._epoch_ax = dict(
-            ls="-", marker="o", markersize=6, lw=3
-        )  # plot settings for epoch-data
+        # plot-settings for batch and epoch data
+        self._batch_ax = dict(ls="-", alpha=0.5)
+        self._epoch_ax = dict(ls="-", marker="o", markersize=6, lw=3)
         self._legend = dict()
-        self._axis_mapping = OrderedDict()  # metric name -> matplotlib axis object
-        self._plot_batch = True
+
+        # metric name -> matplotlib axis object
+        self._axis_mapping = OrderedDict()  # type: Dict[str, Axes]
+
+        self._plot_batch = True  # type: bool
         self._fig = None  # type: Optional[Figure]
         self._axes = None  # type: Union[None, Axes, np.ndarray]
 
-        # attribute initialization
-        self._start_time = None  # float: Time upon entering the training session
-        self._last_plot_time = None  # float: Time of last plot
+        self._last_plot_time = None  # type: Optional[float]
 
     def to_dict(self):
         out = super().to_dict()
@@ -344,15 +344,13 @@ class LivePlot(LiveLogger):
         if self._pyplot is None or self._fig is not None:
             return None
 
-        if self._start_time is None:
-            self._start_time = time.time()
-
         self._fig, self._axes = self._pyplot.subplots(sharex=True, **self._pltkwargs)
         self._fig.tight_layout()
 
         if len(self._metrics) == 1:
             self._axes = np.array([self._axes])
 
+        # remove unused axes from plot grid
         axis_offset = self._axes.size - len(self._metrics)
         for i, ax in zip(range(axis_offset), self._axes.flat[::-1]):
             ax.remove()
@@ -362,6 +360,7 @@ class LivePlot(LiveLogger):
         for ax in self._axes.flat:
             ax.grid(True)
 
+        # Add x-label to bottom-plot for each column
         for i in range(min(self._pltkwargs["ncols"], len(self._metrics))):
             self._axes.flat[-(i + 1 + axis_offset)].set_xlabel("Number of iterations")
 
