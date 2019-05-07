@@ -364,15 +364,6 @@ class LivePlot(LiveLogger):
         for i in range(min(self._pltkwargs["ncols"], len(self._metrics))):
             self._axes.flat[-(i + 1 + axis_offset)].set_xlabel("Number of iterations")
 
-    def _resize(self):
-        for ax in self._axes.flat:
-            ax.relim()
-            ax.autoscale_view()
-
-    def _update_text(self):
-        for ax in self._axis_mapping.values():
-            ax.legend()
-
     def plot(self):
         """ Plot data, irrespective of the refresh rate. This should only
            be called if you are generating a static plot."""
@@ -451,6 +442,15 @@ class LivePlot(LiveLogger):
             self._fig.canvas.draw()
 
         self._last_plot_time = time.time()
+
+    def _resize(self):
+        for ax in self._axes.flat:
+            ax.relim()
+            ax.autoscale_view()
+
+    def _update_text(self):
+        for ax in self._axis_mapping.values():
+            ax.legend()
 
     def show(self):
         """ Calls `matplotlib.pyplot.show()`. For visualizing a static-plot"""
