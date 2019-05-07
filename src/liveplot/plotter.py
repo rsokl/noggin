@@ -18,6 +18,11 @@ from liveplot.typing import Metrics
 __all__ = ["LivePlot"]
 
 
+def _filter_data(seq, cap=2000):
+    step = max(len(seq) // cap, 1)
+    return seq[::step]
+
+
 class LivePlot(LiveLogger):
     """ Plots batch-level and epoch-level summary statistics of the training and
         testing metrics of a model during a session.
@@ -375,70 +380,71 @@ class LivePlot(LiveLogger):
         if self._pyplot is None:
             return None
 
-        # plot update all train/test line objects with latest x/y data
-        for mode, mode_metrics in zip(
-            ("train", "test"), [self._train_metrics, self._test_metrics]
-        ):
-            for key, livedata in mode_metrics.items():
-                if (
-                    mode == "train"
-                    and livedata._batch_data
-                    and livedata.batch_line is None
-                ):
-                    try:
-                        ax = self._axis_mapping[key]
-                        livedata.batch_line, = ax.plot(
-                            [],
-                            [],
-                            label="train",
-                            color=self._train_colors.get(key),
-                            **self._batch_ax
-                        )
-                        ax.set_title(key)
-                        ax.legend()
-                    except KeyError:
-                        pass
-
-                if self._plot_batch and livedata.batch_line is not None:
-                    livedata.batch_line.set_xdata(livedata.batch_domain)
-                    livedata.batch_line.set_ydata(livedata._batch_data)
-                    if livedata._epoch_data:
-                        livedata.batch_line.set_label(
-                            "train: {:.2e}".format(livedata._epoch_data[-1])
-                        )
-
-                if mode == "train" and livedata.epoch_line is None:
-                    # initialize batch-level plot objects
+        # plot batch-level train metrics
+        for key, livedata in self._train_metrics.items():
+            if livedata._batch_data and livedata.batch_line is None:
+                try:
                     ax = self._axis_mapping[key]
-                    batch_color = self._train_metrics[key].batch_line.get_color()
-                    livedata.epoch_line, = ax.plot(
-                        [], [], color=batch_color, **self._epoch_ax
+                    livedata.batch_line, = ax.plot(
+                        [],
+                        [],
+                        label="train",
+                        color=self._train_colors.get(key),
+                        **self._batch_ax
                     )
+                    ax.set_title(key)
+                    ax.legend()
+                except KeyError:
+                    pass
+
+            if self._plot_batch:
+                livedata.batch_line.set_xdata(_filter_data(livedata.batch_domain))
+                livedata.batch_line.set_ydata(_filter_data(livedata._batch_data))
+                if livedata._epoch_data:
+                    livedata.batch_line.set_label(
+                        "train: {:.2e}".format(livedata._epoch_data[-1])
+                    )
+
+        # plot epoch-level train metrics
+        for key, livedata in self._train_metrics.items():
+            if livedata.epoch_line is None:
+                # initialize batch-level plot objects
+                ax = self._axis_mapping[key]
+                batch_color = self._train_metrics[key].batch_line.get_color()
+                livedata.epoch_line, = ax.plot(
+                    [], [], color=batch_color, **self._epoch_ax
+                )
+                ax.legend(**self._legend)
+
+            if livedata.epoch_line is not None:
+                livedata.epoch_line.set_xdata(livedata._epoch_domain)
+                livedata.epoch_line.set_ydata(livedata._epoch_data)
+
+        # plot epoch-level test metrics
+        for key, livedata in self._test_metrics.items():
+            # initialize epoch-level plot objects
+            if livedata.epoch_line is None:
+                try:
+                    ax = self._axis_mapping[key]
+                    livedata.epoch_line, = ax.plot(
+                        [],
+                        [],
+                        label="test",
+                        color=self._test_colors.get(key),
+                        **self._epoch_ax
+                    )
+                    ax.set_title(key)
                     ax.legend(**self._legend)
+                except KeyError:
+                    pass
 
-                # initialize epoch-level plot objects
-                if mode == "test" and livedata.epoch_line is None:
-                    try:
-                        ax = self._axis_mapping[key]
-                        livedata.epoch_line, = ax.plot(
-                            [],
-                            [],
-                            label="test",
-                            color=self._test_colors.get(key),
-                            **self._epoch_ax
-                        )
-                        ax.set_title(key)
-                        ax.legend(**self._legend)
-                    except KeyError:
-                        pass
-
-                if livedata.epoch_line is not None:
-                    livedata.epoch_line.set_xdata(livedata._epoch_domain)
-                    livedata.epoch_line.set_ydata(livedata._epoch_data)
-                    if mode == "test" and livedata._epoch_data:
-                        livedata.epoch_line.set_label(
-                            "test: " + "{:.2e}".format(livedata._epoch_data[-1])
-                        )
+            if livedata.epoch_line is not None:
+                livedata.epoch_line.set_xdata(livedata._epoch_domain)
+                livedata.epoch_line.set_ydata(livedata._epoch_data)
+                if livedata._epoch_data:
+                    livedata.epoch_line.set_label(
+                        "test: " + "{:.2e}".format(livedata._epoch_data[-1])
+                    )
 
         self._update_text()
         self._resize()
