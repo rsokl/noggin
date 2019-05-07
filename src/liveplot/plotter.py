@@ -376,9 +376,15 @@ class LivePlot(LiveLogger):
             return None
 
         # plot update all train/test line objects with latest x/y data
-        for i, mode_metrics in enumerate([self._train_metrics, self._test_metrics]):
+        for mode, mode_metrics in zip(
+            ("train", "test"), [self._train_metrics, self._test_metrics]
+        ):
             for key, livedata in mode_metrics.items():
-                if i == 0 and livedata._batch_data and livedata.batch_line is None:
+                if (
+                    mode == "train"
+                    and livedata._batch_data
+                    and livedata.batch_line is None
+                ):
                     try:
                         ax = self._axis_mapping[key]
                         livedata.batch_line, = ax.plot(
@@ -401,7 +407,7 @@ class LivePlot(LiveLogger):
                             "train: {:.2e}".format(livedata._epoch_data[-1])
                         )
 
-                if i == 0 and livedata.epoch_line is None:
+                if mode == "train" and livedata.epoch_line is None:
                     # initialize batch-level plot objects
                     ax = self._axis_mapping[key]
                     batch_color = self._train_metrics[key].batch_line.get_color()
@@ -411,7 +417,7 @@ class LivePlot(LiveLogger):
                     ax.legend(**self._legend)
 
                 # initialize epoch-level plot objects
-                if i == 1 and livedata.epoch_line is None:
+                if mode == "test" and livedata.epoch_line is None:
                     try:
                         ax = self._axis_mapping[key]
                         livedata.epoch_line, = ax.plot(
@@ -429,7 +435,7 @@ class LivePlot(LiveLogger):
                 if livedata.epoch_line is not None:
                     livedata.epoch_line.set_xdata(livedata._epoch_domain)
                     livedata.epoch_line.set_ydata(livedata._epoch_data)
-                    if i == 1 and livedata._epoch_data:
+                    if mode == "test" and livedata._epoch_data:
                         livedata.epoch_line.set_label(
                             "test: " + "{:.2e}".format(livedata._epoch_data[-1])
                         )
