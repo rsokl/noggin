@@ -14,6 +14,7 @@ def do_setup():
         package_dir={"": "src"},
         packages=find_packages(where="src", exclude=["tests", "tests.*"]),
         python_requires=">=3.6",
+        install_requires=["numpy>=1.12", "matplotlib>=2.0", "xarray>=0.1"],
     )
 
 
