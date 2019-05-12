@@ -1,26 +1,22 @@
-from tests.utils import compare_all_metrics
-
-from liveplot import save_metrics, load_metrics
-from liveplot.logger import LiveLogger, LiveMetric
-
 from typing import List
 
-from numpy.testing import assert_array_equal
-
 import hypothesis.strategies as st
-from hypothesis.strategies import SearchStrategy
+import numpy as np
+import pytest
+from hypothesis import note
 from hypothesis.stateful import (
     RuleBasedStateMachine,
     initialize,
-    rule,
-    precondition,
     invariant,
+    precondition,
+    rule,
 )
-from hypothesis import note
+from hypothesis.strategies import SearchStrategy
+from numpy.testing import assert_array_equal
 
-import numpy as np
-
-import pytest
+from liveplot import load_metrics, save_metrics
+from liveplot.logger import LiveLogger, LiveMetric
+from tests.utils import compare_all_metrics
 
 
 def test_trivial_case():

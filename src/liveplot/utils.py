@@ -1,6 +1,5 @@
 from liveplot.typing import ValidColor
 
-
 __all__ = ["check_valid_color"]
 
 

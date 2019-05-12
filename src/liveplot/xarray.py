@@ -10,16 +10,15 @@ except ImportError:
         "The Python package `xarray` must be installed "
         "in order to access this functionality in liveplot."
     )
-from typing import Dict, Union, Tuple
 from collections import namedtuple
+from typing import Dict, Tuple, Union
 
 import numpy as np
-
 from numpy import ndarray
-from liveplot.plotter import LivePlot
-from liveplot.logger import LiveLogger
 from xarray import Dataset
 
+from liveplot.logger import LiveLogger
+from liveplot.plotter import LivePlot
 
 LiveObject = Union[LivePlot, LiveLogger]
 

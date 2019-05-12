@@ -1,19 +1,18 @@
-from numbers import Integral, Real
-from itertools import product
-import time
 import importlib
-import numpy as np
-from inspect import cleandoc
+import time
 from collections import OrderedDict, defaultdict
+from inspect import cleandoc
+from itertools import product
+from numbers import Integral, Real
+from typing import Dict, Optional, Tuple, Union
 from warnings import warn
-from typing import Union, Dict, Tuple, Optional
 
-from matplotlib.pyplot import Figure, Axes
+import numpy as np
+from matplotlib.pyplot import Axes, Figure
 
-from liveplot.utils import check_valid_color
-from liveplot.logger import LiveMetric, LiveLogger
+from liveplot.logger import LiveLogger, LiveMetric
 from liveplot.typing import Metrics
-
+from liveplot.utils import check_valid_color
 
 __all__ = ["LivePlot"]
 

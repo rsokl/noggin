@@ -1,7 +1,7 @@
-from numpy import ndarray
-
-from typing import Dict, Union, Sequence
 from numbers import Real
+from typing import Dict, Sequence, Union
+
+from numpy import ndarray
 
 ValidColor = Union[str, Real, Sequence[Real], None]
 Metrics = Union[

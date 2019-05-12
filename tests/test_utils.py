@@ -1,9 +1,8 @@
-from tests.utils import err_msg, compare_all_metrics
-from liveplot.utils import check_valid_color
-
 import numpy as np
-
 import pytest
+
+from liveplot.utils import check_valid_color
+from tests.utils import compare_all_metrics, err_msg
 
 
 @pytest.mark.parametrize(

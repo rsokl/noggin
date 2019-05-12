@@ -1,17 +1,15 @@
-from contextlib import contextmanager
 from collections import OrderedDict
+from contextlib import contextmanager
 
-from hypothesis import settings, assume, note
 import hypothesis.strategies as st
-from hypothesis.strategies import SearchStrategy
+from hypothesis import assume, note, settings
 from hypothesis.stateful import RuleBasedStateMachine, initialize, rule
-
+from hypothesis.strategies import SearchStrategy
 from matplotlib.pyplot import close
 
+import tests.custom_strategies as cst
 from liveplot.logger import LiveLogger
 from liveplot.plotter import LivePlot
-
-import tests.custom_strategies as cst
 
 
 @contextmanager
