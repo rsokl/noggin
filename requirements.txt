@@ -1,3 +1,0 @@
-numpy >= 1.12
-matplotlib >= 2.0
-xarray >= 0.10
