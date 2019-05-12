@@ -1,25 +1,20 @@
-from tests.base_state_machines import LivePlotStateMachine
 from contextlib import contextmanager
 from string import ascii_letters
 
-import numpy as np
-from numpy.testing import assert_array_equal
-from numpy import ndarray
-
-from hypothesis import given
 import hypothesis.strategies as st
-from hypothesis.stateful import rule, precondition, invariant
-
-from matplotlib.pyplot import Figure, Axes
-from matplotlib.pyplot import close
-
+import numpy as np
 import pytest
+from hypothesis import given
+from hypothesis.stateful import invariant, precondition, rule
+from matplotlib.pyplot import Axes, Figure, close
+from numpy import ndarray
+from numpy.testing import assert_array_equal
 
-from liveplot import save_metrics, load_metrics
-from liveplot.plotter import LivePlot
-
-from tests.utils import compare_all_metrics
 import tests.custom_strategies as cst
+from liveplot import load_metrics, save_metrics
+from liveplot.plotter import LivePlot
+from tests.base_state_machines import LivePlotStateMachine
+from tests.utils import compare_all_metrics
 
 
 @contextmanager

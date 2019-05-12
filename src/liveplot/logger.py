@@ -2,13 +2,12 @@
 Provides functionality for logging training and testing batch-level & epoch-level metrics
 """
 
-from numbers import Integral, Real
-from itertools import product
 from collections import OrderedDict
-from typing import Dict, Optional, Any, Tuple
+from itertools import product
+from numbers import Integral, Real
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
-
 from numpy import ndarray
 
 try:

@@ -2,11 +2,10 @@ from itertools import combinations
 
 from hypothesis import given
 
+import tests.custom_strategies as cst
 from liveplot.logger import LiveLogger, LiveMetric
 from liveplot.plotter import LivePlot
 from liveplot.utils import check_valid_color
-
-import tests.custom_strategies as cst
 
 
 @given(cst.choices("abcdefg", 3))

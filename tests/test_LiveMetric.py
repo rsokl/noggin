@@ -1,23 +1,20 @@
-from tests.utils import err_msg
+from typing import Any, Optional
 
-from liveplot.logger import LiveMetric
-
-from typing import Optional, Any
-
-import pytest
-
-import numpy as np
-from numpy.testing import assert_array_equal, assert_allclose
-
-from hypothesis import given
 import hypothesis.strategies as st
+import numpy as np
+import pytest
+from hypothesis import given
 from hypothesis.stateful import (
     RuleBasedStateMachine,
     initialize,
-    rule,
     invariant,
     precondition,
+    rule,
 )
+from numpy.testing import assert_allclose, assert_array_equal
+
+from liveplot.logger import LiveMetric
+from tests.utils import err_msg
 
 
 @given(name=st.sampled_from([1, None, np.array([1]), ["moo"]]))

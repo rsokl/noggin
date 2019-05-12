@@ -1,15 +1,13 @@
-from liveplot.xarray import metrics_to_xarrays
-from liveplot.typing import LiveMetrics
-from liveplot.logger import LiveLogger
-from liveplot.plotter import LivePlot
-
-import tests.custom_strategies as cst
-
 import numpy as np
+import pytest
+from hypothesis import given
 from numpy.testing import assert_array_equal
 
-from hypothesis import given
-import pytest
+import tests.custom_strategies as cst
+from liveplot.logger import LiveLogger
+from liveplot.plotter import LivePlot
+from liveplot.typing import LiveMetrics
+from liveplot.xarray import metrics_to_xarrays
 
 
 def check_batch_xarray(metrics_dict, metrics_xarray):

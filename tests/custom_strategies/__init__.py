@@ -3,16 +3,13 @@ from collections import defaultdict
 from itertools import combinations
 from typing import Dict, Sequence, Tuple
 
+import hypothesis.extra.numpy as hnp
+import hypothesis.strategies as st
 import numpy as np
-
 from matplotlib import colors
 
-import hypothesis.strategies as st
-import hypothesis.extra.numpy as hnp
-
-from liveplot.typing import LiveMetrics
 from liveplot.plotter import LiveLogger, LivePlot
-from liveplot.typing import ValidColor
+from liveplot.typing import LiveMetrics, ValidColor
 
 __all__ = [
     "finite_arrays",
