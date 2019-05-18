@@ -19,7 +19,7 @@ from tests.utils import compare_all_metrics
 
 
 @given(x=st.lists(st.text(), min_size=2).filter(lambda x: len(set(x)) != len(x)))
-def test_redundant_metrics(x: List[str]):
+def test_redundant_metrics_are_not_permitted(x: List[str]):
     """Ensures that redundant metrics are not permitted"""
     with pytest.raises(ValueError):
         LivePlot(x)
