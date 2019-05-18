@@ -1,9 +1,10 @@
+import tests.custom_strategies as cst
 from typing import List
 
 import hypothesis.strategies as st
 import numpy as np
 import pytest
-from hypothesis import note
+from hypothesis import note, given, settings
 from hypothesis.stateful import (
     RuleBasedStateMachine,
     initialize,
@@ -31,6 +32,18 @@ def test_trivial_case():
     assert_array_equal(
         logger.train_metrics["a"]["epoch_data"], np.array([1.0 / 2.0 + 3.0 / 2.0])
     )
+
+
+@settings(deadline=None)
+@given(logger=cst.loggers(), data=st.data())
+def test_set_batch_missing_metric(logger: LiveLogger, data: st.DataObject):
+    keys = list(logger.train_metrics) + list(logger.test_metrics)
+
+    missing_metrics = data.draw(
+        st.text().filter(lambda x: x not in set(keys)).map(lambda x: {x: 2})
+    )
+    logger.set_train_batch(metrics=missing_metrics, batch_size=1)
+    logger.set_test_batch(metrics=missing_metrics, batch_size=1)
 
 
 class LiveLoggerStateMachine(RuleBasedStateMachine):
