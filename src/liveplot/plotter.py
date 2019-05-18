@@ -71,7 +71,7 @@ class LivePlot(LiveLogger):
         if (
             not isinstance(size, Sequence)
             or len(size) != 2
-            or not all(isinstance(x, Real) and x >= 0 for x in size)
+            or not all(isinstance(x, Real) and x > 0 for x in size)
         ):
             raise ValueError(
                 f"`size` must be a length-2 sequence of "
