@@ -5,7 +5,7 @@ from hypothesis import given
 import tests.custom_strategies as cst
 from liveplot.logger import LiveLogger, LiveMetric
 from liveplot.plotter import LivePlot
-from liveplot.utils import check_valid_color
+from liveplot.plotter import _check_valid_color
 
 
 @given(cst.choices("abcdefg", 3))
@@ -40,4 +40,4 @@ def test_livemetrics(live_metrics: dict):
 
 @given(cst.matplotlib_colors())
 def test_colors(color):
-    check_valid_color(color)
+    _check_valid_color(color)
