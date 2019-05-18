@@ -1,31 +1,28 @@
 from collections.abc import Sequence
 from numbers import Real
 from string import ascii_letters
-from typing import Tuple
+from typing import List, Tuple
 
 import hypothesis.strategies as st
 import numpy as np
 import pytest
+import tests.custom_strategies as cst
 from hypothesis import given
 from hypothesis.stateful import invariant, precondition, rule
+from liveplot import load_metrics, save_metrics
+from liveplot.plotter import LivePlot
 from matplotlib.pyplot import Axes, Figure
 from numpy import ndarray
 from numpy.testing import assert_array_equal
-
-import tests.custom_strategies as cst
-from liveplot import load_metrics, save_metrics
-from liveplot.plotter import LivePlot
 from tests.base_state_machines import LivePlotStateMachine
 from tests.utils import compare_all_metrics
 
 
-def test_redundant_metrics():
+@given(x=st.lists(st.text(), min_size=2).filter(lambda x: len(set(x)) != len(x)))
+def test_redundant_metrics(x: List[str]):
     """Ensures that redundant metrics are not permitted"""
     with pytest.raises(ValueError):
-        LivePlot(["a", "b", "a"])
-
-    with pytest.raises(ValueError):
-        LivePlot(["a", "b", "a", "c", "c"])
+        LivePlot(x)
 
 
 @pytest.mark.parametrize(
