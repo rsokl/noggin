@@ -7,7 +7,7 @@ def do_setup():
     setup(
         version=versioneer.get_version(),
         cmdclass=versioneer.get_cmdclass(),
-        name="LivePlot",
+        name="liveplot",
         author="Ryan Soklaski",
         license="MIT",
         platforms=["Windows", "Linux", "Mac OS-X", "Unix"],
