@@ -468,6 +468,9 @@ class LivePlot(LiveLogger):
         self._last_plot_time = time.time()
 
     def _resize(self):
+        if self._axes is None:
+            return
+
         for ax in self._axes.flat:
             ax.relim()
             ax.autoscale_view()

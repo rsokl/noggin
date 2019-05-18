@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-from contextlib import contextmanager
 from numbers import Real
 from string import ascii_letters
 from typing import Tuple
@@ -9,7 +8,7 @@ import numpy as np
 import pytest
 from hypothesis import given
 from hypothesis.stateful import invariant, precondition, rule
-from matplotlib.pyplot import Axes, Figure, close
+from matplotlib.pyplot import Axes, Figure
 from numpy import ndarray
 from numpy.testing import assert_array_equal
 
@@ -18,14 +17,6 @@ from liveplot import load_metrics, save_metrics
 from liveplot.plotter import LivePlot
 from tests.base_state_machines import LivePlotStateMachine
 from tests.utils import compare_all_metrics
-
-
-@contextmanager
-def close_fig(fig):
-    try:
-        yield None
-    finally:
-        close(fig)
 
 
 def test_redundant_metrics():
@@ -49,6 +40,7 @@ def test_redundant_metrics():
         (3, dict(ncols=3), ndarray, (3,)),
     ],
 )
+@pytest.mark.usefixtures("killplots")
 def test_plot_grid(num_metrics, fig_layout, outer_type, shape):
     """Ensure that axes have the right type/shape for a given grid spec"""
     metric_names = list(ascii_letters[:num_metrics])
@@ -56,10 +48,9 @@ def test_plot_grid(num_metrics, fig_layout, outer_type, shape):
     fig, ax = LivePlot(metric_names, **fig_layout).plot_objects
 
     assert isinstance(fig, Figure)
-    with close_fig(fig):
-        assert isinstance(ax, outer_type)
-        if shape:
-            assert ax.shape == shape
+    assert isinstance(ax, outer_type)
+    if shape:
+        assert ax.shape == shape
 
 
 def test_trivial_case():
@@ -122,6 +113,10 @@ class LivePlotStateChecker(LivePlotStateMachine):
 
     Note that this inherits from the base rule-based state machine for
     `LivePlot`"""
+
+    @rule()
+    def plot(self):
+        self.plotter.plot()
 
     @rule()
     def get_repr(self):
@@ -236,6 +231,6 @@ class LivePlotStateChecker(LivePlotStateMachine):
         assert self.plotter._train_colors[None] is new_plotter._train_colors[None]
 
 
-@pytest.mark.usefixtures("cleandir")
+@pytest.mark.usefixtures("cleandir", "killplots")
 class TestLivePlot(LivePlotStateChecker.TestCase):
     pass
