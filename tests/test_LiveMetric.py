@@ -1,10 +1,12 @@
+from numbers import Real
+from random import Random
 from typing import Any, Optional
 
 import hypothesis.strategies as st
 import numpy as np
 import pytest
 import tests.custom_strategies as cst
-from hypothesis import given
+from hypothesis import given, settings, HealthCheck
 from hypothesis.stateful import (
     RuleBasedStateMachine,
     initialize,
@@ -47,11 +49,53 @@ def test_trivial_case():
 @pytest.mark.parametrize(
     "bad_input", [cst.everything_except(dict), st.just(dict(a_bad_key=1))]
 )
+@settings(suppress_health_check=[HealthCheck.too_slow])
 @given(data=st.data())
 def test_from_dict_input_validation(bad_input: st.SearchStrategy, data: st.DataObject):
     bad_input = data.draw(bad_input, label="bad_input")
     with pytest.raises((ValueError, TypeError)):
         LiveMetric.from_dict(bad_input)
+
+
+static_logger_dict = cst.live_metrics(min_num_metrics=1).example(
+    random=Random(0)
+)  # type: dict
+
+
+@pytest.mark.parametrize(
+    "bad_input",
+    [
+        dict(batch_data=np.arange(9).reshape(3, 3)),
+        dict(epoch_data=np.arange(9).reshape(3, 3)),
+        dict(cnt_since_epoch=-1),
+        dict(epoch_domain=np.arange(9).reshape(3, 3)),
+        dict(batch_data=cst.everything_except(np.ndarray)),
+        dict(epoch_data=cst.everything_except(np.ndarray)),
+        dict(epoch_domain=cst.everything_except(np.ndarray)),
+        dict(cnt_since_epoch=cst.everything_except(Real)),
+        dict(total_weighting=cst.everything_except(Real)),
+        dict(running_weighted_sum=cst.everything_except(Real)),
+        dict(name=cst.everything_except(str)),
+    ],
+)
+@settings(suppress_health_check=[HealthCheck.too_slow])
+@given(data=st.data())
+def test_from_dict_input_validation2(bad_input: dict, data: st.DataObject):
+    input_dict = {}
+
+    bad_input = {
+        k: data.draw(v, label=k) if isinstance(v, st.SearchStrategy) else v
+        for k, v in bad_input.items()
+    }
+    for name, metrics in static_logger_dict.items():
+        input_dict = metrics.copy()
+        input_dict.update(bad_input)
+        break
+
+    assert input_dict
+
+    with pytest.raises((ValueError, TypeError)):
+        LiveMetric.from_dict(input_dict)
 
 
 class LiveMetricChecker(RuleBasedStateMachine):
