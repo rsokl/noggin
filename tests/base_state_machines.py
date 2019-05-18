@@ -116,7 +116,7 @@ class LivePlotStateMachine(RuleBasedStateMachine):
 
     def teardown(self):
         if self.plotter is not None:
-            fig, _ = self.plotter.plot_objects()
+            fig, _ = self.plotter.plot_objects
             if fig is not None:
                 close(fig)
         super().teardown()

@@ -50,7 +50,7 @@ def test_plot_grid(num_metrics, fig_layout, outer_type, shape):
     """Ensure that axes have the right type/shape for a given grid spec"""
     metric_names = list(ascii_letters[:num_metrics])
 
-    fig, ax = LivePlot(metric_names, **fig_layout).plot_objects()
+    fig, ax = LivePlot(metric_names, **fig_layout).plot_objects
 
     assert isinstance(fig, Figure)
     with close_fig(fig):
@@ -114,7 +114,7 @@ class LivePlotStateChecker(LivePlotStateMachine):
     @rule()
     def check_plt_objects(self):
         """ Ensure no side effect """
-        fig, ax = self.plotter.plot_objects()
+        fig, ax = self.plotter.plot_objects
 
         assert isinstance(fig, Figure)
 
