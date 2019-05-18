@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from liveplot.utils import check_valid_color
+from liveplot.plotter import _check_valid_color
 from tests.utils import compare_all_metrics, err_msg
 
 
@@ -19,7 +19,7 @@ from tests.utils import compare_all_metrics, err_msg
     ),
 )
 def test_valid_colors(color):
-    assert check_valid_color(color)
+    assert _check_valid_color(color)
 
 
 @pytest.mark.parametrize(
@@ -27,7 +27,7 @@ def test_valid_colors(color):
 )
 def test_invalid_colors(color):
     with pytest.raises(ValueError):
-        check_valid_color(color)
+        _check_valid_color(color)
 
 
 def test_err_msg():

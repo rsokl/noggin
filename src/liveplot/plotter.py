@@ -10,11 +10,34 @@ from warnings import warn
 
 import numpy as np
 from liveplot.logger import LiveLogger, LiveMetric
-from liveplot.typing import Metrics
-from liveplot.utils import check_valid_color
+from liveplot.typing import Metrics, ValidColor
 from matplotlib.pyplot import Axes, Figure
 
 __all__ = ["LivePlot"]
+
+
+def _check_valid_color(c: ValidColor) -> bool:
+    """
+    Checks if `c` is a valid color argument for matplotlib or `None`.
+    Raises `ValueError` if `c` is not a valid color.
+
+    Parameters
+    ----------
+    c : Union[str, Real, Sequence[Real], NoneType]
+
+    Returns
+    -------
+    bool
+
+    Raises
+    ------
+    ValueError"""
+    from matplotlib.colors import is_color_like
+
+    if c is not None and not is_color_like(c):
+        raise ValueError("{} is not a valid matplotlib color".format(repr(c)))
+    else:
+        return True
 
 
 def _filter_data(seq, cap=2000):
@@ -219,8 +242,8 @@ class LivePlot(LiveLogger):
                     self._test_colors[k] = v.get("test")
                 else:
                     self._train_colors[k] = v
-        sum(check_valid_color(c) for c in self._train_colors.values())
-        sum(check_valid_color(c) for c in self._test_colors.values())
+        sum(_check_valid_color(c) for c in self._train_colors.values())
+        sum(_check_valid_color(c) for c in self._test_colors.values())
 
         # plot-settings for batch and epoch data
         self._batch_ax = dict(ls="-", alpha=0.5)
