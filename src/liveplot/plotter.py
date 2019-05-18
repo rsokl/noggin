@@ -61,6 +61,7 @@ class LivePlot(LiveLogger):
         self._refresh = 0.001 if 0 <= value < 0.001 else value
         self._liveplot = self._refresh >= 0.0 and "nbAgg" in self._backend
 
+    @property
     def plot_objects(self) -> Union[Tuple[Figure, Axes], Tuple[Figure, np.ndarray]]:
         """ The figure-instance of the plot, and the axis-instance for each metric.
 
