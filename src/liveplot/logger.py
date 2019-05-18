@@ -12,7 +12,7 @@ from numpy import ndarray
 
 try:
     from xarray import Dataset
-except ImportError:
+except ImportError:  # pragma: no cover
     Dataset = Any
 
 __all__ = ["LiveLogger", "LiveMetric"]
@@ -185,7 +185,7 @@ class LiveMetric:
                 "got type {}".format(type(metrics_dict))
             )
 
-        if not set(required_keys) <= set(metrics_dict):
+        if not (set(required_keys) <= set(metrics_dict)):
             raise ValueError(
                 "`live_metrics` is missing the following keys: "
                 "'{}'".format(", ".join(set(required_keys) - set(metrics_dict)))

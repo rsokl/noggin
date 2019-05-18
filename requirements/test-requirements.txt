@@ -1,2 +1,2 @@
 pytest >= 3.8
-hypothesis >= 4.8
+hypothesis >= 4.22.3

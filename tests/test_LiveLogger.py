@@ -71,7 +71,9 @@ class LiveLoggerStateMachine(RuleBasedStateMachine):
 
         self.train_batch_set = True
         batch = {
-            metric.name: data.draw(st.floats(-1, 1), label=metric.name)
+            metric.name: data.draw(
+                st.floats(-1, 1) | st.floats(-1, 1).map(np.array), label=metric.name
+            )
             for metric in self.train_metrics
         }
         self.logger.set_train_batch(metrics=batch, batch_size=batch_size)
@@ -89,7 +91,9 @@ class LiveLoggerStateMachine(RuleBasedStateMachine):
     def set_test_batch(self, batch_size: int, data: SearchStrategy):
         self.test_batch_set = True
         batch = {
-            metric.name: data.draw(st.floats(-1, 1), label=metric.name)
+            metric.name: data.draw(
+                st.floats(-1, 1) | st.floats(-1, 1).map(np.array), label=metric.name
+            )
             for metric in self.test_metrics
         }
         self.logger.set_test_batch(metrics=batch, batch_size=batch_size)
