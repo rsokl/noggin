@@ -388,8 +388,8 @@ class LivePlot(LiveLogger):
                     pass
 
             if self._plot_batch:
-                livedata.batch_line.set_xdata(_filter_data(livedata.batch_domain))
-                livedata.batch_line.set_ydata(_filter_data(livedata._batch_data))
+                livedata.batch_line.set_xdata(livedata.batch_domain)
+                livedata.batch_line.set_ydata(livedata._batch_data)
                 if livedata._epoch_data:
                     livedata.batch_line.set_label(
                         "train: {:.2e}".format(livedata._epoch_data[-1])
