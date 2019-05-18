@@ -1,7 +1,7 @@
 import pprint
 from collections import defaultdict
 from itertools import combinations
-from typing import Dict, Sequence, Tuple
+from typing import Any, Dict, Sequence, Tuple, Union
 
 import hypothesis.extra.numpy as hnp
 import hypothesis.strategies as st
@@ -32,6 +32,16 @@ a_bunch_of_colors.append(None)
 
 def matplotlib_colors() -> st.SearchStrategy[ValidColor]:
     return st.sampled_from(a_bunch_of_colors)
+
+
+def everything_except(
+    excluded_types: Union[type, Tuple[type, ...]]
+) -> st.SearchStrategy[Any]:
+    return (
+        st.from_type(type)
+        .flatmap(st.from_type)
+        .filter(lambda x: not isinstance(x, excluded_types))
+    )
 
 
 def finite_arrays(size):

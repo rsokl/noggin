@@ -1,5 +1,8 @@
+from collections.abc import Sequence
 from contextlib import contextmanager
+from numbers import Real
 from string import ascii_letters
+from typing import Tuple
 
 import hypothesis.strategies as st
 import numpy as np
@@ -80,6 +83,21 @@ def test_init_refresh(refresh: float):
     assert plotter.refresh == refresh
 
 
+@given(
+    plotter=cst.plotters(),
+    bad_size=(
+        cst.everything_except(Sequence)
+        | st.tuples(*[cst.everything_except(Real)] * 2)
+        | st.lists(st.floats(max_value=10)).filter(
+            lambda x: len(x) != 2 or any(i <= 0 for i in x)
+        )
+    ),
+)
+def test_bad_figsize(plotter: LivePlot, bad_size):
+    with pytest.raises(ValueError):
+        plotter.figsize = bad_size
+
+
 @given(refresh=st.floats(min_value=-1, max_value=100, exclude_min=True))
 def test_setter_refresh(refresh: float):
     plotter = LivePlot("loss")
@@ -110,6 +128,16 @@ class LivePlotStateChecker(LivePlotStateMachine):
         """ Ensure no side effect """
         repr(self.logger)
         repr(self.plotter)
+
+    @rule()
+    def get_figsize(self):
+        size = self.plotter.figsize
+        assert size is None or isinstance(size, tuple) and len(size) == 2
+
+    @rule(size=st.tuples(*[st.floats(1, 10)] * 2))
+    def set_figsize(self, size: Tuple[float, float]):
+        self.plotter.figsize = size
+        assert self.plotter.figsize == size
 
     @rule()
     def check_plt_objects(self):

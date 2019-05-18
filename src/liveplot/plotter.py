@@ -1,6 +1,7 @@
 import importlib
 import time
 from collections import OrderedDict, defaultdict
+from collections.abc import Sequence
 from inspect import cleandoc
 from itertools import product
 from numbers import Integral, Real
@@ -8,11 +9,10 @@ from typing import Dict, Optional, Tuple, Union
 from warnings import warn
 
 import numpy as np
-from matplotlib.pyplot import Axes, Figure
-
 from liveplot.logger import LiveLogger, LiveMetric
 from liveplot.typing import Metrics
 from liveplot.utils import check_valid_color
+from matplotlib.pyplot import Axes, Figure
 
 __all__ = ["LivePlot"]
 
@@ -60,6 +60,28 @@ class LivePlot(LiveLogger):
         # TODO: Proper input validation
         self._refresh = 0.001 if 0 <= value < 0.001 else value
         self._liveplot = self._refresh >= 0.0 and "nbAgg" in self._backend
+
+    @property
+    def figsize(self) -> Optional[Tuple[float, float]]:
+        """Returns the current size of the figure in inches."""
+        return self._pltkwargs["figsize"]
+
+    @figsize.setter
+    def figsize(self, size: Tuple[float, float]):
+        if (
+            not isinstance(size, Sequence)
+            or len(size) != 2
+            or not all(isinstance(x, Real) and x >= 0 for x in size)
+        ):
+            raise ValueError(
+                f"`size` must be a length-2 sequence of "
+                f"positive-valued numbers, got: {size}"
+            )
+        size = tuple(size)
+        if self.figsize != size:
+            self._pltkwargs["figsize"] = size
+            if self._fig is not None:
+                self._fig.set_size_inches(size)
 
     @property
     def plot_objects(self) -> Union[Tuple[Figure, Axes], Tuple[Figure, np.ndarray]]:
@@ -347,6 +369,8 @@ class LivePlot(LiveLogger):
         self._fig, self._axes = self._pyplot.subplots(sharex=True, **self._pltkwargs)
         self._fig.tight_layout()
 
+        self._pltkwargs["figsize"] = tuple(self._fig.get_size_inches())
+
         if len(self._metrics) == 1:
             self._axes = np.array([self._axes])
 
@@ -380,7 +404,7 @@ class LivePlot(LiveLogger):
                         [],
                         label="train",
                         color=self._train_colors.get(key),
-                        **self._batch_ax
+                        **self._batch_ax,
                     )
                     ax.set_title(key)
                     ax.legend()
@@ -421,7 +445,7 @@ class LivePlot(LiveLogger):
                         [],
                         label="test",
                         color=self._test_colors.get(key),
-                        **self._epoch_ax
+                        **self._epoch_ax,
                     )
                     ax.set_title(key)
                     ax.legend(**self._legend)
