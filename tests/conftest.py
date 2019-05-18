@@ -2,6 +2,7 @@ import os
 import tempfile
 
 import pytest
+import matplotlib.pyplot as plt
 
 
 @pytest.fixture()
@@ -23,3 +24,10 @@ def cleandir() -> str:
         os.chdir(tmpdirname)
         yield tmpdirname
         os.chdir(old_dir)
+
+
+@pytest.fixture()
+def killplots():
+    """Ensures all matplotlib figures are closed upon leaving the fixture"""
+    yield None
+    plt.close("all")
