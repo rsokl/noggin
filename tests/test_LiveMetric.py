@@ -3,6 +3,7 @@ from typing import Any, Optional
 import hypothesis.strategies as st
 import numpy as np
 import pytest
+import tests.custom_strategies as cst
 from hypothesis import given
 from hypothesis.stateful import (
     RuleBasedStateMachine,
@@ -11,9 +12,8 @@ from hypothesis.stateful import (
     precondition,
     rule,
 )
-from numpy.testing import assert_allclose, assert_array_equal
-
 from liveplot.logger import LiveMetric
+from numpy.testing import assert_allclose, assert_array_equal
 from tests.utils import err_msg
 
 
@@ -42,6 +42,16 @@ def test_trivial_case():
             getattr(metric, name),
             err_msg=name + " does not map to the correct value in the metric-dict",
         )
+
+
+@pytest.mark.parametrize(
+    "bad_input", [cst.everything_except(dict), st.just(dict(a_bad_key=1))]
+)
+@given(data=st.data())
+def test_from_dict_input_validation(bad_input: st.SearchStrategy, data: st.DataObject):
+    bad_input = data.draw(bad_input, label="bad_input")
+    with pytest.raises((ValueError, TypeError)):
+        LiveMetric.from_dict(bad_input)
 
 
 class LiveMetricChecker(RuleBasedStateMachine):
