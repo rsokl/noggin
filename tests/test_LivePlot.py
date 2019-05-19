@@ -1,13 +1,13 @@
 from collections.abc import Sequence
-from numbers import Real
+from numbers import Integral, Real
 from string import ascii_letters
-from typing import List, Tuple
+from typing import Tuple
 
 import hypothesis.strategies as st
 import numpy as np
 import pytest
 import tests.custom_strategies as cst
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis.stateful import invariant, precondition, rule
 from liveplot import load_metrics, save_metrics
 from liveplot.plotter import LivePlot
@@ -18,11 +18,36 @@ from tests.base_state_machines import LivePlotStateMachine
 from tests.utils import compare_all_metrics
 
 
-@given(x=st.lists(st.text(), min_size=2).filter(lambda x: len(set(x)) != len(x)))
-def test_redundant_metrics_are_not_permitted(x: List[str]):
-    """Ensures that redundant metrics are not permitted"""
-    with pytest.raises(ValueError):
-        LivePlot(x)
+@settings(deadline=None)
+@pytest.mark.parametrize(
+    "bad_input",
+    [
+        dict(metrics=[]),
+        dict(
+            metrics=st.lists(st.text(), min_size=2).filter(
+                lambda x: len(set(x)) != len(x)
+            )
+        ),
+        dict(
+            metrics=cst.everything_except((str, Sequence))
+            | st.lists(cst.everything_except(str))
+        ),
+        dict(
+            nrows=cst.everything_except((Integral, type(None)))
+            | st.integers(max_value=0)
+        ),
+        dict(
+            ncols=cst.everything_except((Integral, type(None)))
+            | st.integers(max_value=0)
+        ),
+    ],
+)
+@given(data=st.data())
+def test_input_validation(bad_input: dict, data: st.DataObject):
+    defaults = dict(metrics=["a"])
+    defaults.update({k: cst.draw_if_strategy(data, v) for k, v in bad_input.items()})
+    with pytest.raises((ValueError, TypeError)):
+        LivePlot(**defaults)
 
 
 @pytest.mark.parametrize(
