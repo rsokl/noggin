@@ -75,6 +75,15 @@ def test_plot_grid(num_metrics, fig_layout, outer_type, shape):
         assert ax.shape == shape
 
 
+def test_unregister_metric_warns():
+    plotter = LivePlot(metrics=["a"])
+    with pytest.warns(UserWarning):
+        plotter.set_train_batch(dict(a=1, b=1), batch_size=1)
+
+    with pytest.warns(UserWarning):
+        plotter.set_test_batch(dict(a=1, b=1), batch_size=1)
+
+
 def test_trivial_case():
     """ Perform a trivial sanity check on live logger"""
     plotter = LivePlot("a", refresh=-1)
