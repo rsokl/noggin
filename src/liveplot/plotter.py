@@ -213,12 +213,12 @@ class LivePlot(LiveLogger):
         if nrows is None:
             nrows = 1
 
-        if 1 > nrows or not isinstance(nrows, Integral):
+        if not isinstance(nrows, Integral) or 1 > nrows:
             raise ValueError(
                 "`nrows` must integer-valued and be at least 1. Got {}".format(nrows)
             )
 
-        if 1 > ncols or not isinstance(ncols, Integral):
+        if not isinstance(ncols, Integral) or 1 > ncols:
             raise ValueError(
                 "`ncols` must integer-valued and be at least 1. Got {}".format(ncols)
             )

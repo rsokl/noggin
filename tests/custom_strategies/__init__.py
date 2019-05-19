@@ -1,7 +1,7 @@
 import pprint
 from collections import defaultdict
 from itertools import combinations
-from typing import Any, Dict, Sequence, Tuple, Union
+from typing import Any, Dict, Sequence, Tuple, Union, TypeVar
 
 import hypothesis.extra.numpy as hnp
 import hypothesis.strategies as st
@@ -19,6 +19,14 @@ __all__ = [
     "loggers",
     "matplotlib_colors",
 ]
+
+T = TypeVar("T")
+
+
+def draw_if_strategy(data: st.DataObject, value: Union[T, st.SearchStrategy[T]]) -> T:
+    if isinstance(value, st.SearchStrategy):
+        return data.draw(value)
+    return value
 
 
 a_bunch_of_colors = list(colors.BASE_COLORS.keys())
