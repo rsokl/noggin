@@ -84,6 +84,15 @@ def test_unregister_metric_warns():
         plotter.set_test_batch(dict(a=1, b=1), batch_size=1)
 
 
+@given(plotter=cst.plotters())
+def test_residual_logger_methods_raise(plotter: LivePlot):
+    with pytest.raises(NotImplementedError):
+        plotter.set_train_epoch()
+
+    with pytest.raises(NotImplementedError):
+        plotter.set_test_epoch()
+
+
 def test_trivial_case():
     """ Perform a trivial sanity check on live logger"""
     plotter = LivePlot("a", refresh=-1)
@@ -181,6 +190,12 @@ class LivePlotStateChecker(LivePlotStateMachine):
                 "A sole `Axes` instance is expected as the plot "
                 "object when only one metric is specified"
             )
+
+    @precondition(lambda self: self.plotter is not None)
+    @invariant()
+    def check_metrics_property(self):
+        all_metrics = set(self.train_metric_names + self.test_metric_names)
+        assert sorted(self.plotter.metrics) == sorted(all_metrics)
 
     @precondition(lambda self: self.train_batch_set)
     @invariant()
