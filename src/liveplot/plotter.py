@@ -386,7 +386,7 @@ class LivePlot(LiveLogger):
         self._do_liveplot()
 
     def _init_plot_window(self):
-        if self._pyplot is None or self._fig is not None:
+        if self._fig is not None:
             return None
 
         self._fig, self._axes = self._pyplot.subplots(sharex=True, **self._pltkwargs)
@@ -414,9 +414,6 @@ class LivePlot(LiveLogger):
     def plot(self):
         """ Plot data, irrespective of the refresh rate. This should only
            be called if you are generating a static plot."""
-        if self._pyplot is None:
-            return None
-
         # plot batch-level train metrics
         for key, livedata in self._train_metrics.items():
             if livedata._batch_data and livedata.batch_line is None:
