@@ -1,8 +1,13 @@
+from hypothesis import given
+import hypothesis.strategies as st
 import numpy as np
 import pytest
 
+from liveplot import create_plot, LivePlot
+from liveplot.typing import Figure, ndarray, Axes
 from liveplot.plotter import _check_valid_color
 from tests.utils import compare_all_metrics, err_msg
+from tests import close_plots
 
 
 @pytest.mark.parametrize(
@@ -94,3 +99,18 @@ def test_mismatched_metrics(mismatched_category, mismatched_metric):
             compare_all_metrics(x, y)
     else:
         compare_all_metrics(x, y)
+
+
+@given(
+    metrics=st.lists(st.sampled_from("abcdef"), min_size=1, unique=True).map(tuple),
+    figsize=st.tuples(*[st.floats(min_value=1, max_value=10)] * 2),
+    refresh=st.floats(0.5, 2),
+)
+def test_create_plot(metrics, figsize, refresh):
+    with close_plots():
+        plotter, fig, ax = create_plot(
+            metrics=metrics, figsize=figsize, refresh=refresh
+        )
+        assert isinstance(plotter, LivePlot)
+        assert isinstance(fig, Figure)
+        assert isinstance(ax, (Axes, ndarray))

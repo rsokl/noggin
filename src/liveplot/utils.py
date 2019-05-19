@@ -80,7 +80,7 @@ def create_plot(
     >>> save_metrics("./metrics.npz", plotter) # save metrics to numpy-archive
     """
     live_plotter = LivePlot(metrics, refresh, figsize=figsize, ncols=ncols, nrows=nrows)
-    fig, ax = live_plotter.plot_objects()
+    fig, ax = live_plotter.plot_objects
     return live_plotter, fig, ax
 
 

@@ -115,8 +115,4 @@ class LivePlotStateMachine(RuleBasedStateMachine):
         self.plotter.plot_test_epoch()
 
     def teardown(self):
-        if self.plotter is not None:
-            fig, _ = self.plotter.plot_objects
-            if fig is not None:
-                close(fig)
         super().teardown()

@@ -56,6 +56,10 @@ class LivePlot(LiveLogger):
         jupyter notebook). """
 
     @property
+    def metrics(self) -> Tuple[str, ...]:
+        return self._metrics
+
+    @property
     def metric_colors(self) -> Dict[str, Dict[str, str]]:
         """ Returns
             -------
@@ -87,10 +91,12 @@ class LivePlot(LiveLogger):
     @property
     def figsize(self) -> Optional[Tuple[float, float]]:
         """Returns the current size of the figure in inches."""
-        return self._pltkwargs["figsize"]
+        return self._pltkwargs.get("figsize")
 
     @figsize.setter
     def figsize(self, size: Tuple[float, float]):
+        if "figsize" not in self._pltkwargs and size is None:
+            self._pltkwargs["figsize"]
         if (
             not isinstance(size, Sequence)
             or len(size) != 2
@@ -163,18 +169,25 @@ class LivePlot(LiveLogger):
                 Number of columns of the subplot grid. Metrics are added in
                 row-major order to fill the grid.
 
-            figsize : Optional[Sequence[int, int]]
+            figsize : Optional[Sequence[float, float]]
                 Specifies the width and height, respectively, of the figure."""
         # type checking on inputs
         # initializes the batch and epoch numbers
         super().__init__()
 
-        assert isinstance(refresh, Real)
-        assert (
-            figsize is None
-            or len(figsize) == 2
-            and all(isinstance(i, Integral) for i in figsize)
-        )
+        # plot-settings for batch and epoch data
+        self._batch_ax = dict(ls="-", alpha=0.5)
+        self._epoch_ax = dict(ls="-", marker="o", markersize=6, lw=3)
+        self._legend = dict()
+
+        # metric name -> matplotlib axis object
+        self._axis_mapping = OrderedDict()  # type: Dict[str, Axes]
+
+        self._plot_batch = True  # type: bool
+        self._fig = None  # type: Optional[Figure]
+        self._axes = None  # type: Union[None, Axes, np.ndarray]
+
+        self._last_plot_time = None  # type: Optional[float]
 
         # import matplotlib and check backend
         self._pyplot = importlib.import_module("matplotlib.pyplot")
@@ -230,7 +243,11 @@ class LivePlot(LiveLogger):
         self._liveplot = None  # type: Optional[bool]
         self.refresh = refresh  # sets _refresh and _liveplot
 
-        self._pltkwargs = dict(figsize=figsize, nrows=nrows, ncols=ncols)
+        self._pltkwargs = dict(nrows=nrows, ncols=ncols)
+        if figsize is not None:
+            self.figsize = figsize
+        else:
+            self._pltkwargs["figsize"] = None
 
         # color config
         self._train_colors = defaultdict(lambda: None)
@@ -244,20 +261,6 @@ class LivePlot(LiveLogger):
                     self._train_colors[k] = v
         sum(_check_valid_color(c) for c in self._train_colors.values())
         sum(_check_valid_color(c) for c in self._test_colors.values())
-
-        # plot-settings for batch and epoch data
-        self._batch_ax = dict(ls="-", alpha=0.5)
-        self._epoch_ax = dict(ls="-", marker="o", markersize=6, lw=3)
-        self._legend = dict()
-
-        # metric name -> matplotlib axis object
-        self._axis_mapping = OrderedDict()  # type: Dict[str, Axes]
-
-        self._plot_batch = True  # type: bool
-        self._fig = None  # type: Optional[Figure]
-        self._axes = None  # type: Union[None, Axes, np.ndarray]
-
-        self._last_plot_time = None  # type: Optional[float]
 
     def to_dict(self):
         out = super().to_dict()
