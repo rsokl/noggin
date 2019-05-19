@@ -1,4 +1,4 @@
-from hypothesis import given
+from hypothesis import given, settings
 import hypothesis.strategies as st
 import numpy as np
 import pytest
@@ -101,6 +101,7 @@ def test_mismatched_metrics(mismatched_category, mismatched_metric):
         compare_all_metrics(x, y)
 
 
+@settings(deadline=None)
 @given(
     metrics=st.lists(st.sampled_from("abcdef"), min_size=1, unique=True).map(tuple),
     figsize=st.tuples(*[st.floats(min_value=1, max_value=10)] * 2),

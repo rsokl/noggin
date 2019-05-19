@@ -1,23 +1,13 @@
 from collections import OrderedDict
-from contextlib import contextmanager
 
 import hypothesis.strategies as st
+import matplotlib.pyplot as plt
+import tests.custom_strategies as cst
 from hypothesis import assume, note, settings
 from hypothesis.stateful import RuleBasedStateMachine, initialize, rule
 from hypothesis.strategies import SearchStrategy
-from matplotlib.pyplot import close
-
-import tests.custom_strategies as cst
 from liveplot.logger import LiveLogger
 from liveplot.plotter import LivePlot
-
-
-@contextmanager
-def close_fig(fig):
-    try:
-        yield None
-    finally:
-        close(fig)
 
 
 @settings(deadline=None)
@@ -115,4 +105,5 @@ class LivePlotStateMachine(RuleBasedStateMachine):
         self.plotter.plot_test_epoch()
 
     def teardown(self):
+        plt.close("all")
         super().teardown()
