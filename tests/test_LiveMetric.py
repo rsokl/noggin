@@ -146,13 +146,16 @@ class LiveMetricChecker(RuleBasedStateMachine):
 
     @precondition(lambda self: self.livemetric is not None)
     @invariant()
-    def to_dict(self):
+    def dict_roundtrip(self):
         """Ensure `from_dict(to_dict())` round trip is successful"""
         metrics_dict = self.livemetric.to_dict()
         new_metrics = LiveMetric.from_dict(metrics_dict=metrics_dict)
 
         for attr in [
             "name",
+            "batch_data",
+            "epoch_data",
+            "epoch_domain",
             "_batch_data",
             "_epoch_data",
             "_epoch_domain",
@@ -171,6 +174,7 @@ class LiveMetricChecker(RuleBasedStateMachine):
                 "".format(attr, actual, desired),
             )
 
+    @rule()
     def check_batch_data_is_consistent(self):
         actual_batch_data1 = self.livemetric.batch_data
         actual_batch_data2 = self.livemetric.batch_data
@@ -180,6 +184,34 @@ class LiveMetricChecker(RuleBasedStateMachine):
             actual_batch_data1,
             actual_batch_data2,
             err_msg="calling `LiveMetric.batch_data` two"
+            "consecutive times produces different "
+            "results",
+        )
+
+    @rule()
+    def check_epoch_data_is_consistent(self):
+        actual_epoch_data1 = self.livemetric.epoch_data
+        actual_epoch_data2 = self.livemetric.epoch_data
+        assert isinstance(actual_epoch_data1, np.ndarray)
+        assert isinstance(actual_epoch_data2, np.ndarray)
+        assert_array_equal(
+            actual_epoch_data1,
+            actual_epoch_data2,
+            err_msg="calling `LiveMetric.epoch_data` two"
+            "consecutive times produces different "
+            "results",
+        )
+
+    @rule()
+    def check_epoch_domain_is_consistent(self):
+        actual_epoch_domain1 = self.livemetric.epoch_domain
+        actual_epoch_domain2 = self.livemetric.epoch_domain
+        assert isinstance(actual_epoch_domain1, np.ndarray)
+        assert isinstance(actual_epoch_domain2, np.ndarray)
+        assert_array_equal(
+            actual_epoch_domain1,
+            actual_epoch_domain2,
+            err_msg="calling `LiveMetric.epoch_domain` two"
             "consecutive times produces different "
             "results",
         )
