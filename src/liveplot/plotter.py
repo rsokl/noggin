@@ -1,6 +1,6 @@
 import importlib
 import time
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict, defaultdict, deque
 from collections.abc import Sequence
 from inspect import cleandoc
 from itertools import product
@@ -204,6 +204,14 @@ class LivePlot(LiveLogger):
         # plotting logic
         self._plot_batch = True  # type: bool
         self._last_plot_time = None  # type: Optional[float]
+        self._plot_time_queue = deque([])  # stores most recent plot-times (seconds)
+        self._time_of_last_liveplot_attempt = None  # type: Optional[float]
+        self._draw_time = 0.0  # type: float
+
+        # stores most times between consecutive live-plot attempts (seconds)
+        self._outer_time_queue = deque([])
+        self._queue_size = 4
+        self._max_fraction_spent_plotting = 0.1
 
         # input parameters
         self._metrics = (metrics,) if isinstance(metrics, str) else tuple(metrics)
@@ -428,7 +436,6 @@ class LivePlot(LiveLogger):
     def plot(self):
         """ Plot data, irrespective of the refresh rate. This should only
            be called if you are generating a static plot."""
-        # plot batch-level train metrics
         for key, livedata in self._train_metrics.items():
             if livedata.batch_data.size and livedata.batch_line is None:
                 try:
@@ -494,12 +501,21 @@ class LivePlot(LiveLogger):
                         "test: " + "{:.2e}".format(livedata.epoch_data[-1])
                     )
 
+        # TODO: remove timing
+        s = time.time()
         self._update_text()
         self._resize()
         if self._liveplot:
             self._fig.canvas.draw()
+        self._draw_time = time.time() - s
 
+    def _timed_plot(self):
+        plot_start_time = time.time()
+        self.plot()
         self._last_plot_time = time.time()
+        if len(self._plot_time_queue) == self._queue_size:
+            self._plot_time_queue.popleft()
+        self._plot_time_queue.append(self._last_plot_time - plot_start_time)
 
     def _resize(self):
         if self._axes is None:
@@ -525,8 +541,41 @@ class LivePlot(LiveLogger):
                 self._pyplot.ion()
             self._last_plot_time = time.time()
 
-        if self._liveplot and time.time() - self._last_plot_time >= self._refresh:
-            self.plot()
+        if not self._liveplot:
+            return
+
+        # plot batch-level train metrics
+        if len(self._outer_time_queue) == self._queue_size:
+            self._outer_time_queue.popleft()
+
+        self._outer_time_queue.append(
+            time.time() - self._time_of_last_liveplot_attempt
+            if self._time_of_last_liveplot_attempt
+            else 0.0
+        )
+        self._time_of_last_liveplot_attempt = time.time()
+        time_since_last_plot = (
+            self._time_of_last_liveplot_attempt - self._last_plot_time
+        )
+
+        if self.refresh is not None and time_since_last_plot >= self.refresh:
+            self._timed_plot()
+            return
+
+        mean_plot_time = (
+            sum(self._plot_time_queue) / len(self._plot_time_queue)
+            if self._plot_time_queue
+            else 0.0
+        )
+
+        if (
+            time_since_last_plot
+            and mean_plot_time / (time_since_last_plot + mean_plot_time)
+            < self._max_fraction_spent_plotting
+        ):
+            self._timed_plot()
+            # exclude plot time
+            self._time_of_last_liveplot_attempt = time.time()
 
     def set_test_epoch(self):
         """ Not implemented. Use `plot_test_epoch` instead"""

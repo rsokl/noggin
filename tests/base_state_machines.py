@@ -66,7 +66,9 @@ class LivePlotStateMachine(RuleBasedStateMachine):
         for metric, color in zip(self.test_metric_names, test_colors):
             metrics[metric]["test"] = color
 
-        self.plotter = LivePlot(metrics, refresh=-1)
+        self.plotter = LivePlot(
+            metrics, refresh=data.draw(st.sampled_from([-1, None]), label="refresh")
+        )
         self.logger = LiveLogger()
 
         note("Train metric names: {}".format(self.train_metric_names))
