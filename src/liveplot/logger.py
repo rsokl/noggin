@@ -5,7 +5,7 @@ Provides functionality for logging training and testing batch-level & epoch-leve
 from collections import OrderedDict
 from itertools import product
 from numbers import Integral, Real
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, List
 
 import numpy as np
 from numpy import ndarray
@@ -37,11 +37,20 @@ class LiveMetric:
                 "Metric names must be specified as strings. Got: {}".format(name)
             )
         self._name = name
-        self.batch_line = None  # ax object for batch data
-        self.epoch_line = None  # ax object for epoch data
-        self._batch_data = []  # metric data for consecutive batches
-        self._epoch_data = []  # accuracies
-        self._epoch_domain = []
+
+        # axis objects for batch/epoch data
+        self.batch_line = None
+        self.epoch_line = None
+
+        self._batch_data_list = []  # type: List[float]
+        self._batch_data = np.array([])  # type: np.ndarray
+
+        self._epoch_data_list = []  # type: List[float]
+        self._epoch_data = np.array([])  # type: np.ndarray
+
+        self._epoch_domain_list = []  # type: List[int]
+        self._epoch_domain = np.array([])  # type: np.ndarray
+
         self._running_weighted_sum = 0.0
         self._total_weighting = 0.0
         self._cnt_since_epoch = 0
@@ -62,11 +71,19 @@ class LiveMetric:
         Returns
         -------
         numpy.ndarray, shape=(N_batch, )"""
-        return np.array(self._batch_data)
+        if self._batch_data_list:
+            self._batch_data = np.concatenate((self._batch_data, self._batch_data_list))
+            self._batch_data_list = []
+        return self._batch_data
 
     @property
     def epoch_domain(self) -> ndarray:
-        return np.array(self._epoch_domain)
+        if self._epoch_domain_list:
+            self._epoch_domain = np.concatenate(
+                (self._epoch_domain, self._epoch_domain_list)
+            )
+            self._epoch_domain_list = []
+        return self._epoch_domain
 
     @property
     def epoch_data(self) -> ndarray:
@@ -76,7 +93,10 @@ class LiveMetric:
         Returns
         -------
         numpy.ndarray, shape=(N_epoch, )"""
-        return np.array(self._epoch_data)
+        if self._epoch_data_list:
+            self._epoch_data = np.concatenate((self._epoch_data, self._epoch_data_list))
+            self._epoch_data_list = []
+        return self._epoch_data
 
     def add_datapoint(self, value: Real, weighting: Real = 1.0):
         """
@@ -87,7 +107,7 @@ class LiveMetric:
         if isinstance(value, np.ndarray):
             value = np.asscalar(value)
 
-        self._batch_data.append(value)
+        self._batch_data_list.append(value)
         self._running_weighted_sum += weighting * value
         self._total_weighting += weighting
         self._cnt_since_epoch += 1
@@ -101,8 +121,10 @@ class LiveMetric:
             mean = self._running_weighted_sum / (
                 self._total_weighting if self._total_weighting > 0.0 else 1.0
             )
-            self._epoch_data.append(mean)
-            self._epoch_domain.append(x if x is not None else self.batch_domain[-1])
+            self._epoch_data_list.append(mean)
+            self._epoch_domain_list.append(
+                x if x is not None else self.batch_domain[-1]
+            )
             self._running_weighted_sum = 0.0
             self._total_weighting = 0.0
             self._cnt_since_epoch = 0
@@ -197,7 +219,6 @@ class LiveMetric:
             if k in array_keys:
                 if not isinstance(v, np.ndarray) or v.ndim != 1:
                     raise ValueError("'{}' must map to a 1D numpy arrays".format(k))
-                v = v.tolist()
             else:
                 if not isinstance(v, Real):
                     raise ValueError("'{}' must map to a real number".format(k))

@@ -162,6 +162,7 @@ class LiveMetricChecker(RuleBasedStateMachine):
         ]:
             desired = getattr(self.livemetric, attr)
             actual = getattr(new_metrics, attr)
+            assert type(actual) == type(desired), attr
             assert_array_equal(
                 actual,
                 desired,
@@ -170,44 +171,67 @@ class LiveMetricChecker(RuleBasedStateMachine):
                 "".format(attr, actual, desired),
             )
 
+    def check_batch_data_is_consistent(self):
+        actual_batch_data1 = self.livemetric.batch_data
+        actual_batch_data2 = self.livemetric.batch_data
+        assert isinstance(actual_batch_data1, np.ndarray)
+        assert isinstance(actual_batch_data2, np.ndarray)
+        assert_array_equal(
+            actual_batch_data1,
+            actual_batch_data2,
+            err_msg="calling `LiveMetric.batch_data` two"
+            "consecutive times produces different "
+            "results",
+        )
+
     @precondition(lambda self: self.livemetric is not None)
     @invariant()
     def compare(self):
-        batch_domain = np.arange(1, len(self.batch_data) + 1)
-        batch_data = np.asarray(self.batch_data)
-        epoch_data = np.asarray(self.epoch_data)
-        epoch_domain = np.asarray(self.epoch_domain)
+        expected_batch_domain = np.arange(1, len(self.batch_data) + 1)
+        expected_batch_data = np.asarray(self.batch_data)
+        expected_epoch_data = np.asarray(self.epoch_data)
+        expected_epoch_domain = np.asarray(self.epoch_domain)
+
+        actual_batch_domain = self.livemetric.batch_domain
+        actual_batch_data = self.livemetric.batch_data
+        actual_epoch_data = self.livemetric.epoch_data
+        actual_epoch_domain = self.livemetric.epoch_domain
+
+        assert isinstance(actual_batch_domain, np.ndarray)
+        assert isinstance(actual_batch_data, np.ndarray)
+        assert isinstance(actual_epoch_data, np.ndarray)
+        assert isinstance(actual_epoch_domain, np.ndarray)
 
         assert_array_equal(
-            batch_data,
-            self.livemetric.batch_data,
+            expected_batch_data,
+            actual_batch_data,
             err_msg=err_msg(
-                actual=batch_data, desired=self.livemetric.batch_data, name="Batch Data"
+                desired=expected_batch_data, actual=actual_batch_data, name="Batch Data"
             ),
         )
         assert_array_equal(
-            epoch_domain,
+            expected_epoch_domain,
             self.livemetric.epoch_domain,
             err_msg=err_msg(
-                actual=epoch_domain,
-                desired=self.livemetric.epoch_domain,
+                desired=expected_epoch_domain,
+                actual=self.livemetric.epoch_domain,
                 name="Epoch Domain",
             ),
         )
         assert_array_equal(
             self.livemetric.batch_domain,
-            batch_domain,
+            actual_batch_domain,
             err_msg=err_msg(
-                actual=batch_domain,
-                desired=self.livemetric.batch_domain,
+                desired=expected_batch_domain,
+                actual=actual_batch_domain,
                 name="Batch Domain",
             ),
         )
         assert_allclose(
-            actual=self.livemetric.epoch_data,
-            desired=epoch_data,
+            actual=actual_epoch_data,
+            desired=expected_epoch_data,
             err_msg=err_msg(
-                actual=epoch_data, desired=self.livemetric.epoch_data, name="Epoch Data"
+                desired=expected_epoch_data, actual=actual_batch_data, name="Epoch Data"
             ),
         )
 

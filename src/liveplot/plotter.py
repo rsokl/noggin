@@ -419,7 +419,7 @@ class LivePlot(LiveLogger):
            be called if you are generating a static plot."""
         # plot batch-level train metrics
         for key, livedata in self._train_metrics.items():
-            if livedata._batch_data and livedata.batch_line is None:
+            if livedata.batch_data.size and livedata.batch_line is None:
                 try:
                     ax = self._axis_mapping[key]
                     livedata.batch_line, = ax.plot(
@@ -436,10 +436,10 @@ class LivePlot(LiveLogger):
 
             if self._plot_batch:
                 livedata.batch_line.set_xdata(livedata.batch_domain)
-                livedata.batch_line.set_ydata(livedata._batch_data)
-                if livedata._epoch_data:
+                livedata.batch_line.set_ydata(livedata.batch_data)
+                if livedata.epoch_data.size:
                     livedata.batch_line.set_label(
-                        "train: {:.2e}".format(livedata._epoch_data[-1])
+                        "train: {:.2e}".format(livedata.epoch_data[-1])
                     )
 
         # plot epoch-level train metrics
@@ -454,8 +454,8 @@ class LivePlot(LiveLogger):
                 ax.legend(**self._legend)
 
             if livedata.epoch_line is not None:
-                livedata.epoch_line.set_xdata(livedata._epoch_domain)
-                livedata.epoch_line.set_ydata(livedata._epoch_data)
+                livedata.epoch_line.set_xdata(livedata.epoch_domain)
+                livedata.epoch_line.set_ydata(livedata.epoch_data)
 
         # plot epoch-level test metrics
         for key, livedata in self._test_metrics.items():
@@ -476,11 +476,11 @@ class LivePlot(LiveLogger):
                     pass
 
             if livedata.epoch_line is not None:
-                livedata.epoch_line.set_xdata(livedata._epoch_domain)
-                livedata.epoch_line.set_ydata(livedata._epoch_data)
-                if livedata._epoch_data:
+                livedata.epoch_line.set_xdata(livedata.epoch_domain)
+                livedata.epoch_line.set_ydata(livedata.epoch_data)
+                if livedata.epoch_data.size:
                     livedata.epoch_line.set_label(
-                        "test: " + "{:.2e}".format(livedata._epoch_data[-1])
+                        "test: " + "{:.2e}".format(livedata.epoch_data[-1])
                     )
 
         self._update_text()
