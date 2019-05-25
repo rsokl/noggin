@@ -209,7 +209,6 @@ class LivePlot(LiveLogger):
         self._draw_time = 0.0  # type: float
 
         # stores most times between consecutive live-plot attempts (seconds)
-        self._outer_time_queue = deque([])
         self._queue_size = 4
         self._max_fraction_spent_plotting = 0.1
 
@@ -501,7 +500,6 @@ class LivePlot(LiveLogger):
                         "test: " + "{:.2e}".format(livedata.epoch_data[-1])
                     )
 
-        # TODO: remove timing
         s = time.time()
         self._update_text()
         self._resize()
@@ -544,15 +542,6 @@ class LivePlot(LiveLogger):
         if not self._liveplot:
             return
 
-        # plot batch-level train metrics
-        if len(self._outer_time_queue) == self._queue_size:
-            self._outer_time_queue.popleft()
-
-        self._outer_time_queue.append(
-            time.time() - self._time_of_last_liveplot_attempt
-            if self._time_of_last_liveplot_attempt
-            else 0.0
-        )
         self._time_of_last_liveplot_attempt = time.time()
         time_since_last_plot = (
             self._time_of_last_liveplot_attempt - self._last_plot_time
