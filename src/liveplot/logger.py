@@ -5,7 +5,7 @@ Provides functionality for logging training and testing batch-level & epoch-leve
 from collections import OrderedDict
 from itertools import product
 from numbers import Integral, Real
-from typing import Any, Dict, Optional, Tuple, List
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 from numpy import ndarray
