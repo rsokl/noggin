@@ -40,6 +40,7 @@ from tests.utils import compare_all_metrics
             ncols=cst.everything_except((Integral, type(None)))
             | st.integers(max_value=0)
         ),
+        dict(refresh=cst.everything_except((float, int, type(None)))),
     ],
 )
 @given(data=st.data())

@@ -74,19 +74,27 @@ class LivePlot(LiveLogger):
         return dict(out)
 
     @property
-    def refresh(self) -> float:
+    def refresh(self) -> Union[float, None]:
         """ The minimum time between canvas-draw events, in seconds.
             A negative `refresh` value turns off live-plotting."""
         return self._refresh
 
     @refresh.setter
-    def refresh(self, value: float):
+    def refresh(self, value: Union[float, None]):
         """ Set the refresh rate (per second). A negative refresh rate
             turns off static plotting."""
-        assert isinstance(value, Real)
-        # TODO: Proper input validation
-        self._refresh = 0.001 if 0 <= value < 0.001 else value
-        self._liveplot = self._refresh >= 0.0 and "nbAgg" in self._backend
+        if not isinstance(value, (float, int)) and value is not None:
+            raise TypeError(
+                "`refresh` must be set to a "
+                "real number or `None`, got {}".format(value)
+            )
+
+        if value is not None:
+            self._refresh = 0.001 if 0 <= value < 0.001 else value
+            self._liveplot = self._refresh >= 0.0 and "nbAgg" in self._backend
+        else:
+            self._refresh = None
+            self._liveplot = "nbAgg" in self._backend
 
     @property
     def figsize(self) -> Optional[Tuple[float, float]]:
@@ -137,7 +145,7 @@ class LivePlot(LiveLogger):
     def __init__(
         self,
         metrics: Metrics,
-        refresh: Real = 0.0,
+        refresh: Optional[float] = None,
         nrows: Optional[int] = None,
         ncols: int = 1,
         figsize: Optional[Tuple[int, int]] = None,
@@ -175,6 +183,12 @@ class LivePlot(LiveLogger):
         # initializes the batch and epoch numbers
         super().__init__()
 
+        # import matplotlib and check backend
+        self._pyplot = importlib.import_module("matplotlib.pyplot")
+        _matplotlib = importlib.import_module("matplotlib")
+
+        self._backend = _matplotlib.get_backend()
+
         # plot-settings for batch and epoch data
         self._batch_ax = dict(ls="-", alpha=0.5)
         self._epoch_ax = dict(ls="-", marker="o", markersize=6, lw=3)
@@ -183,24 +197,13 @@ class LivePlot(LiveLogger):
         # metric name -> matplotlib axis object
         self._axis_mapping = OrderedDict()  # type: Dict[str, Axes]
 
-        self._plot_batch = True  # type: bool
+        # plot objects
         self._fig = None  # type: Optional[Figure]
         self._axes = None  # type: Union[None, Axes, np.ndarray]
 
+        # plotting logic
+        self._plot_batch = True  # type: bool
         self._last_plot_time = None  # type: Optional[float]
-
-        # import matplotlib and check backend
-        self._pyplot = importlib.import_module("matplotlib.pyplot")
-        _matplotlib = importlib.import_module("matplotlib")
-
-        self._backend = _matplotlib.get_backend()
-        if "nbAgg" not in self._backend and refresh >= 0:
-            _inline_msg = """Live plotting is not supported when matplotlib uses the '{}'
-                             backend. Instead, use the 'nbAgg' backend.
-
-                             In a Jupyter notebook, this can be activated using the cell magic:
-                                %matplotlib notebook."""
-            warn(cleandoc(_inline_msg.format(self._backend)))
 
         # input parameters
         self._metrics = (metrics,) if isinstance(metrics, str) else tuple(metrics)
@@ -261,6 +264,14 @@ class LivePlot(LiveLogger):
                     self._train_colors[k] = v
         sum(_check_valid_color(c) for c in self._train_colors.values())
         sum(_check_valid_color(c) for c in self._test_colors.values())
+
+        if "nbAgg" not in self._backend and (self.refresh is None or self.refresh >= 0):
+            _inline_msg = """Live plotting is not supported when matplotlib uses the '{}'
+                             backend. Instead, use the 'nbAgg' backend.
+
+                             In a Jupyter notebook, this can be activated using the cell magic:
+                                %matplotlib notebook."""
+            warn(cleandoc(_inline_msg.format(self._backend)))
 
     def to_dict(self):
         out = super().to_dict()
