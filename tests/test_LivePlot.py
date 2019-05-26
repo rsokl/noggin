@@ -88,6 +88,22 @@ def test_plot_grid(num_metrics, fig_layout, outer_type, shape):
         assert ax.shape == shape
 
 
+@pytest.mark.usefixtures("killplots")
+def test_adaptive_plot_grid():
+    plotter = LivePlot(list(ascii_letters[:5]), ncols=2)
+    assert plotter._pltkwargs["nrows"] == 3
+    assert plotter._pltkwargs["ncols"] == 2
+
+
+@pytest.mark.usefixtures("killplots")
+@given(
+    num_metrics=st.integers(1, 12), nrows=st.integers(1, 12), ncols=st.integers(1, 12)
+)
+def test_fuzz_plot_grid(num_metrics: int, nrows: int, ncols: int):
+    plotter = LivePlot(list(ascii_letters[:num_metrics]), nrows=nrows, ncols=ncols)
+    assert plotter._pltkwargs["nrows"] * plotter._pltkwargs["ncols"] >= num_metrics
+
+
 def test_unregister_metric_warns():
     plotter = LivePlot(metrics=["a"])
     with pytest.warns(UserWarning):
@@ -107,7 +123,7 @@ def test_residual_logger_methods_raise(plotter: LivePlot):
 
 
 def test_trivial_case():
-    """ Perform a trivial sanity check on live logger"""
+    """ Perform a trivial sanity check on live plotter"""
     plotter = LivePlot("a")
     plotter.set_train_batch(dict(a=1.0), batch_size=1, plot=False)
     plotter.set_train_batch(dict(a=3.0), batch_size=1, plot=False)
