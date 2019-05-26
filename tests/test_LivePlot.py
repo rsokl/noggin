@@ -40,12 +40,18 @@ from tests.utils import compare_all_metrics
             ncols=cst.everything_except((Integral, type(None)))
             | st.integers(max_value=0)
         ),
+        dict(
+            max_fraction_spent_plotting=cst.everything_except((float, int))
+            | st.floats().filter(lambda x: not 0 <= x <= 1)
+        ),
     ],
 )
 @given(data=st.data())
 def test_input_validation(bad_input: dict, data: st.DataObject):
     defaults = dict(metrics=["a"])
-    defaults.update({k: cst.draw_if_strategy(data, v) for k, v in bad_input.items()})
+    defaults.update(
+        {k: cst.draw_if_strategy(data, v, label=k) for k, v in bad_input.items()}
+    )
     with pytest.raises((ValueError, TypeError)):
         LivePlot(**defaults)
 
@@ -95,7 +101,7 @@ def test_residual_logger_methods_raise(plotter: LivePlot):
 
 def test_trivial_case():
     """ Perform a trivial sanity check on live logger"""
-    plotter = LivePlot("a", refresh=-1)
+    plotter = LivePlot("a")
     plotter.set_train_batch(dict(a=1.0), batch_size=1, plot=False)
     plotter.set_train_batch(dict(a=3.0), batch_size=1, plot=False)
     plotter.plot_train_epoch()
@@ -105,13 +111,6 @@ def test_trivial_case():
     assert_array_equal(
         plotter.train_metrics["a"]["epoch_data"], np.array([1.0 / 2.0 + 3.0 / 2.0])
     )
-
-
-@given(refresh=st.floats(min_value=-1, max_value=100, exclude_min=True))
-def test_init_refresh(refresh: float):
-    plotter = LivePlot("loss", refresh=refresh)
-    refresh = 0.001 if 0 <= refresh < 0.001 else refresh
-    assert plotter.refresh == refresh
 
 
 @given(
@@ -127,14 +126,6 @@ def test_init_refresh(refresh: float):
 def test_bad_figsize(plotter: LivePlot, bad_size):
     with pytest.raises(ValueError):
         plotter.figsize = bad_size
-
-
-@given(refresh=st.floats(min_value=-1, max_value=100, exclude_min=True))
-def test_setter_refresh(refresh: float):
-    plotter = LivePlot("loss")
-    plotter.refresh = refresh
-    refresh = 0.001 if 0 <= refresh < 0.001 else refresh
-    assert plotter.refresh == refresh
 
 
 @given(colors=st.lists(cst.matplotlib_colors(), min_size=1, max_size=4))
@@ -250,7 +241,7 @@ class LivePlotStateChecker(LivePlotStateMachine):
             "_num_train_batch",
             "_num_test_epoch",
             "_num_test_batch",
-            "refresh",
+            "max_fraction_spent_plotting",
             "_metrics",
             "_pltkwargs",
             "metric_colors",
