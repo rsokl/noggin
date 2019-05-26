@@ -279,7 +279,7 @@ class LivePlot(LiveLogger):
             )
 
         if len(self._metrics) > ncols * nrows:
-            nrows = len(self._metrics)
+            nrows = int(round(len(self._metrics) / ncols))
 
         self._pltkwargs = dict(nrows=nrows, ncols=ncols)
         if figsize is not None:
@@ -456,6 +456,8 @@ class LivePlot(LiveLogger):
         # Add x-label to bottom-plot for each column
         for i in range(min(self._pltkwargs["ncols"], len(self._metrics))):
             self._axes.flat[-(i + 1 + axis_offset)].set_xlabel("Number of iterations")
+
+        self._pyplot.ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
 
     def plot(self):
         """ Plot data, irrespective of the refresh rate. This should only
