@@ -60,7 +60,7 @@ def finite_arrays(size):
     return hnp.arrays(
         shape=(size,),
         dtype=np.float64,
-        elements=st.floats(allow_infinity=False, allow_nan=False),
+        elements=st.floats(min_value=-1e6, max_value=1e6),
     )
 
 

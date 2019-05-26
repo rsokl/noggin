@@ -466,7 +466,7 @@ class LivePlot(LiveLogger):
         """ Plot data, irrespective of the refresh rate. This should only
            be called if you are generating a static plot."""
         for key, livedata in self._train_metrics.items():
-            if livedata.batch_data.size and livedata.batch_line is None:
+            if livedata.batch_line is None:
                 ax = self._axis_mapping[key]
                 livedata.batch_line, = ax.plot(
                     [],
@@ -506,7 +506,7 @@ class LivePlot(LiveLogger):
                 )
                 ax.legend(**self._legend)
 
-            if livedata.epoch_line is not None:
+            if livedata.epoch_line is not None and livedata.batch_domain.size:
                 if self.last_n_batches:
                     old_n = self._epoch_domain_lookup[livedata.name]
                     n = np.searchsorted(
