@@ -460,24 +460,19 @@ class LivePlot(LiveLogger):
     def plot(self):
         """ Plot data, irrespective of the refresh rate. This should only
            be called if you are generating a static plot."""
-
-        # try-except blocks protect prevent plot from failing
-        # when a user has not initialized the plot window
+        self._init_plot_window()
         for key, livedata in self._train_metrics.items():
             if livedata.batch_line is None:
-                try:
-                    ax = self._axis_mapping[key]
-                    livedata.batch_line, = ax.plot(
-                        [],
-                        [],
-                        label="train",
-                        color=self._train_colors.get(key),
-                        **self._batch_ax,
-                    )
-                    ax.set_title(key)
-                    ax.legend()
-                except KeyError:
-                    continue
+                ax = self._axis_mapping[key]
+                livedata.batch_line, = ax.plot(
+                    [],
+                    [],
+                    label="train",
+                    color=self._train_colors.get(key),
+                    **self._batch_ax,
+                )
+                ax.set_title(key)
+                ax.legend()
 
             if self._plot_batch and livedata.batch_line:
                 n = (
@@ -499,16 +494,13 @@ class LivePlot(LiveLogger):
         # plot epoch-level train metrics
         for key, livedata in self._train_metrics.items():
             if livedata.epoch_line is None:
-                try:
-                    # initialize batch-level plot objects
-                    ax = self._axis_mapping[key]
-                    batch_color = self._train_metrics[key].batch_line.get_color()
-                    livedata.epoch_line, = ax.plot(
-                        [], [], color=batch_color, **self._epoch_ax
-                    )
-                    ax.legend(**self._legend)
-                except KeyError:
-                    continue
+                # initialize batch-level plot objects
+                ax = self._axis_mapping[key]
+                batch_color = self._train_metrics[key].batch_line.get_color()
+                livedata.epoch_line, = ax.plot(
+                    [], [], color=batch_color, **self._epoch_ax
+                )
+                ax.legend(**self._legend)
 
             if livedata.epoch_line is not None and livedata.batch_domain.size:
                 if self.last_n_batches:
@@ -528,19 +520,16 @@ class LivePlot(LiveLogger):
         for key, livedata in self._test_metrics.items():
             # initialize epoch-level plot objects
             if livedata.epoch_line is None:
-                try:
-                    ax = self._axis_mapping[key]
-                    livedata.epoch_line, = ax.plot(
-                        [],
-                        [],
-                        label="test",
-                        color=self._test_colors.get(key),
-                        **self._epoch_ax,
-                    )
-                    ax.set_title(key)
-                    ax.legend(**self._legend)
-                except KeyError:
-                    continue
+                ax = self._axis_mapping[key]
+                livedata.epoch_line, = ax.plot(
+                    [],
+                    [],
+                    label="test",
+                    color=self._test_colors.get(key),
+                    **self._epoch_ax,
+                )
+                ax.set_title(key)
+                ax.legend(**self._legend)
 
             if livedata.epoch_line is not None:
                 n = self._epoch_domain_lookup[livedata.name]
@@ -567,7 +556,7 @@ class LivePlot(LiveLogger):
         self._plot_time_queue.append(self._last_plot_time - plot_start_time)
 
     def _resize(self):
-        if self._axes is None:
+        if self._axes is None:  # pragma: no cover
             return
 
         for ax in self._axes.flat:
