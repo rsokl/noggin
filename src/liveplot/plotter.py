@@ -5,13 +5,14 @@ from collections.abc import Sequence
 from inspect import cleandoc
 from itertools import product
 from numbers import Integral, Real
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, Optional, Set, Tuple, Union
 from warnings import warn
 
 import numpy as np
+from matplotlib.pyplot import Axes, Figure
+
 from liveplot.logger import LiveLogger, LiveMetric
 from liveplot.typing import Metrics, ValidColor
-from matplotlib.pyplot import Axes, Figure
 
 __all__ = ["LivePlot"]
 
@@ -76,8 +77,6 @@ class LivePlot(LiveLogger):
 
     @figsize.setter
     def figsize(self, size: Tuple[float, float]):
-        if "figsize" not in self._pltkwargs and size is None:
-            self._pltkwargs["figsize"]
         if (
             not isinstance(size, Sequence)
             or len(size) != 2
@@ -237,6 +236,9 @@ class LivePlot(LiveLogger):
         self._epoch_domain_lookup = defaultdict(int)  # type: Dict[str, int]
         self.last_n_batches = last_n_batches
 
+        # used to warn users only once when they plot an unregistered metric
+        self._unregistered_metrics = set()  # type: Set[str]
+
         # stores most times between consecutive live-plot attempts (seconds)
         self._queue_size = 4
         self.max_fraction_spent_plotting = max_fraction_spent_plotting
@@ -352,6 +354,24 @@ class LivePlot(LiveLogger):
         new._test_colors = test_colors
         return new
 
+    def _filter_unregistered_metrics(self, metrics: Dict[str, Real]) -> Dict[str, Real]:
+        """
+        Warns
+        -----
+        UserWarning
+            Unknown metric was logged
+        """
+        unknown_metrics = set(metrics).difference(self._metrics)
+        if unknown_metrics - self._unregistered_metrics:
+            msg = "\nThe following metrics are not registered for live-plotting:\n\t"
+            warn(msg + ", ".join(sorted(unknown_metrics - self._unregistered_metrics)))
+        self._unregistered_metrics.update(unknown_metrics)
+        return (
+            {k: v for k, v in metrics.items() if k in self._metrics}
+            if unknown_metrics
+            else metrics
+        )
+
     def set_train_batch(
         self, metrics: Dict[str, Real], batch_size: Integral, plot: bool = True
     ):
@@ -373,17 +393,8 @@ class LivePlot(LiveLogger):
         if not self._num_train_batch:
             self._init_plot_window()
 
-            unreg_metrics = set(metrics).difference(self._metrics)
-            if unreg_metrics:
-                msg = (
-                    "\nThe following training metrics are not registered for live-plotting:\n\t"
-                    + "\n\t"
-                )
-                warn(cleandoc(msg.join(sorted(unreg_metrics))))
-
         super().set_train_batch(
-            {k: v for k, v in metrics.items() if k in self._metrics},
-            batch_size=batch_size,
+            self._filter_unregistered_metrics(metrics), batch_size=batch_size
         )
 
         self._plot_batch = plot
@@ -411,19 +422,8 @@ class LivePlot(LiveLogger):
                 The number of samples in the batch used to produce the metrics.
                 Used to weight the metrics to produce epoch-level statistics.
             """
-        # initialize live plot objects for testing
-        if not self._test_metrics:
-            unreg_metrics = set(metrics).difference(self._metrics)
-            if unreg_metrics:
-                msg = (
-                    "\nThe following testing metrics are not registered for live-plotting:\n\t"
-                    + "\n\t"
-                )
-                warn(cleandoc(msg + "\n\t".join(sorted(unreg_metrics))))
-
         super().set_test_batch(
-            {k: v for k, v in metrics.items() if k in self._metrics},
-            batch_size=batch_size,
+            self._filter_unregistered_metrics(metrics), batch_size=batch_size
         )
 
     def plot_test_epoch(self):
