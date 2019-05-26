@@ -57,6 +57,7 @@ class LivePlot(LiveLogger):
 
     @property
     def metrics(self) -> Tuple[str, ...]:
+        """A tuple of all the metric names"""
         return self._metrics
 
     @property

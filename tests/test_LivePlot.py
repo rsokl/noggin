@@ -255,8 +255,6 @@ class LivePlotStateChecker(LivePlotStateMachine):
             "_num_train_batch",
             "_num_test_epoch",
             "_num_test_batch",
-            "max_fraction_spent_plotting",
-            "last_n_batches",
             "_metrics",
             "_pltkwargs",
             "metric_colors",
@@ -281,6 +279,18 @@ class LivePlotStateChecker(LivePlotStateMachine):
         assert isinstance(self.plotter._train_colors, type(new_plotter._train_colors))
         assert self.plotter._train_colors == new_plotter._train_colors
         assert self.plotter._train_colors[None] is new_plotter._train_colors[None]
+
+        # check consistency for all public attributes
+        for attr in (
+            x
+            for x in dir(self.plotter)
+            if not x.startswith("_")
+            and not callable(getattr(self.plotter, x))
+            and x not in {"plot_objects", "metrics", "test_metrics", "train_metrics"}
+        ):
+            original_attr = getattr(self.plotter, attr)
+            from_dict_attr = getattr(new_plotter, attr)
+            assert original_attr == from_dict_attr, attr
 
 
 @pytest.mark.usefixtures("cleandir", "killplots")
