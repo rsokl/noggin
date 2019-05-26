@@ -363,7 +363,7 @@ class LivePlot(LiveLogger):
         """
         unknown_metrics = set(metrics).difference(self._metrics)
         if unknown_metrics - self._unregistered_metrics:
-            msg = "\nThe following metrics are not registered for live-plotting:\n\t"
+            msg = "\nThe following metrics are not registered for live-plotting: "
             warn(msg + ", ".join(sorted(unknown_metrics - self._unregistered_metrics)))
         self._unregistered_metrics.update(unknown_metrics)
         return (
@@ -467,19 +467,16 @@ class LivePlot(LiveLogger):
            be called if you are generating a static plot."""
         for key, livedata in self._train_metrics.items():
             if livedata.batch_data.size and livedata.batch_line is None:
-                try:
-                    ax = self._axis_mapping[key]
-                    livedata.batch_line, = ax.plot(
-                        [],
-                        [],
-                        label="train",
-                        color=self._train_colors.get(key),
-                        **self._batch_ax,
-                    )
-                    ax.set_title(key)
-                    ax.legend()
-                except KeyError:
-                    pass
+                ax = self._axis_mapping[key]
+                livedata.batch_line, = ax.plot(
+                    [],
+                    [],
+                    label="train",
+                    color=self._train_colors.get(key),
+                    **self._batch_ax,
+                )
+                ax.set_title(key)
+                ax.legend()
 
             if self._plot_batch:
                 n = (
@@ -527,19 +524,16 @@ class LivePlot(LiveLogger):
         for key, livedata in self._test_metrics.items():
             # initialize epoch-level plot objects
             if livedata.epoch_line is None:
-                try:
-                    ax = self._axis_mapping[key]
-                    livedata.epoch_line, = ax.plot(
-                        [],
-                        [],
-                        label="test",
-                        color=self._test_colors.get(key),
-                        **self._epoch_ax,
-                    )
-                    ax.set_title(key)
-                    ax.legend(**self._legend)
-                except KeyError:
-                    pass
+                ax = self._axis_mapping[key]
+                livedata.epoch_line, = ax.plot(
+                    [],
+                    [],
+                    label="test",
+                    color=self._test_colors.get(key),
+                    **self._epoch_ax,
+                )
+                ax.set_title(key)
+                ax.legend(**self._legend)
 
             if livedata.epoch_line is not None:
                 n = self._epoch_domain_lookup[livedata.name]
