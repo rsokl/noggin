@@ -1,10 +1,9 @@
-from uuid import uuid4
 import pickle
-
 from collections.abc import Sequence
 from numbers import Integral, Real
 from string import ascii_letters
-from typing import Tuple
+from typing import Tuple, Union
+from uuid import uuid4
 
 import hypothesis.strategies as st
 import numpy as np
@@ -12,13 +11,14 @@ import pytest
 import tests.custom_strategies as cst
 from hypothesis import given, settings
 from hypothesis.stateful import invariant, precondition, rule
-from liveplot import load_metrics, save_metrics
-from liveplot.plotter import LivePlot
 from matplotlib.pyplot import Axes, Figure
 from numpy import ndarray
 from numpy.testing import assert_array_equal
 from tests.base_state_machines import LivePlotStateMachine
 from tests.utils import compare_all_metrics
+
+from liveplot import load_metrics, save_metrics
+from liveplot.plotter import LivePlot
 
 
 @settings(deadline=None)
@@ -171,6 +171,16 @@ class LivePlotStateChecker(LivePlotStateMachine):
     def set_figsize(self, size: Tuple[float, float]):
         self.plotter.figsize = size
         assert self.plotter.figsize == size
+
+    @rule(size=st.none() | st.integers(min_value=1))
+    def set_last_n_batches(self, size: Union[None, int]):
+        self.plotter.last_n_batches = size
+        assert self.plotter.last_n_batches == size
+
+    @rule(size=st.floats(min_value=0.0, max_value=1.0))
+    def set_max_fraction_spent_plotting(self, size: float):
+        self.plotter.max_fraction_spent_plotting = size
+        assert self.plotter.max_fraction_spent_plotting == size
 
     @rule()
     def check_plt_objects(self):
