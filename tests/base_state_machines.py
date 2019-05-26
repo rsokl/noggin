@@ -71,6 +71,9 @@ class LivePlotStateMachine(RuleBasedStateMachine):
             max_fraction_spent_plotting=data.draw(
                 st.floats(0, 1), label="max_fraction_spent_plotting"
             ),
+            last_n_batches=data.draw(
+                st.none() | st.integers(1, 100), label="last_n_batches"
+            ),
         )
         self.logger = LiveLogger()
 

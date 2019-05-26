@@ -1,7 +1,9 @@
+import pickle
 from collections.abc import Sequence
 from numbers import Integral, Real
 from string import ascii_letters
-from typing import Tuple
+from typing import Tuple, Union
+from uuid import uuid4
 
 import hypothesis.strategies as st
 import numpy as np
@@ -9,13 +11,14 @@ import pytest
 import tests.custom_strategies as cst
 from hypothesis import given, settings
 from hypothesis.stateful import invariant, precondition, rule
-from liveplot import load_metrics, save_metrics
-from liveplot.plotter import LivePlot
 from matplotlib.pyplot import Axes, Figure
 from numpy import ndarray
 from numpy.testing import assert_array_equal
 from tests.base_state_machines import LivePlotStateMachine
 from tests.utils import compare_all_metrics
+
+from liveplot import load_metrics, save_metrics
+from liveplot.plotter import LivePlot
 
 
 @settings(deadline=None)
@@ -43,6 +46,10 @@ from tests.utils import compare_all_metrics
         dict(
             max_fraction_spent_plotting=cst.everything_except((float, int))
             | st.floats().filter(lambda x: not 0 <= x <= 1)
+        ),
+        dict(
+            last_n_batches=cst.everything_except((int, type(None)))
+            | st.integers(max_value=0)
         ),
     ],
 )
@@ -165,6 +172,16 @@ class LivePlotStateChecker(LivePlotStateMachine):
         self.plotter.figsize = size
         assert self.plotter.figsize == size
 
+    @rule(size=st.none() | st.integers(min_value=1))
+    def set_last_n_batches(self, size: Union[None, int]):
+        self.plotter.last_n_batches = size
+        assert self.plotter.last_n_batches == size
+
+    @rule(size=st.floats(min_value=0.0, max_value=1.0))
+    def set_max_fraction_spent_plotting(self, size: float):
+        self.plotter.max_fraction_spent_plotting = size
+        assert self.plotter.max_fraction_spent_plotting == size
+
     @rule()
     def check_plt_objects(self):
         """ Ensure no side effect """
@@ -234,14 +251,20 @@ class LivePlotStateChecker(LivePlotStateMachine):
     @invariant()
     def check_from_dict_roundtrip(self):
         plotter_dict = self.plotter.to_dict()
-        new_plotter = LivePlot.from_dict(plotter_dict)
+        filename = str(uuid4())
+        with open(filename, "wb") as f:
+            pickle.dump(plotter_dict, f)
+
+        with open(filename, "rb") as f:
+            loaded_dict = pickle.load(f)
+
+        new_plotter = LivePlot.from_dict(loaded_dict)
 
         for attr in [
             "_num_train_epoch",
             "_num_train_batch",
             "_num_test_epoch",
             "_num_test_batch",
-            "max_fraction_spent_plotting",
             "_metrics",
             "_pltkwargs",
             "metric_colors",
@@ -266,6 +289,18 @@ class LivePlotStateChecker(LivePlotStateMachine):
         assert isinstance(self.plotter._train_colors, type(new_plotter._train_colors))
         assert self.plotter._train_colors == new_plotter._train_colors
         assert self.plotter._train_colors[None] is new_plotter._train_colors[None]
+
+        # check consistency for all public attributes
+        for attr in (
+            x
+            for x in dir(self.plotter)
+            if not x.startswith("_")
+            and not callable(getattr(self.plotter, x))
+            and x not in {"plot_objects", "metrics", "test_metrics", "train_metrics"}
+        ):
+            original_attr = getattr(self.plotter, attr)
+            from_dict_attr = getattr(new_plotter, attr)
+            assert original_attr == from_dict_attr, attr
 
 
 @pytest.mark.usefixtures("cleandir", "killplots")

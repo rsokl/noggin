@@ -176,10 +176,7 @@ def plotters(draw) -> st.SearchStrategy[LivePlot]:
     train_metrics = draw(live_metrics())
     min_num_test = 1 if not train_metrics else 0
     test_metrics = draw(live_metrics(min_num_metrics=min_num_test))
-
-    max_fraction_spent_plotting = draw(st.floats(0, 1))
     metric_names = sorted(set(train_metrics).union(set(test_metrics)))
-    nrows = len(metric_names)
     train_colors = {k: draw(matplotlib_colors()) for k in train_metrics}
     test_colors = {k: draw(matplotlib_colors()) for k in test_metrics}
 
@@ -199,8 +196,9 @@ def plotters(draw) -> st.SearchStrategy[LivePlot]:
             num_test_batch=max(
                 (len(v["batch_data"]) for v in test_metrics.values()), default=0
             ),
-            max_fraction_spent_plotting=max_fraction_spent_plotting,
-            pltkwargs=dict(figsize=(3, 2), nrows=nrows, ncols=1),
+            max_fraction_spent_plotting=draw(st.floats(0, 1)),
+            last_n_batches=draw(st.none() | st.integers(1, 100)),
+            pltkwargs=dict(figsize=(3, 2), nrows=len(metric_names), ncols=1),
             train_colors=train_colors,
             test_colors=test_colors,
             metric_names=metric_names,

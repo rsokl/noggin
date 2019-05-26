@@ -57,6 +57,7 @@ class LivePlot(LiveLogger):
 
     @property
     def metrics(self) -> Tuple[str, ...]:
+        """A tuple of all the metric names"""
         return self._metrics
 
     @property
@@ -120,7 +121,7 @@ class LivePlot(LiveLogger):
             return self._fig, self._axes
 
     @property
-    def max_fraction_spent_plotting(self):
+    def max_fraction_spent_plotting(self) -> float:
         return self._max_fraction_spent_plotting
 
     @max_fraction_spent_plotting.setter
@@ -138,10 +139,40 @@ class LivePlot(LiveLogger):
             )
         self._max_fraction_spent_plotting = value
 
+    @property
+    def last_n_batches(self) -> int:
+        """The maximum number of batches to be plotted at any given time.
+        If ``None``, all data will be plotted."""
+        return self._last_n_batches
+
+    @last_n_batches.setter
+    def last_n_batches(self, value: int):
+        if value is None:
+            self._last_n_batches = None
+            self._epoch_domain_lookup = defaultdict(int)  # type: Dict[str, int]
+            return
+
+        if not isinstance(value, int):
+            raise TypeError(
+                "`last_n_batches` must be a positive integer got {}".format(value)
+            )
+
+        if value < 1:
+            raise ValueError(
+                "`last_n_batches` must be a positive integer got {}".format(value)
+            )
+        # Points to starting index for the epoch-domain of a
+        # given metric's name; used to keep epoch plot within
+        # "last-n-batches" plotted.
+        # This must be reset each time `last_n_batches` is set
+        self._epoch_domain_lookup = defaultdict(int)  # type: Dict[str, int]
+        self._last_n_batches = value
+
     def __init__(
         self,
         metrics: Metrics,
         max_fraction_spent_plotting: float = 0.05,
+        last_n_batches: Optional[int] = None,
         nrows: Optional[int] = None,
         ncols: int = 1,
         figsize: Optional[Tuple[int, int]] = None,
@@ -164,6 +195,10 @@ class LivePlot(LiveLogger):
                 mean_plot_time / (time_since_last_plot + mean_plot_time)
 
             does not exceed ``max_fraction_spent_plotting``.
+
+        last_n_batches : Optional[int]
+            The maximum number of batches to be plotted at any given time.
+            If ``None``, all data will be plotted.
 
         nrows : Optional[int]
             Number of rows of the subplot grid. Metrics are added in
@@ -204,6 +239,8 @@ class LivePlot(LiveLogger):
         self._plot_time_queue = deque([])  # stores most recent plot-times (seconds)
         self._time_of_last_liveplot_attempt = None  # type: Optional[float]
         self._draw_time = 0.0  # type: float
+        self._epoch_domain_lookup = defaultdict(int)  # type: Dict[str, int]
+        self.last_n_batches = last_n_batches
 
         # stores most times between consecutive live-plot attempts (seconds)
         self._queue_size = 4
@@ -278,6 +315,7 @@ class LivePlot(LiveLogger):
         out.update(
             dict(
                 max_fraction_spent_plotting=self.max_fraction_spent_plotting,
+                last_n_batches=self.last_n_batches,
                 pltkwargs=self._pltkwargs,
                 train_colors=dict(self._train_colors),
                 test_colors=dict(self._test_colors),
@@ -291,6 +329,7 @@ class LivePlot(LiveLogger):
         new = cls(
             metrics=plotter_dict["metric_names"],
             max_fraction_spent_plotting=plotter_dict["max_fraction_spent_plotting"],
+            last_n_batches=plotter_dict["last_n_batches"],
         )
 
         new._train_metrics.update(
@@ -448,12 +487,21 @@ class LivePlot(LiveLogger):
                     pass
 
             if self._plot_batch:
-                livedata.batch_line.set_xdata(livedata.batch_domain)
-                livedata.batch_line.set_ydata(livedata.batch_data)
+                n = (
+                    self.last_n_batches
+                    if self.last_n_batches
+                    else len(livedata.batch_domain)
+                )
+                livedata.batch_line.set_xdata(livedata.batch_domain[-n:])
+                livedata.batch_line.set_ydata(livedata.batch_data[-n:])
                 if livedata.epoch_data.size:
                     livedata.batch_line.set_label(
                         "train: {:.2e}".format(livedata.epoch_data[-1])
                     )
+            elif len(livedata.batch_line.get_xdata()):
+                # clear batch-level plots
+                livedata.batch_line.set_xdata([])
+                livedata.batch_line.set_ydata([])
 
         # plot epoch-level train metrics
         for key, livedata in self._train_metrics.items():
@@ -467,8 +515,18 @@ class LivePlot(LiveLogger):
                 ax.legend(**self._legend)
 
             if livedata.epoch_line is not None:
-                livedata.epoch_line.set_xdata(livedata.epoch_domain)
-                livedata.epoch_line.set_ydata(livedata.epoch_data)
+                if self.last_n_batches:
+                    old_n = self._epoch_domain_lookup[livedata.name]
+                    n = np.searchsorted(
+                        livedata.epoch_domain[old_n:],
+                        livedata.batch_domain[-self.last_n_batches :][0],
+                    )
+                    n += old_n
+                else:
+                    n = 0
+                self._epoch_domain_lookup[livedata.name] = n
+                livedata.epoch_line.set_xdata(livedata.epoch_domain[n:])
+                livedata.epoch_line.set_ydata(livedata.epoch_data[n:])
 
         # plot epoch-level test metrics
         for key, livedata in self._test_metrics.items():
@@ -489,8 +547,9 @@ class LivePlot(LiveLogger):
                     pass
 
             if livedata.epoch_line is not None:
-                livedata.epoch_line.set_xdata(livedata.epoch_domain)
-                livedata.epoch_line.set_ydata(livedata.epoch_data)
+                n = self._epoch_domain_lookup[livedata.name]
+                livedata.epoch_line.set_xdata(livedata.epoch_domain[n:])
+                livedata.epoch_line.set_ydata(livedata.epoch_data[n:])
                 if livedata.epoch_data.size:
                     livedata.epoch_line.set_label(
                         "test: " + "{:.2e}".format(livedata.epoch_data[-1])

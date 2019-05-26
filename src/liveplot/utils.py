@@ -17,6 +17,7 @@ __all__ = ["create_plot", "save_metrics", "load_metrics"]
 def create_plot(
     metrics: Metrics,
     max_fraction_spent_plotting: float = 0.05,
+    last_n_batches: Optional[int] = None,
     nrows: Optional[int] = None,
     ncols: int = 1,
     figsize: Optional[Tuple[int, int]] = None,
@@ -64,6 +65,7 @@ def create_plot(
     live_plotter = LivePlot(
         metrics,
         max_fraction_spent_plotting=max_fraction_spent_plotting,
+        last_n_batches=last_n_batches,
         figsize=figsize,
         ncols=ncols,
         nrows=nrows,
