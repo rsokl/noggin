@@ -94,7 +94,7 @@ def test_unregister_metric_warns():
         plotter.set_train_batch(dict(a=1, b=1), batch_size=1)
 
     with pytest.warns(UserWarning):
-        plotter.set_test_batch(dict(a=1, b=1), batch_size=1)
+        plotter.set_test_batch(dict(a=1, c=1), batch_size=1)
 
 
 @given(plotter=cst.plotters())
