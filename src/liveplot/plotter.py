@@ -1,3 +1,4 @@
+from math import ceil
 import importlib
 import time
 from collections import OrderedDict, defaultdict, deque
@@ -280,7 +281,9 @@ class LivePlot(LiveLogger):
             )
 
         if len(self._metrics) > ncols * nrows:
-            nrows = int(round(len(self._metrics) / ncols))
+            nrows = int(ceil(len(self._metrics) / ncols))
+
+        assert nrows * ncols >= len(self._metrics)
 
         self._pltkwargs = dict(nrows=nrows, ncols=ncols)
         if figsize is not None:
