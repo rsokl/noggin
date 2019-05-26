@@ -43,13 +43,13 @@ def _check_valid_color(c: ValidColor) -> bool:
 
 class LivePlot(LiveLogger):
     """ Plots batch-level and epoch-level summary statistics of the training and
-        testing metrics of a model during a session.
+    testing metrics of a model during a session.
 
-        Notes
-        -----
-        Live plotting is only supported for the 'nbAgg' backend (i.e.
-        when the cell magic ``%matplotlib notebook`` is invoked in a
-        jupyter notebook). """
+    Notes
+    -----
+    Live plotting is only supported for the 'nbAgg' backend (i.e.
+    when the cell magic ``%matplotlib notebook`` is invoked in a
+    jupyter notebook). """
 
     @property
     def metrics(self) -> Tuple[str, ...]:
@@ -58,10 +58,11 @@ class LivePlot(LiveLogger):
 
     @property
     def metric_colors(self) -> Dict[str, Dict[str, str]]:
-        """ Returns
-            -------
-            Dict[str, Dict[str, color-value]]
-                {'<metric-name>' -> {'train'/'test' -> color-value}}"""
+        """
+        Returns
+        -------
+        Dict[str, Dict[str, color-value]]
+            {'<metric-name>' -> {'train'/'test' -> color-value}}"""
         out = defaultdict(dict)
         for k, v in self._train_colors.items():
             out[k]["train"] = v
@@ -357,6 +358,11 @@ class LivePlot(LiveLogger):
 
     def _filter_unregistered_metrics(self, metrics: Dict[str, Real]) -> Dict[str, Real]:
         """
+        Returns
+        -------
+        Dict[str, Real]
+            A dictionary containing only registered metric-names.
+
         Warns
         -----
         UserWarning
@@ -378,18 +384,18 @@ class LivePlot(LiveLogger):
     ):
         """ Provide the batch-level metric values to be recorded, and (optionally) plotted.
 
-            Parameters
-            ----------
-            metrics : Dict[str, Real]
-                Mapping of metric-name to value. Only those metrics that were
-                registered when initializing LivePlot will be recorded.
+        Parameters
+        ----------
+        metrics : Dict[str, Real]
+            Mapping of metric-name to value. Only those metrics that were
+            registered when initializing LivePlot will be recorded.
 
-            batch_size : Integral
-                The number of samples in the batch used to produce the metrics.
-                Used to weight the metrics to produce epoch-level statistics.
+        batch_size : Integral
+            The number of samples in the batch used to produce the metrics.
+            Used to weight the metrics to produce epoch-level statistics.
 
-            plot : bool
-                If True, plot the batch-metrics (adhering to the refresh rate)"""
+        plot : bool
+            If True, plot the batch-metrics (adhering to the refresh rate)"""
 
         super().set_train_batch(
             self._filter_unregistered_metrics(metrics), batch_size=batch_size
@@ -410,16 +416,15 @@ class LivePlot(LiveLogger):
     def set_test_batch(self, metrics: Dict[str, Real], batch_size: Integral):
         """ Provide the batch-level metric values to be recorded, and (optionally) plotted.
 
-            Parameters
-            ----------
-            metrics : Dict[str, Real]
-                Mapping of metric-name to value. Only those metrics that were
-                registered when initializing LivePlot will be recorded.
+        Parameters
+        ----------
+        metrics : Dict[str, Real]
+            Mapping of metric-name to value. Only those metrics that were
+            registered when initializing LivePlot will be recorded.
 
-            batch_size : Integral
-                The number of samples in the batch used to produce the metrics.
-                Used to weight the metrics to produce epoch-level statistics.
-            """
+        batch_size : Integral
+            The number of samples in the batch used to produce the metrics.
+            Used to weight the metrics to produce epoch-level statistics."""
         super().set_test_batch(
             self._filter_unregistered_metrics(metrics), batch_size=batch_size
         )
@@ -461,7 +466,7 @@ class LivePlot(LiveLogger):
 
     def plot(self):
         """ Plot data, irrespective of the refresh rate. This should only
-           be called if you are generating a static plot."""
+        be called if you are generating a static plot."""
         self._init_plot_window()
         for key, livedata in self._train_metrics.items():
             if livedata.batch_line is None:
