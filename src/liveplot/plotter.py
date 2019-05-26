@@ -40,11 +40,6 @@ def _check_valid_color(c: ValidColor) -> bool:
         return True
 
 
-def _filter_data(seq, cap=2000):
-    step = max(len(seq) // cap, 1)
-    return seq[::step]
-
-
 class LivePlot(LiveLogger):
     """ Plots batch-level and epoch-level summary statistics of the training and
         testing metrics of a model during a session.
