@@ -106,14 +106,18 @@ def test_mismatched_metrics(mismatched_category, mismatched_metric):
     metrics=st.lists(st.sampled_from("abcdef"), min_size=1, unique=True).map(tuple),
     figsize=st.tuples(*[st.floats(min_value=1, max_value=10)] * 2),
     max_fraction_spent_plotting=st.floats(0.0, 1.0),
+    last_n_batches=st.none() | st.integers(1, 10),
 )
-def test_create_plot(metrics, figsize, max_fraction_spent_plotting):
+def test_create_plot(metrics, figsize, max_fraction_spent_plotting, last_n_batches):
     with close_plots():
         plotter, fig, ax = create_plot(
             metrics=metrics,
             figsize=figsize,
             max_fraction_spent_plotting=max_fraction_spent_plotting,
+            last_n_batches=last_n_batches,
         )
         assert isinstance(plotter, LivePlot)
         assert isinstance(fig, Figure)
         assert isinstance(ax, (Axes, ndarray))
+        assert plotter.last_n_batches == last_n_batches
+        assert plotter.max_fraction_spent_plotting == max_fraction_spent_plotting
