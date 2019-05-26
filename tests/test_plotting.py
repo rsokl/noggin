@@ -88,9 +88,10 @@ def test_exhaustive_plotting(plot_time, outer_time, max_fraction, expected_fract
 
 
 @settings(deadline=None)
-@given(plotter=cst.plotters(), liveplot=st.booleans())
-def test_plot(plotter: LivePlot, liveplot: bool):
+@given(plotter=cst.plotters(), liveplot=st.booleans(), init_plot_window=st.booleans())
+def test_fuzz_plot_method(plotter: LivePlot, liveplot: bool, init_plot_window: bool):
     with close_plots():
         plotter._liveplot = liveplot
-        plotter._init_plot_window()
+        if init_plot_window:
+            plotter._init_plot_window()
         plotter.plot()
