@@ -1,7 +1,7 @@
 import pprint
 from collections import defaultdict
 from itertools import combinations
-from typing import Any, Dict, Sequence, Tuple, Union, TypeVar
+from typing import Any, Dict, Optional, Sequence, Union, Tuple, TypeVar
 
 import hypothesis.extra.numpy as hnp
 import hypothesis.strategies as st
@@ -23,9 +23,13 @@ __all__ = [
 T = TypeVar("T")
 
 
-def draw_if_strategy(data: st.DataObject, value: Union[T, st.SearchStrategy[T]]) -> T:
+def draw_if_strategy(
+    data: st.DataObject,
+    value: Union[T, st.SearchStrategy[T]],
+    label: Optional[str] = None,
+) -> T:
     if isinstance(value, st.SearchStrategy):
-        return data.draw(value)
+        return data.draw(value, label=label)
     return value
 
 
@@ -173,7 +177,7 @@ def plotters(draw) -> st.SearchStrategy[LivePlot]:
     min_num_test = 1 if not train_metrics else 0
     test_metrics = draw(live_metrics(min_num_metrics=min_num_test))
 
-    refresh = draw(st.one_of(st.just(-1), st.floats(0, 2)))
+    max_fraction_spent_plotting = draw(st.floats(0, 1))
     metric_names = sorted(set(train_metrics).union(set(test_metrics)))
     nrows = len(metric_names)
     train_colors = {k: draw(matplotlib_colors()) for k in train_metrics}
@@ -195,7 +199,7 @@ def plotters(draw) -> st.SearchStrategy[LivePlot]:
             num_test_batch=max(
                 (len(v["batch_data"]) for v in test_metrics.values()), default=0
             ),
-            refresh=refresh,
+            max_fraction_spent_plotting=max_fraction_spent_plotting,
             pltkwargs=dict(figsize=(3, 2), nrows=nrows, ncols=1),
             train_colors=train_colors,
             test_colors=test_colors,
