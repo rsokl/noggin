@@ -1,7 +1,13 @@
-import pytest
 from math import isclose
-from liveplot import LivePlot
 from time import sleep, time
+
+import hypothesis.strategies as st
+import pytest
+import tests.custom_strategies as cst
+from hypothesis import given, settings
+from tests import close_plots
+
+from liveplot import LivePlot
 
 
 class ControlledPlot(LivePlot):
@@ -79,3 +85,11 @@ def test_exhaustive_plotting(plot_time, outer_time, max_fraction, expected_fract
     actual_fraction = total_plot_time / total_time
 
     assert isclose(actual_fraction, expected_fraction, rel_tol=0.1, abs_tol=0.01)
+
+
+@settings(deadline=None)
+@given(plotter=cst.plotters(), liveplot=st.booleans())
+def test_fuzz_plot_method(plotter: LivePlot, liveplot: bool):
+    with close_plots():
+        plotter._liveplot = liveplot
+        plotter.plot()
