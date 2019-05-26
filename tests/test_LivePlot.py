@@ -47,6 +47,10 @@ from tests.utils import compare_all_metrics
             max_fraction_spent_plotting=cst.everything_except((float, int))
             | st.floats().filter(lambda x: not 0 <= x <= 1)
         ),
+        dict(
+            last_n_batches=cst.everything_except((int, type(None)))
+            | st.integers(max_value=0)
+        ),
     ],
 )
 @given(data=st.data())
@@ -252,6 +256,7 @@ class LivePlotStateChecker(LivePlotStateMachine):
             "_num_test_epoch",
             "_num_test_batch",
             "max_fraction_spent_plotting",
+            "last_n_batches",
             "_metrics",
             "_pltkwargs",
             "metric_colors",
