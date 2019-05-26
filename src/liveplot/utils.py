@@ -7,41 +7,23 @@ from liveplot.logger import LiveLogger
 from liveplot.plotter import LivePlot
 from liveplot.typing import Figure, LiveMetrics, Metrics, ndarray
 
+from custom_inherit import doc_inherit
+
+
 __all__ = ["create_plot", "save_metrics", "load_metrics"]
 
 
+@doc_inherit(LivePlot.__init__, style="numpy")
 def create_plot(
     metrics: Metrics,
-    refresh: float = 0.001,
-    figsize: Optional[Tuple[float, float]] = None,
+    max_fraction_spent_plotting: float = 0.05,
+    nrows: Optional[int] = None,
     ncols: int = 1,
-    nrows: int = 1,
+    figsize: Optional[Tuple[int, int]] = None,
 ) -> Tuple[LivePlot, Figure, ndarray]:
     """ Create matplotlib figure/axes, and a live-plotter, which publishes
     "live" training/testing metric data, at a batch and epoch level, to
     the figure.
-
-    Parameters
-    ----------
-    metrics : Union[str, Sequence[str], Dict[str, valid-color], Dict[str, Dict['train'/'test', valid-color]]]
-        The name, or sequence of names, of the metric(s) that will be plotted.
-
-        `metrics` can also be a dictionary, specifying the colors used to plot
-        the metrics. Two mappings are valid:
-            - '<metric-name>' -> color-value  (specifies train-metric color only)
-            - '<metric-name>' -> {'train'/'test' : color-value}
-
-    refresh : float, optional (default=0.001)
-        Sets the plot refresh rate in redraws-per-seconds.
-
-        The lowest permissible refresh rate is 1/1000 redraws per second.
-
-    figsize : Optional[Tuple[int, int]]
-        Specifies the width and height, respectively, of the figure in inches.
-
-    nrows, ncols : int, optional, default: 1
-        Number of rows/columns of the subplot grid. Metrics are added in
-        row-major order to fill the grid.
 
     Returns
     -------
@@ -79,7 +61,13 @@ def create_plot(
     Saving the logged metrics
     >>> save_metrics("./metrics.npz", plotter) # save metrics to numpy-archive
     """
-    live_plotter = LivePlot(metrics, refresh, figsize=figsize, ncols=ncols, nrows=nrows)
+    live_plotter = LivePlot(
+        metrics,
+        max_fraction_spent_plotting=max_fraction_spent_plotting,
+        figsize=figsize,
+        ncols=ncols,
+        nrows=nrows,
+    )
     fig, ax = live_plotter.plot_objects
     return live_plotter, fig, ax
 

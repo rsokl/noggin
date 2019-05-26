@@ -26,7 +26,7 @@ class ControlledPlot(LivePlot):
 def test_adaptive_plotting(plot_time, outer_time, max_fraction):
     plotter = ControlledPlot(metrics="a", plot_time=plot_time)
 
-    plotter._max_fraction_spent_plotting = max_fraction
+    plotter.max_fraction_spent_plotting = max_fraction
     plotter._queue_size = 1
     total_plot_time = 0.0
 

@@ -67,7 +67,10 @@ class LivePlotStateMachine(RuleBasedStateMachine):
             metrics[metric]["test"] = color
 
         self.plotter = LivePlot(
-            metrics, refresh=data.draw(st.sampled_from([-1, None]), label="refresh")
+            metrics,
+            max_fraction_spent_plotting=data.draw(
+                st.floats(0, 1), label="max_fraction_spent_plotting"
+            ),
         )
         self.logger = LiveLogger()
 

@@ -105,12 +105,14 @@ def test_mismatched_metrics(mismatched_category, mismatched_metric):
 @given(
     metrics=st.lists(st.sampled_from("abcdef"), min_size=1, unique=True).map(tuple),
     figsize=st.tuples(*[st.floats(min_value=1, max_value=10)] * 2),
-    refresh=st.floats(0.5, 2),
+    max_fraction_spent_plotting=st.floats(0.0, 1.0),
 )
-def test_create_plot(metrics, figsize, refresh):
+def test_create_plot(metrics, figsize, max_fraction_spent_plotting):
     with close_plots():
         plotter, fig, ax = create_plot(
-            metrics=metrics, figsize=figsize, refresh=refresh
+            metrics=metrics,
+            figsize=figsize,
+            max_fraction_spent_plotting=max_fraction_spent_plotting,
         )
         assert isinstance(plotter, LivePlot)
         assert isinstance(fig, Figure)

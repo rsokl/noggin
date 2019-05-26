@@ -74,29 +74,6 @@ class LivePlot(LiveLogger):
         return dict(out)
 
     @property
-    def refresh(self) -> Union[float, None]:
-        """ The minimum time between canvas-draw events, in seconds.
-            A negative `refresh` value turns off live-plotting."""
-        return self._refresh
-
-    @refresh.setter
-    def refresh(self, value: Union[float, None]):
-        """ Set the refresh rate (per second). A negative refresh rate
-            turns off static plotting."""
-        if not isinstance(value, (float, int)) and value is not None:
-            raise TypeError(
-                "`refresh` must be set to a "
-                "real number or `None`, got {}".format(value)
-            )
-
-        if value is not None:
-            self._refresh = 0.001 if 0 <= value < 0.001 else value
-            self._liveplot = self._refresh >= 0.0 and "nbAgg" in self._backend
-        else:
-            self._refresh = None
-            self._liveplot = "nbAgg" in self._backend
-
-    @property
     def figsize(self) -> Optional[Tuple[float, float]]:
         """Returns the current size of the figure in inches."""
         return self._pltkwargs.get("figsize")
@@ -142,43 +119,62 @@ class LivePlot(LiveLogger):
         else:
             return self._fig, self._axes
 
+    @property
+    def max_fraction_spent_plotting(self):
+        return self._max_fraction_spent_plotting
+
+    @max_fraction_spent_plotting.setter
+    def max_fraction_spent_plotting(self, value: float):
+        if not isinstance(value, (int, float)):
+            raise TypeError(
+                "`max_fraction_spent_plotting` must be a "
+                "floating point number in [0, 1], got {}".format(value)
+            )
+
+        if not 0 <= value <= 1:
+            raise ValueError(
+                "`max_fraction_spent_plotting` must be a "
+                "floating point number in [0, 1], got {}".format(value)
+            )
+        self._max_fraction_spent_plotting = value
+
     def __init__(
         self,
         metrics: Metrics,
-        refresh: Optional[float] = None,
+        max_fraction_spent_plotting: float = 0.05,
         nrows: Optional[int] = None,
         ncols: int = 1,
         figsize: Optional[Tuple[int, int]] = None,
     ):
-        """ Parameters
-            ----------
-            metrics : Union[str, Sequence[str], Dict[str, valid-color], Dict[str, Dict['train'/'test', valid-color]]]
-                The name, or sequence of names, of the metric(s) that will be plotted.
+        """
+        Parameters
+        ----------
+        metrics : Union[str, Sequence[str], Dict[str, valid-color], Dict[str, Dict['train'/'test', valid-color]]]
+            The name, or sequence of names, of the metric(s) that will be plotted.
 
-            `metrics` can also be a dictionary, specifying the colors used to plot
-            the metrics. Two mappings are valid:
-                - '<metric-name>' -> color-value  (specifies train-metric color only)
-                - '<metric-name>' -> {'train'/'test' : color-value}
+        `metrics` can also be a dictionary, specifying the colors used to plot
+        the metrics. Two mappings are valid:
+            - '<metric-name>' -> color-value  (specifies train-metric color only)
+            - '<metric-name>' -> {'train'/'test' : color-value}
 
-            refresh : float, optional (default=0.)
-                Sets the plot refresh rate in seconds.
+        max_fraction_spent_plotting : float, optional (default=0.05)
+            The maximum fraction of time spent plotting. The refresh rate of plotting
+            will update dynamically such that:
 
-                A refresh rate of 0. updates the once every 1/1000 seconds.
+                mean_plot_time / (time_since_last_plot + mean_plot_time)
 
-                A negative refresh rate  turns off live plotting:
-                   Call `self.plot()` to draw the static plot.
-                   Call `self.show()` to open a window showing the static plot
+            does not exceed ``max_fraction_spent_plotting``.
 
-            nrows : Optional[int]
-                Number of rows of the subplot grid. Metrics are added in
-                row-major order to fill the grid.
+        nrows : Optional[int]
+            Number of rows of the subplot grid. Metrics are added in
+            row-major order to fill the grid.
 
-            ncols : int, optional, default: 1
-                Number of columns of the subplot grid. Metrics are added in
-                row-major order to fill the grid.
+        ncols : int, optional, default: 1
+            Number of columns of the subplot grid. Metrics are added in
+            row-major order to fill the grid.
 
-            figsize : Optional[Sequence[float, float]]
-                Specifies the width and height, respectively, of the figure."""
+        figsize : Optional[Sequence[float, float]]
+            Specifies the width and height, respectively, of the figure."""
         # type checking on inputs
         # initializes the batch and epoch numbers
         super().__init__()
@@ -188,6 +184,7 @@ class LivePlot(LiveLogger):
         _matplotlib = importlib.import_module("matplotlib")
 
         self._backend = _matplotlib.get_backend()
+        self._liveplot = "nbAgg" in self._backend
 
         # plot-settings for batch and epoch data
         self._batch_ax = dict(ls="-", alpha=0.5)
@@ -210,7 +207,7 @@ class LivePlot(LiveLogger):
 
         # stores most times between consecutive live-plot attempts (seconds)
         self._queue_size = 4
-        self._max_fraction_spent_plotting = 0.1
+        self.max_fraction_spent_plotting = max_fraction_spent_plotting
 
         # input parameters
         self._metrics = (metrics,) if isinstance(metrics, str) else tuple(metrics)
@@ -249,10 +246,6 @@ class LivePlot(LiveLogger):
         if len(self._metrics) > ncols * nrows:
             nrows = len(self._metrics)
 
-        self._refresh = None  # type: Optional[float]
-        self._liveplot = None  # type: Optional[bool]
-        self.refresh = refresh  # sets _refresh and _liveplot
-
         self._pltkwargs = dict(nrows=nrows, ncols=ncols)
         if figsize is not None:
             self.figsize = figsize
@@ -272,7 +265,7 @@ class LivePlot(LiveLogger):
         sum(_check_valid_color(c) for c in self._train_colors.values())
         sum(_check_valid_color(c) for c in self._test_colors.values())
 
-        if "nbAgg" not in self._backend and (self.refresh is None or self.refresh >= 0):
+        if "nbAgg" not in self._backend:
             _inline_msg = """Live plotting is not supported when matplotlib uses the '{}'
                              backend. Instead, use the 'nbAgg' backend.
 
@@ -284,7 +277,7 @@ class LivePlot(LiveLogger):
         out = super().to_dict()
         out.update(
             dict(
-                refresh=self.refresh,
+                max_fraction_spent_plotting=self.max_fraction_spent_plotting,
                 pltkwargs=self._pltkwargs,
                 train_colors=dict(self._train_colors),
                 test_colors=dict(self._test_colors),
@@ -295,7 +288,10 @@ class LivePlot(LiveLogger):
 
     @classmethod
     def from_dict(cls, plotter_dict):
-        new = cls(metrics=plotter_dict["metric_names"], refresh=plotter_dict["refresh"])
+        new = cls(
+            metrics=plotter_dict["metric_names"],
+            max_fraction_spent_plotting=plotter_dict["max_fraction_spent_plotting"],
+        )
 
         new._train_metrics.update(
             (key, LiveMetric.from_dict(metric))
@@ -546,10 +542,6 @@ class LivePlot(LiveLogger):
         time_since_last_plot = (
             self._time_of_last_liveplot_attempt - self._last_plot_time
         )
-
-        if self.refresh is not None and time_since_last_plot >= self.refresh:
-            self._timed_plot()
-            return
 
         mean_plot_time = (
             sum(self._plot_time_queue) / len(self._plot_time_queue)
