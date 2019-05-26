@@ -1,3 +1,6 @@
+from uuid import uuid4
+import pickle
+
 from collections.abc import Sequence
 from numbers import Integral, Real
 from string import ascii_letters
@@ -234,7 +237,14 @@ class LivePlotStateChecker(LivePlotStateMachine):
     @invariant()
     def check_from_dict_roundtrip(self):
         plotter_dict = self.plotter.to_dict()
-        new_plotter = LivePlot.from_dict(plotter_dict)
+        filename = str(uuid4())
+        with open(filename, "wb") as f:
+            pickle.dump(plotter_dict, f)
+
+        with open(filename, "rb") as f:
+            loaded_dict = pickle.load(f)
+
+        new_plotter = LivePlot.from_dict(loaded_dict)
 
         for attr in [
             "_num_train_epoch",
