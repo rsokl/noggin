@@ -1,16 +1,16 @@
-# nogging
-Log and plot metrics during train/test time for a neural network (or whatever, really). `nogging`
-provides convenient i/o functions for saving, loading, and recreating nogging sessions. It also provides
+# noggin
+Log and plot metrics during train/test time for a neural network (or whatever, really). `noggin`
+provides convenient i/o functions for saving, loading, and recreating noggin sessions. It also provides
 an interface for accessing logged metrics as [xarray data sets](http://xarray.pydata.org/en/stable/index.html). This
-functionality, availabile via `nogging.xarray`, permits users to seamlessly access their logged metrics as N-dimensional arrays with named axes.
+functionality, available via `noggin.xarray`, permits users to seamlessly access their logged metrics as N-dimensional arrays with named axes.
 
-Please consult the [demo notebook](https://github.com/rsokl/LivePlot/blob/master/LivePlot_Demo.ipynb) for a summary of `nogging`'s functionality.
+Please consult the [demo notebook](https://github.com/rsokl/LivePlot/blob/master/LivePlot_Demo.ipynb) for a summary of `noggin`'s functionality.
 
-![nogging](https://user-images.githubusercontent.com/29104956/52166468-bf425700-26db-11e9-9324-1fc83d4bc71d.gif)
+![noggin](https://user-images.githubusercontent.com/29104956/52166468-bf425700-26db-11e9-9324-1fc83d4bc71d.gif)
 
 
-## Installing nogging
-Clone/download this repository, navigate to the `nogging` directory, and run:
+## Installing noggin
+Clone/download this repository, navigate to the `noggin` directory, and run:
 ```shell
 python setup.py install
 ```
@@ -19,7 +19,7 @@ python setup.py install
 ### Creating a live plot
 ```python
 import numpy as np
-from nogging import create_plot
+from noggin import create_plot
 
 %matplotlib notebook
 
@@ -48,9 +48,9 @@ for i, x in enumerate(np.linspace(0, 10, 100)):
 plotter.plot()  # ensures final data gets plotted
 
 
-from nogging import save_metrics
+from noggin import save_metrics
 
-# save metrics from nogging instance
+# save metrics from noggin instance
 save_metrics("tmp.npz", plotter)
 ```
 
