@@ -5,25 +5,32 @@ and for building a dataset from multiple iterations of an experiment.
 
 try:
     import xarray as xr
-except ImportError:
-    raise ImportError("The Python package `xarray` must be installed "
-                      "in order to access this functionality in liveplot.")
+except ImportError:  # pragma:nocover
+    raise ImportError(
+        "The Python package `xarray` must be installed "
+        "in order to access this functionality in liveplot."
+    )
+from collections import namedtuple
+from typing import Dict, Tuple, Union
 
 import numpy as np
-
 from numpy import ndarray
-from liveplot.plotter import LivePlot
-from liveplot.logger import LiveLogger
 from xarray import Dataset
 
-from typing import Dict, Tuple, Union
+from liveplot.logger import LiveLogger
+from liveplot.plotter import LivePlot
 
 LiveObject = Union[LivePlot, LiveLogger]
 
-__all__ = ['metrics_to_DataArrays', 'get_DataArrays', 'concat_experiments']
+__all__ = ["metrics_to_xarrays", "concat_experiments"]
 
 
-def metrics_to_DataArrays(metrics: Dict[str, Dict[str, ndarray]]) -> Tuple[Dataset, Dataset]:
+MetricArrays = namedtuple("MetricArrays", ("batch", "epoch"))
+
+
+def metrics_to_xarrays(
+    metrics: Dict[str, Dict[str, ndarray]]
+) -> Tuple[Dataset, Dataset]:
     """
     Given liveplot metrics, returns xarray datasets for the batch-level and epoch-level
     metrics, respectively.
@@ -36,8 +43,8 @@ def metrics_to_DataArrays(metrics: Dict[str, Dict[str, ndarray]]) -> Tuple[Datas
 
     Returns
     -------
-    Tuple[xarray.Dataset, xarray.Dataset]
-        The batch-level and epoch-level datasets. The metrics are reported as 
+    MetricArrays[xarray.Dataset, xarray.Dataset]
+        The batch-level and epoch-level datasets. The metrics are reported as
         data variables in the dataset, and the coordinates corresponds to
         the batch-iteration count.
 
@@ -55,55 +62,27 @@ def metrics_to_DataArrays(metrics: Dict[str, Dict[str, ndarray]]) -> Tuple[Datas
     """
     batch_arrays = []
     for metric_name in metrics.keys():
-        dat = metrics[metric_name]['batch_data']
-        at = xr.DataArray(dat,
-                          dims=('iterations',),
-                          coords=[np.arange(1, len(dat) + 1)],
-                          name=metric_name)
+        dat = metrics[metric_name]["batch_data"]
+        at = xr.DataArray(
+            dat,
+            dims=("iterations",),
+            coords=[np.arange(1, len(dat) + 1)],
+            name=metric_name,
+        )
         batch_arrays.append(at)
 
     epoch_arrays = []
     for metric_name in metrics.keys():
-        dat = metrics[metric_name]['epoch_data']
-        at = xr.DataArray(dat,
-                          dims=('iterations',),
-                          coords=[metrics[metric_name]['epoch_domain'].astype(np.int32)],
-                          name=metric_name)
+        dat = metrics[metric_name]["epoch_data"]
+        at = xr.DataArray(
+            dat,
+            dims=("iterations",),
+            coords=[metrics[metric_name]["epoch_domain"].astype(np.int32)],
+            name=metric_name,
+        )
         epoch_arrays.append(at)
 
-    return xr.merge(batch_arrays), xr.merge(epoch_arrays)
-
-
-def get_DataArrays(logger: LiveObject) -> Dict[str, Dict[str, Dataset]]:
-    """
-    Given a LiveLogger or LivePlot instance, returns xarray data sets for
-    its train & test, batch-level & epoch-level metrics, respectively.
-
-    Parameters
-    ----------
-    logger : Union[LivePlot, LiveLogger]
-
-    Returns
-    -------
-    Dict[str, Dict[str, Dataset]]
-        'train/test' -> 'batch/epoch' -> Dataset
-
-    Notes
-    -----
-    The layout of the resulting data sets are:
-
-    Dimensions:     (iterations: num_iterations)
-    Coordinates:
-      * iterations  (iterations) int64 1 2 3 ...
-    Data variables:
-        metric0      (iterations) float64 val_0 val_1 ...
-        metric1      (iterations) float64 val_0 val_1 ...
-        ...
-    """
-    tr_batch, tr_epoch = metrics_to_DataArrays(logger.train_metrics)
-    te_batch, te_epoch = metrics_to_DataArrays(logger.test_metrics)
-    return dict(train=dict(batch=tr_batch, epoch=tr_epoch),
-                test=dict(batch=te_batch, epoch=te_epoch))
+    return MetricArrays(batch=xr.merge(batch_arrays), epoch=xr.merge(epoch_arrays))
 
 
 def concat_experiments(*exps: Dataset) -> Dataset:
@@ -140,9 +119,22 @@ def concat_experiments(*exps: Dataset) -> Dataset:
         metric1      (experiment, iterations) float64 val_0 val_1 ...
         ...
     """
+    if not all(bool(x) for x in exps):
+        raise ValueError(
+            "An empty dataset was included among the experiments: {}".format(exps)
+        )
+
+    if len(exps) == 0:
+        raise ValueError("At least one dataset must be provided, got: {}".format(exps))
+
+    if not len(set(tuple(x.data_vars) for x in exps)) == 1:
+        raise ValueError(
+            "All of the provided datasets must have the "
+            "same data variables, got: {}".format(tuple(x.data_vars) for x in exps)
+        )
+
     exp_inds = list(range(len(exps)))
-    exp_coord = xr.DataArray(exp_inds, 
-                             name='experiment', 
-                             dims=['experiment'], 
-                             coords=[exp_inds])
+    exp_coord = xr.DataArray(
+        exp_inds, name="experiment", dims=["experiment"], coords=[exp_inds]
+    )
     return xr.concat(exps, exp_coord)
