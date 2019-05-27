@@ -6,8 +6,8 @@ import tests.custom_strategies as cst
 from hypothesis import assume, note, settings
 from hypothesis.stateful import RuleBasedStateMachine, initialize, rule
 from hypothesis.strategies import SearchStrategy
-from liveplot.logger import LiveLogger
-from liveplot.plotter import LivePlot
+from noggin.logger import LiveLogger
+from noggin.plotter import LivePlot
 
 
 @settings(deadline=None)

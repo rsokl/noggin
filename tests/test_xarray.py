@@ -7,10 +7,10 @@ import tests.custom_strategies as cst
 from hypothesis import assume, given
 from numpy.testing import assert_array_equal
 
-from liveplot.logger import LiveLogger
-from liveplot.plotter import LivePlot
-from liveplot.typing import LiveMetrics
-from liveplot.xarray import concat_experiments, metrics_to_xarrays
+from noggin.logger import LiveLogger
+from noggin.plotter import LivePlot
+from noggin.typing import LiveMetrics
+from noggin.xarray import concat_experiments, metrics_to_xarrays
 
 
 def check_batch_xarray(metrics_dict, metrics_xarray):

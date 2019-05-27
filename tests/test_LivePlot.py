@@ -17,8 +17,8 @@ from numpy.testing import assert_array_equal
 from tests.base_state_machines import LivePlotStateMachine
 from tests.utils import compare_all_metrics
 
-from liveplot import load_metrics, save_metrics
-from liveplot.plotter import LivePlot
+from noggin import load_metrics, save_metrics
+from noggin.plotter import LivePlot
 
 
 @settings(deadline=None)

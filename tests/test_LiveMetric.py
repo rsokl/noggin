@@ -14,7 +14,7 @@ from hypothesis.stateful import (
     precondition,
     rule,
 )
-from liveplot.logger import LiveMetric
+from noggin.logger import LiveMetric
 from numpy.testing import assert_allclose, assert_array_equal
 from tests.utils import err_msg
 

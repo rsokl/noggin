@@ -3,9 +3,9 @@ from itertools import combinations
 from hypothesis import given
 
 import tests.custom_strategies as cst
-from liveplot.logger import LiveLogger, LiveMetric
-from liveplot.plotter import LivePlot
-from liveplot.plotter import _check_valid_color
+from noggin.logger import LiveLogger, LiveMetric
+from noggin.plotter import LivePlot
+from noggin.plotter import _check_valid_color
 
 
 @given(cst.choices("abcdefg", 3))

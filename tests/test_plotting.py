@@ -10,7 +10,7 @@ from hypothesis import given, settings
 from numpy.testing import assert_array_equal
 from tests import close_plots
 
-from liveplot import LivePlot
+from noggin import LivePlot
 
 
 class ControlledPlot(LivePlot):

@@ -8,10 +8,10 @@ from numpy.testing import assert_array_equal
 from tests import close_plots
 from tests.utils import compare_all_metrics, err_msg
 
-from liveplot import LiveLogger, LivePlot, create_plot
-from liveplot.plotter import _check_valid_color
-from liveplot.typing import Axes, Figure, ndarray
-from liveplot.utils import load_metrics, save_metrics
+from noggin import LiveLogger, LivePlot, create_plot
+from noggin.plotter import _check_valid_color
+from noggin.typing import Axes, Figure, ndarray
+from noggin.utils import load_metrics, save_metrics
 
 
 @pytest.mark.parametrize(

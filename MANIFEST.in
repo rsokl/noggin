@@ -1,2 +1,2 @@
 include versioneer.py
-include src/liveplot/_version.py
+include src/noggin/_version.py

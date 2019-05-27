@@ -3,9 +3,9 @@ from pathlib import Path
 from typing import Optional, Tuple, Union
 
 import numpy as np
-from liveplot.logger import LiveLogger
-from liveplot.plotter import LivePlot
-from liveplot.typing import Figure, LiveMetrics, Metrics, ndarray
+from noggin.logger import LiveLogger
+from noggin.plotter import LivePlot
+from noggin.typing import Figure, LiveMetrics, Metrics, ndarray
 
 from custom_inherit import doc_inherit
 
@@ -37,7 +37,7 @@ def create_plot(
     Creating a live plot in a Jupyter notebook
     >>> %matplotlib notebook
     >>> import numpy as np
-    >>> from liveplot import create_plot, save_metrics
+    >>> from noggin import create_plot, save_metrics
     >>> metrics = ["accuracy", "loss"]
     >>> plotter, fig, ax = create_plot(metrics)
     >>> for i, x in enumerate(np.linspace(0, 10, 100)):
@@ -89,7 +89,7 @@ def save_metrics(
         path: PathLike
            The file-path used to save the archive. E.g. 'path/to/saved_metrics.npz'
 
-        liveplot : Optional[liveplot.LivePlot]
+        liveplot : Optional[noggin.LivePlot]
            The LivePlot instance whose metrics will be saves.
 
         train_metrics : Optional[OrderedDict[str, Dict[str, numpy.ndarray]]]]
@@ -139,7 +139,7 @@ metrics = namedtuple("metrics", ["train", "test"])
 
 
 def load_metrics(path: Union[str, Path]) -> Tuple[LiveMetrics, LiveMetrics]:
-    """ Load liveplot metrics from a numpy archive.
+    """ Load noggin metrics from a numpy archive.
 
         Parameters
         ----------
