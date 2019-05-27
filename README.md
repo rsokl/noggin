@@ -4,7 +4,6 @@ provides convenient i/o functions for saving, loading, and recreating noggin ses
 an interface for accessing logged metrics as [xarray data sets](http://xarray.pydata.org/en/stable/index.html). This
 functionality, available via `noggin.xarray`, permits users to seamlessly access their logged metrics as N-dimensional arrays with named axes.
 
-Please consult the [demo notebook](https://github.com/rsokl/LivePlot/blob/master/LivePlot_Demo.ipynb) for a summary of `noggin`'s functionality.
 
 ![noggin](https://user-images.githubusercontent.com/29104956/52166468-bf425700-26db-11e9-9324-1fc83d4bc71d.gif)
 
