@@ -12,8 +12,8 @@ from warnings import warn
 import numpy as np
 from matplotlib.pyplot import Axes, Figure
 
-from liveplot.logger import LiveLogger, LiveMetric
-from liveplot.typing import Metrics, ValidColor
+from noggin.logger import LiveLogger, LiveMetric
+from noggin.typing import Metrics, ValidColor
 
 __all__ = ["LivePlot"]
 

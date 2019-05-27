@@ -266,7 +266,7 @@ class LiveLogger:
 
     def to_xarray(self, train_or_test: str) -> Tuple[Dataset, Dataset]:
         """
-        Given liveplot metrics, returns xarray datasets for the batch-level and epoch-level
+        Given noggin metrics, returns xarray datasets for the batch-level and epoch-level
         metrics, respectively.
 
         Parameters

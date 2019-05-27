@@ -8,8 +8,8 @@ import hypothesis.strategies as st
 import numpy as np
 from matplotlib import colors
 
-from liveplot.plotter import LiveLogger, LivePlot
-from liveplot.typing import LiveMetrics, ValidColor
+from noggin.plotter import LiveLogger, LivePlot
+from noggin.typing import LiveMetrics, ValidColor
 
 __all__ = [
     "finite_arrays",

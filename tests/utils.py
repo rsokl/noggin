@@ -1,6 +1,6 @@
 from numpy.testing import assert_array_equal
 
-from liveplot.typing import LiveMetrics
+from noggin.typing import LiveMetrics
 
 
 def err_msg(actual, desired, name):

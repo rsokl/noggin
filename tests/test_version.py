@@ -1,6 +1,6 @@
 def test_version():
-    import liveplot
+    import noggin
 
-    assert isinstance(liveplot.__version__, str)
-    assert liveplot.__version__
-    assert "unknown" not in liveplot.__version__
+    assert isinstance(noggin.__version__, str)
+    assert noggin.__version__
+    assert "unknown" not in noggin.__version__
