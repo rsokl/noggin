@@ -15,8 +15,8 @@ from hypothesis.stateful import (
 from hypothesis.strategies import SearchStrategy
 from numpy.testing import assert_array_equal
 
-from liveplot import load_metrics, save_metrics
-from liveplot.logger import LiveLogger, LiveMetric
+from noggin import load_metrics, save_metrics
+from noggin.logger import LiveLogger, LiveMetric
 from tests.utils import compare_all_metrics
 
 

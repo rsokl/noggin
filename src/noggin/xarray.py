@@ -1,5 +1,5 @@
 """
-This module provides functionality for converting liveplot metrics to xarray objects,
+This module provides functionality for converting noggin metrics to xarray objects,
 and for building a dataset from multiple iterations of an experiment.
 """
 
@@ -8,7 +8,7 @@ try:
 except ImportError:  # pragma:nocover
     raise ImportError(
         "The Python package `xarray` must be installed "
-        "in order to access this functionality in liveplot."
+        "in order to access this functionality in noggin."
     )
 from collections import namedtuple
 from typing import Dict, Tuple, Union
@@ -17,8 +17,8 @@ import numpy as np
 from numpy import ndarray
 from xarray import Dataset
 
-from liveplot.logger import LiveLogger
-from liveplot.plotter import LivePlot
+from noggin.logger import LiveLogger
+from noggin.plotter import LivePlot
 
 LiveObject = Union[LivePlot, LiveLogger]
 
@@ -32,7 +32,7 @@ def metrics_to_xarrays(
     metrics: Dict[str, Dict[str, ndarray]]
 ) -> Tuple[Dataset, Dataset]:
     """
-    Given liveplot metrics, returns xarray datasets for the batch-level and epoch-level
+    Given noggin metrics, returns xarray datasets for the batch-level and epoch-level
     metrics, respectively.
 
     Parameters
