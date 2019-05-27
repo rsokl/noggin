@@ -518,8 +518,8 @@ class LivePlot(LiveLogger):
                     )
             elif len(livedata.batch_line.get_xdata()):
                 # clear batch-level plots
-                livedata.batch_line.set_xdata([])
-                livedata.batch_line.set_ydata([])
+                livedata.batch_line.set_xdata(np.array([]))
+                livedata.batch_line.set_ydata(np.array([]))
 
         # plot epoch-level train metrics
         for key, livedata in self._train_metrics.items():

@@ -122,6 +122,16 @@ def test_plot_batches_flag_via_plot(plotter: LivePlot, plot_batches: bool):
                 assert metric.epoch_line.get_xdata().size > 0
 
 
+def test_subsequent_plot_batches_is_false_clears_batch_plot():
+    with close_plots():
+        plotter = LivePlot("a")
+        plotter.set_train_batch(dict(a=1), batch_size=1, plot=True)
+        plotter.plot(plot_batches=True)
+        assert plotter._train_metrics["a"].batch_line.get_xdata().size > 0
+        plotter.plot(plot_batches=False)
+        assert plotter._train_metrics["a"].batch_line.get_xdata().size == 0
+
+
 @settings(deadline=None, max_examples=10)
 @given(plotter=cst.plotters(), plot_batches=st.booleans())
 def test_plot_batches_flag_via_set_batch(plotter: LivePlot, plot_batches: bool):
