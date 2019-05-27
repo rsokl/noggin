@@ -26,7 +26,7 @@ def cleandir() -> str:
         os.chdir(old_dir)
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session", autouse=True)
 def killplots():
     """Ensures all matplotlib figures are closed upon leaving the fixture"""
     yield None
