@@ -46,6 +46,13 @@ def test_set_batch_missing_metric(logger: LiveLogger, data: st.DataObject):
     logger.set_test_batch(metrics=missing_metrics, batch_size=1)
 
 
+@settings(deadline=None)
+@given(logger=cst.loggers())
+def test_fuzz_set_epoch(logger: LiveLogger):
+    logger.set_train_epoch()
+    logger.set_test_epoch()
+
+
 class LiveLoggerStateMachine(RuleBasedStateMachine):
     """ Ensures that exercising the api of LiveLogger produces
     results that are consistent with a simplistic implementation"""
