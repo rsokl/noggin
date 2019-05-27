@@ -98,13 +98,54 @@ def test_fuzz_plot_method(plotter: LivePlot, liveplot: bool, plot_batches: bool)
         plotter.plot(plot_batches=plot_batches)
 
 
+@settings(deadline=None)
 @given(plotter=cst.plotters(), bad_input=cst.everything_except(bool))
 def test_validate_plot_input(plotter: LivePlot, bad_input):
     with pytest.raises(TypeError):
         plotter.plot(plot_batches=bad_input)
 
 
-@settings(deadline=None, max_examples=20)
+@settings(deadline=None, max_examples=10)
+@given(plotter=cst.plotters(), plot_batches=st.booleans())
+def test_plot_batches_flag_via_plot(plotter: LivePlot, plot_batches: bool):
+    with close_plots():
+        plotter.last_n_batches = None
+        plotter.plot(plot_batches=plot_batches)
+        for name, metric in plotter._train_metrics.items():
+            if metric.batch_domain.size:
+                assert bool(metric.batch_line.get_xdata().size) is plot_batches
+            if metric.epoch_domain.size:
+                assert metric.epoch_line.get_xdata().size > 0
+
+        for name, metric in plotter._test_metrics.items():
+            if metric.epoch_domain.size:
+                assert metric.epoch_line.get_xdata().size > 0
+
+
+@settings(deadline=None, max_examples=10)
+@given(plotter=cst.plotters(), plot_batches=st.booleans())
+def test_plot_batches_flag_via_set_batch(plotter: LivePlot, plot_batches: bool):
+    with close_plots():
+        plotter.last_n_batches = None
+        plotter._liveplot = True
+        plotter.max_fraction_spent_plotting = 1.0
+        plotter.set_train_batch({}, batch_size=1, plot=plot_batches)
+        plotter.plot_train_epoch()
+        plotter.plot_test_epoch()
+        for name, metric in plotter._train_metrics.items():
+            if metric.batch_domain.size:
+                assert metric.batch_line is None or (
+                    bool(metric.batch_line.get_xdata().size) is plot_batches
+                )
+            if metric.epoch_domain.size:
+                assert metric.epoch_line.get_xdata().size > 0
+
+        for name, metric in plotter._test_metrics.items():
+            if metric.epoch_domain.size:
+                assert metric.epoch_line.get_xdata().size > 0
+
+
+@settings(deadline=None, max_examples=10)
 @given(
     last_n_batches=st.none() | st.integers(1, 100),
     train_data=st.lists(st.floats(-1e6, 1e6), min_size=1).map(np.array),
