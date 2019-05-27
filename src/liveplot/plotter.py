@@ -151,12 +151,12 @@ class LivePlot(LiveLogger):
 
         if not isinstance(value, int):
             raise TypeError(
-                "`last_n_batches` must be a positive integer got {}".format(value)
+                "`last_n_batches` must be a positive integer, got {}".format(value)
             )
 
         if value < 1:
             raise ValueError(
-                "`last_n_batches` must be a positive integer got {}".format(value)
+                "`last_n_batches` must be a positive integer, got {}".format(value)
             )
         # Points to starting index for the epoch-domain of a
         # given metric's name; used to keep epoch plot within
@@ -467,9 +467,29 @@ class LivePlot(LiveLogger):
 
         self._pyplot.ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
 
-    def plot(self):
-        """ Plot data, irrespective of the refresh rate. This should only
-        be called if you are generating a static plot."""
+    def plot(self, plot_batches: bool = True):
+        """Plot the logged data.
+
+        This method can be used to 'force' a plot to be drawn, and should *not* be
+        called repeatedly while logging data.
+
+        Instead, one should invoke ``Liveplot.set_train_batch(plot=True)``,
+        ``Liveplot.plot_train_epoch``, and ``Liveplot.plot_test_epoch``, which will
+        adjust their plot-rates according to ``Liveplot.max_fraction_spent_plotting``.
+
+        ``LivePlot.plot`` can be called at the end of a logging-loop to ensure that
+        the logged data is plotted in its entirety. This can also be used to recreate
+        a plot after deserializing a ``LivePlot`` instance.
+
+        Parameters
+        ----------
+        plot_batches : bool, optional (default=True)
+            If ``True`` include batch-level data in plot."""
+        if not isinstance(plot_batches, bool):
+            raise TypeError(
+                "`plot_batch` must be `True` or `False`, got {}".format(plot_batches)
+            )
+
         self._init_plot_window()
         for key, livedata in self._train_metrics.items():
             if livedata.batch_line is None:
@@ -484,7 +504,7 @@ class LivePlot(LiveLogger):
                 ax.set_title(key)
                 ax.legend()
 
-            if self._plot_batch and livedata.batch_line:
+            if plot_batches and livedata.batch_line:
                 n = (
                     self.last_n_batches
                     if self.last_n_batches
@@ -557,30 +577,13 @@ class LivePlot(LiveLogger):
             self._fig.canvas.draw()
         self._draw_time = time.time() - s
 
-    def _timed_plot(self):
+    def _timed_plot(self, plot_batches: bool):
         plot_start_time = time.time()
-        self.plot()
+        self.plot(plot_batches=plot_batches)
         self._last_plot_time = time.time()
         if len(self._plot_time_queue) == self._queue_size:
             self._plot_time_queue.popleft()
         self._plot_time_queue.append(self._last_plot_time - plot_start_time)
-
-    def _resize(self):
-        if self._axes is None:  # pragma: no cover
-            return
-
-        for ax in self._axes.flat:
-            ax.relim()
-            ax.autoscale_view()
-
-    def _update_text(self):
-        for ax in self._axis_mapping.values():
-            ax.legend()
-
-    def show(self):  # pragma: no cover
-        """ Calls `matplotlib.pyplot.show()`. For visualizing a static-plot"""
-        if not self._liveplot:
-            self._pyplot.show()
 
     def _do_liveplot(self):
         # enable active plotting upon first plot
@@ -608,9 +611,26 @@ class LivePlot(LiveLogger):
             and mean_plot_time / (time_since_last_plot + mean_plot_time)
             < self.max_fraction_spent_plotting
         ):
-            self._timed_plot()
+            self._timed_plot(plot_batches=self._plot_batch)
             # exclude plot time
             self._time_of_last_liveplot_attempt = time.time()
+
+    def _resize(self):
+        if self._axes is None:  # pragma: no cover
+            return
+
+        for ax in self._axes.flat:
+            ax.relim()
+            ax.autoscale_view()
+
+    def _update_text(self):
+        for ax in self._axis_mapping.values():
+            ax.legend()
+
+    def show(self):  # pragma: no cover
+        """ Calls `matplotlib.pyplot.show()`. For visualizing a static-plot"""
+        if not self._liveplot:
+            self._pyplot.show()
 
     def set_test_epoch(self):
         """ Not implemented. Use `plot_test_epoch` instead"""
