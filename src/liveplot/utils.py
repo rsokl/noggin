@@ -163,6 +163,8 @@ def load_metrics(path: Union[str, Path]) -> Tuple[LiveMetrics, LiveMetrics]:
     test_order = list(data_dict.pop("test_order"))
     sep = data_dict.pop("sep").item()
     for k, v in data_dict.items():
+        if v.ndim == 0:
+            v = v.item()
         type_, metric_name, data_type = k.split(sep)
         out[type_][metric_name][data_type] = v
 
