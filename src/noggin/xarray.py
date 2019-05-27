@@ -3,17 +3,11 @@ This module provides functionality for converting noggin metrics to xarray objec
 and for building a dataset from multiple iterations of an experiment.
 """
 
-try:
-    import xarray as xr
-except ImportError:  # pragma:nocover
-    raise ImportError(
-        "The Python package `xarray` must be installed "
-        "in order to access this functionality in noggin."
-    )
 from collections import namedtuple
 from typing import Dict, Tuple, Union
 
 import numpy as np
+import xarray as xr
 from numpy import ndarray
 from xarray import Dataset
 
