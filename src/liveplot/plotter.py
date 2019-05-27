@@ -603,10 +603,10 @@ class LivePlot(LiveLogger):
             else 0.0
         )
 
-        if (
+        if self.max_fraction_spent_plotting == 1.0 or (
             time_since_last_plot
             and mean_plot_time / (time_since_last_plot + mean_plot_time)
-            < self._max_fraction_spent_plotting
+            < self.max_fraction_spent_plotting
         ):
             self._timed_plot()
             # exclude plot time
