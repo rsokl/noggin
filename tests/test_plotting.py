@@ -1,10 +1,13 @@
 from math import isclose
 from time import sleep, time
+from typing import Optional
 
 import hypothesis.strategies as st
+import numpy as np
 import pytest
 import tests.custom_strategies as cst
 from hypothesis import given, settings
+from numpy.testing import assert_array_equal
 from tests import close_plots
 
 from liveplot import LivePlot
@@ -87,9 +90,59 @@ def test_exhaustive_plotting(plot_time, outer_time, max_fraction, expected_fract
     assert isclose(actual_fraction, expected_fraction, rel_tol=0.1, abs_tol=0.01)
 
 
-@settings(deadline=None)
+@settings(deadline=None, max_examples=20)
 @given(plotter=cst.plotters(), liveplot=st.booleans())
 def test_fuzz_plot_method(plotter: LivePlot, liveplot: bool):
     with close_plots():
         plotter._liveplot = liveplot
         plotter.plot()
+
+
+@settings(deadline=None, max_examples=20)
+@given(
+    last_n_batches=st.none() | st.integers(1, 100),
+    train_data=st.lists(st.floats(-1e6, 1e6), min_size=1).map(np.array),
+    data=st.data(),
+)
+def test_plot_last_n_batches(
+    last_n_batches: Optional[int], train_data: np.ndarray, data: st.DataObject
+):
+    """Ensures correctness of line-data for varying 'last-n-batches' settings"""
+    section = slice(None) if last_n_batches is None else slice(-last_n_batches, None)
+
+    with close_plots():
+        epochs = data.draw(
+            st.lists(st.sampled_from(range(1, len(train_data) + 1)), unique=True).map(
+                np.sort
+            ),
+            label="epochs",
+        )
+        plotter = LivePlot(
+            "a", last_n_batches=last_n_batches, max_fraction_spent_plotting=1.0
+        )
+        plotter._liveplot = True
+        for n, datum in enumerate(train_data):
+            plotter.set_train_batch(dict(a=datum), batch_size=1, plot=True)
+            if n + 1 in epochs:
+                plotter.plot_train_epoch()
+
+            # check batches
+            actual_batchx = plotter._train_metrics["a"].batch_line.get_xdata()
+            actual_batchy = plotter._train_metrics["a"].batch_line.get_ydata()
+            expected_batchx = np.arange(1, len(train_data) + 1)[: n + 1][section]
+            expected_batchy = train_data[: n + 1][section]
+
+            assert_array_equal(actual_batchx, expected_batchx)
+            assert_array_equal(actual_batchy, expected_batchy)
+
+            # check epochs
+            actual_epochx = plotter._train_metrics["a"].epoch_line.get_xdata()
+            actual_epochy = plotter._train_metrics["a"].epoch_line.get_ydata()
+            mask = np.logical_and(
+                expected_batchx.min() <= plotter.train_metrics["a"]["epoch_domain"],
+                plotter.train_metrics["a"]["epoch_domain"] <= expected_batchx.max(),
+            )
+            expected_epochx = plotter.train_metrics["a"]["epoch_domain"][mask]
+            expected_epochy = plotter.train_metrics["a"]["epoch_data"][mask]
+            assert_array_equal(actual_epochx, expected_epochx)
+            assert_array_equal(actual_epochy, expected_epochy)
