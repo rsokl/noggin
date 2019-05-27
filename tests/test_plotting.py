@@ -25,7 +25,7 @@ class ControlledPlot(LivePlot):
     def _init_plot_window(self):
         return
 
-    def plot(self):
+    def plot(self, plot_batches=True):
         sleep(self.plot_time)
 
 
@@ -91,11 +91,17 @@ def test_exhaustive_plotting(plot_time, outer_time, max_fraction, expected_fract
 
 
 @settings(deadline=None, max_examples=20)
-@given(plotter=cst.plotters(), liveplot=st.booleans())
-def test_fuzz_plot_method(plotter: LivePlot, liveplot: bool):
+@given(plotter=cst.plotters(), liveplot=st.booleans(), plot_batches=st.booleans())
+def test_fuzz_plot_method(plotter: LivePlot, liveplot: bool, plot_batches: bool):
     with close_plots():
         plotter._liveplot = liveplot
-        plotter.plot()
+        plotter.plot(plot_batches=plot_batches)
+
+
+@given(plotter=cst.plotters(), bad_input=cst.everything_except(bool))
+def test_validate_plot_input(plotter: LivePlot, bad_input):
+    with pytest.raises(TypeError):
+        plotter.plot(plot_batches=bad_input)
 
 
 @settings(deadline=None, max_examples=20)
