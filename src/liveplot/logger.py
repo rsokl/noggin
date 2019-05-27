@@ -432,7 +432,7 @@ class LiveLogger:
                     if self._train_metrics
                     else None
                 )
-            except KeyError:
+            except (KeyError, IndexError):
                 x = None
             self._test_metrics[key].set_epoch_datapoint(x)
 
