@@ -1,5 +1,3 @@
-[![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/rsokl/liveplot/master?filepath=LivePlot_Demo.ipynb)
-
 # nogging
 Log and plot metrics during train/test time for a neural network (or whatever, really). `nogging`
 provides convenient i/o functions for saving, loading, and recreating nogging sessions. It also provides
