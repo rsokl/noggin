@@ -1,9 +1,11 @@
+from numpy.testing import assert_array_equal
 from hypothesis import given, settings
 import hypothesis.strategies as st
 import numpy as np
 import pytest
 
-from liveplot import create_plot, LivePlot
+from liveplot import create_plot, LivePlot, LiveLogger
+from liveplot.utils import save_metrics, load_metrics
 from liveplot.typing import Figure, ndarray, Axes
 from liveplot.plotter import _check_valid_color
 from tests.utils import compare_all_metrics, err_msg
@@ -121,3 +123,35 @@ def test_create_plot(metrics, figsize, max_fraction_spent_plotting, last_n_batch
         assert isinstance(ax, (Axes, ndarray))
         assert plotter.last_n_batches == last_n_batches
         assert plotter.max_fraction_spent_plotting == max_fraction_spent_plotting
+
+
+@pytest.mark.usefixtures("cleandir")
+def test_metric_io_train():
+    logger = LiveLogger()
+    logger.set_train_batch({"a;a": 1}, batch_size=1)
+    save_metrics("test.pkl", train_metrics=logger.train_metrics)
+    train, test = load_metrics("test.pkl")
+
+    assert list(train) == list(logger.train_metrics)
+    for k, actual in train["a;a"].items():
+        expected = logger.train_metrics["a;a"][k]
+        if isinstance(actual, np.ndarray):
+            assert_array_equal(actual, expected)
+        else:
+            assert expected == actual
+
+
+@pytest.mark.usefixtures("cleandir")
+def test_metric_io_test():
+    logger = LiveLogger()
+    logger.set_test_batch({"a;a": 1}, batch_size=1)
+    save_metrics("test.pkl", test_metrics=logger.test_metrics)
+    train, test = load_metrics("test.pkl")
+
+    assert list(test) == list(logger.test_metrics)
+    for k, actual in test["a;a"].items():
+        expected = logger.test_metrics["a;a"][k]
+        if isinstance(actual, np.ndarray):
+            assert_array_equal(actual, expected)
+        else:
+            assert expected == actual
