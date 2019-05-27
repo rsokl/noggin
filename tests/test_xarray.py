@@ -128,6 +128,12 @@ def test_concat_experiments(logger: LiveLogger, num_exps: int, data: st.DataObje
     ).filter(lambda x: len(x) != 1)
 )
 def test_concat_experiments_input_validation(loggers: List[LiveLogger]):
+    """
+    Produces:
+        - no datasets
+        - datasets with differing data variables
+        - empty datasets
+    """
     with pytest.raises(ValueError):
         xarrays = [x.to_xarray("train")[0] for x in loggers]
         concat_experiments(*xarrays)
