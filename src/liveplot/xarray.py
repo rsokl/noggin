@@ -5,7 +5,7 @@ and for building a dataset from multiple iterations of an experiment.
 
 try:
     import xarray as xr
-except ImportError:
+except ImportError:  # pragma:nocover
     raise ImportError(
         "The Python package `xarray` must be installed "
         "in order to access this functionality in liveplot."
@@ -119,6 +119,20 @@ def concat_experiments(*exps: Dataset) -> Dataset:
         metric1      (experiment, iterations) float64 val_0 val_1 ...
         ...
     """
+    if not all(bool(x) for x in exps):
+        raise ValueError(
+            "An empty dataset was included among the experiments: {}".format(exps)
+        )
+
+    if len(exps) == 0:
+        raise ValueError("At least one dataset must be provided, got: {}".format(exps))
+
+    if not len(set(tuple(x.data_vars) for x in exps)) == 1:
+        raise ValueError(
+            "All of the provided datasets must have the "
+            "same data variables, got: {}".format(tuple(x.data_vars) for x in exps)
+        )
+
     exp_inds = list(range(len(exps)))
     exp_coord = xr.DataArray(
         exp_inds, name="experiment", dims=["experiment"], coords=[exp_inds]
