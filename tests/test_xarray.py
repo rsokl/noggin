@@ -1,13 +1,16 @@
+from typing import List
+from xarray.testing import assert_equal
+import hypothesis.strategies as st
 import numpy as np
 import pytest
-from hypothesis import given
+import tests.custom_strategies as cst
+from hypothesis import assume, given
 from numpy.testing import assert_array_equal
 
-import tests.custom_strategies as cst
 from liveplot.logger import LiveLogger
 from liveplot.plotter import LivePlot
 from liveplot.typing import LiveMetrics
-from liveplot.xarray import metrics_to_xarrays
+from liveplot.xarray import concat_experiments, metrics_to_xarrays
 
 
 def check_batch_xarray(metrics_dict, metrics_xarray):
@@ -86,3 +89,45 @@ def test_plotter_xarray(plotter: LivePlot):
     check_epoch_xarray(plotter.train_metrics, tr_epoch)
     check_batch_xarray(plotter.test_metrics, te_batch)
     check_epoch_xarray(plotter.test_metrics, te_epoch)
+
+
+@given(logger=cst.loggers(), num_exps=st.integers(1, 10), data=st.data())
+def test_concat_experiments(logger: LiveLogger, num_exps: int, data: st.DataObject):
+    metrics = list(logger.train_metrics)
+    assume(len(metrics) > 0)
+
+    logger.set_train_batch(
+        {k: data.draw(st.floats(-1e6, 1e6)) for k in metrics}, batch_size=1
+    )
+    batch_xarrays = [logger.to_xarray("train")[0]]
+
+    for n in range(num_exps - 1):
+        logger.set_train_batch(
+            {k: data.draw(st.floats(-1e6, 1e6)) for k in metrics}, batch_size=1
+        )
+        batch_xarrays.append(logger.to_xarray("train")[0])
+
+    out = concat_experiments(*batch_xarrays)
+    assert list(out.coords["experiment"]) == list(range(num_exps))
+    assert list(out.data_vars) == list(metrics)
+
+    for n in range(num_exps):
+        for metric in metrics:
+            assert_equal(
+                batch_xarrays[n].to_array(metric),
+                out.isel(experiment=n)
+                .drop(labels=["experiment"])
+                .to_array(metric)
+                .dropna(dim="iterations"),
+            )
+
+
+@given(
+    loggers=st.lists(
+        cst.loggers(), min_size=0, unique_by=lambda x: tuple(x.train_metrics)
+    ).filter(lambda x: len(x) != 1)
+)
+def test_concat_experiments_input_validation(loggers: List[LiveLogger]):
+    with pytest.raises(ValueError):
+        xarrays = [x.to_xarray("train")[0] for x in loggers]
+        concat_experiments(*xarrays)
