@@ -3,9 +3,9 @@ services:
   - xvfb
 sudo: false
 language: python
+install: pip install tox
 jobs:
   include:
-    - stage: "Tests"
     - python: 3.7
       name: "Python 3.7"
       dist: xenial
