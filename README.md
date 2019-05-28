@@ -2,8 +2,7 @@
 
 [![Build Status](https://travis-ci.com/rsokl/noggin.svg?branch=master)](https://travis-ci.com/rsokl/noggin)
 [![Tested with Hypothesis](https://img.shields.io/badge/hypothesis-tested-brightgreen.svg)](https://hypothesis.readthedocs.io/)
-
-![Python version support](https://img.shields.io/badge/3.6%20%203.7-blue.svg)
+![Python version support](https://img.shields.io/badge/python-3.6%20%203.7-blue.svg)
 
 
 Log and plot metrics during train/test time for a neural network (or whatever, really). `noggin`
