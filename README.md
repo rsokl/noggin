@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.com/rsokl/noggin.svg?branch=master)](https://travis-ci.com/rsokl/noggin)
 [![Tested with Hypothesis](https://img.shields.io/badge/hypothesis-tested-brightgreen.svg)](https://hypothesis.readthedocs.io/)
+[![PyPi version](https://img.shields.io/pypi/v/noggin.svg)](https://pypi.python.org/pypi/noggin)
 ![Python version support](https://img.shields.io/badge/python-3.6%20%203.7-blue.svg)
 
 
