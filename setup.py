@@ -39,6 +39,8 @@ library.
 
 setup(
     name=DISTNAME,
+    package_dir={"": "src"},
+    packages=find_packages(where="src", exclude=["tests", "tests.*"]),
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     license=LICENSE,
@@ -52,5 +54,4 @@ setup(
     url=URL,
     download_url="https://github.com/rsokl/noggin/tarball/" + versioneer.get_version(),
     python_requires=">=3.6",
-    packages=find_packages(exclude=["tests", "tests.*"]),
 )
