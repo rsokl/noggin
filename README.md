@@ -18,7 +18,7 @@ functionality, available via `noggin.xarray`, permits users to seamlessly access
 ## Installing noggin
 Clone/download this repository, navigate to the `noggin` directory, and run:
 ```shell
-python setup.py install
+pip install noggin
 ```
 
 ## Examples
