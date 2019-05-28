@@ -1,6 +1,7 @@
 from math import isclose
 from time import sleep, time
 from typing import Optional
+import os
 
 import hypothesis.strategies as st
 import numpy as np
@@ -29,6 +30,10 @@ class ControlledPlot(LivePlot):
         sleep(self.plot_time)
 
 
+@pytest.mark.skipif(
+    os.getenv("HYPOTHESIS_PROFILE") == "ci",
+    reason="timing is inconsistent on CI platforms",
+)
 @pytest.mark.parametrize("plot_time", [0.0001, 0.001, 0.01])
 @pytest.mark.parametrize("outer_time", [0.0001, 0.001])
 @pytest.mark.parametrize("max_fraction", [0.0, 0.01, 0.2, 0.4])
@@ -56,6 +61,10 @@ def test_adaptive_plotting(plot_time, outer_time, max_fraction):
     assert isclose(actual_fraction, max_fraction, rel_tol=0.3, abs_tol=0.01)
 
 
+@pytest.mark.skipif(
+    os.getenv("HYPOTHESIS_PROFILE") == "ci",
+    reason="timing is inconsistent on CI platforms",
+)
 @pytest.mark.parametrize(
     ("plot_time", "outer_time", "max_fraction", "expected_fraction"),
     [
