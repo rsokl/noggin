@@ -1,4 +1,11 @@
 # noggin
+
+[![Build Status](https://travis-ci.com/rsokl/noggin.svg?branch=master)](https://travis-ci.com/rsokl/noggin)
+[![Tested with Hypothesis](https://img.shields.io/badge/hypothesis-tested-brightgreen.svg)](https://hypothesis.readthedocs.io/)
+
+![Python version support](https://img.shields.io/badge/3.6%20%203.7-blue.svg)
+
+
 Log and plot metrics during train/test time for a neural network (or whatever, really). `noggin`
 provides convenient i/o functions for saving, loading, and recreating noggin sessions. It also provides
 an interface for accessing logged metrics as [xarray data sets](http://xarray.pydata.org/en/stable/index.html). This
