@@ -8,7 +8,7 @@ extraction:
   python:
     python_setup:
       version: 3
-  index:
-    exclude:
-      - "versioneer.py"
-      - "src/noggin/_version.py"
+    index:
+      exclude:
+        - "versioneer.py"
+        - "src/noggin/_version.py"
