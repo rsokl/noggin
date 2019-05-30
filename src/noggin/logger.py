@@ -363,7 +363,9 @@ class LiveLogger:
 
         return msg
 
-    def set_train_batch(self, metrics: Dict[str, Real], batch_size: Integral):
+    def set_train_batch(
+        self, metrics: Dict[str, Real], batch_size: Integral
+    ):  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Parameters
         ----------
