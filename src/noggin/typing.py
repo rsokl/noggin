@@ -1,11 +1,12 @@
 from numbers import Real
 from typing import Dict, Sequence, Union
-from matplotlib.pyplot import Axes, Figure
+from matplotlib.pyplot import Axes as _Axes
+from matplotlib.pyplot import Figure as _Figure
 
 from numpy import ndarray
 
-Axes = Axes
-Figure = Figure
+Axes = _Axes
+Figure = _Figure
 
 ValidColor = Union[str, Real, Sequence[Real], None]
 Metrics = Union[

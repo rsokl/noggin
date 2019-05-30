@@ -1,0 +1,13 @@
+path_classifiers:
+  test:
+    - "/tests/"
+  docs:
+    - "/docs/"
+extraction:
+  python:
+    python_setup:
+      version: 3
+    index:
+      exclude:
+        - "versioneer.py"
+        - "src/noggin/_version.py"
