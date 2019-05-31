@@ -178,4 +178,20 @@ Let's convert ``plotter`` to a dictionary using :func:`~noggin.plotter.LivePlot.
     with open('plotter.pkl', 'wb') as f:
         pickle.dump(plotter.to_dict(), f, protocol=-1)
 
-We can now easily load out pickled
+We can now easily load out pickled plotter and recreate our plot as we left it via
+:class:`~noggin.plotter.LivePlot.from_dict`
+
+.. code::
+
+    from noggin import LivePlot
+
+    with open('plotter.pkl', 'rb') as f:
+        loaded_dict = pickle.load(f)
+        loaded_plotter = LivePlot.from_dict(loaded_dict)
+
+    fig, ax = loaded_plotter.plot_objects
+    loaded_plotter.plot()
+
+.. image:: _static/filled_pane.png
+
+We can now resume recording measurements in your experiment just as we were doing earlier - our metrics will be logged and plotted just as before!
