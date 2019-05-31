@@ -96,7 +96,7 @@ There are a number of ways that you can customize your live plot; these are deta
 Accessing Your Data
 ###################
 
-There are two ways to access the data that you recorded during your experiment: via `xarray datasets <http://xarray.pydata.org/en/stable/data-structures.html#dataset>`_ or via dictionaries. It is recommended that you make keen use of the xarrays, although it does take some time to familiarize one's self with these data structures.
+There are two ways to access the data that you recorded during your experiment: via `xarray datasets <http://xarray.pydata.org/en/stable/data-structures.html#dataset>`_ or via dictionaries. It is recommended that you make keen use of the xarrays and their ability to handle data-alignment, missing data, and many other features.
 
 via xarray Datasets
 -------------------
@@ -140,3 +140,24 @@ Towards this end, if you run multiple iterations of an experiment, then you can 
 along a new 'experiments' axis. This will gracefully accommodate combining
 experiments that were run for differing numbers of iterations, and will
 permit you to seamlessly compute statistics across them.
+
+via Dictionaries
+----------------
+You can access your recorded metrics as dictionaries via
+:func:`~noggin.plotter.LivePlot.train_metrics` and
+:func:`~noggin.plotter.LivePlot.test_metrics`.
+
+The structure of the resulting dictionary is::
+
+    '<metric-name>' -> {"batch_data":   array,
+                        "epoch_data":   array,
+                        "epoch_domain": array,
+                        ...}
+
+.. code::
+
+    >>> plotter.train_metrics['accuracy']['batch_data']
+    array([3.08328619e-03, 3.19260208e-03, ..., 9.99981201e-01])
+
+Saving and Loading Your
+###################

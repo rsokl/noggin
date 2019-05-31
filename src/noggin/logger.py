@@ -242,11 +242,12 @@ class LiveLogger:
         Returns
         -------
         OrderedDict[str, Dict[str, numpy.ndarray]]
+            The structure of the resulting dictionary is::
 
-       '<metric-name>' -> {"batch_data":   array,
-                           "epoch_data":   array,
-                           "epoch_domain": array,
-                           ...} """
+                '<metric-name>' -> {"batch_data":   array,
+                                    "epoch_data":   array,
+                                    "epoch_domain": array,
+                                    ...} """
         return OrderedDict((k, v.to_dict()) for k, v in self._train_metrics.items())
 
     @property
@@ -257,11 +258,12 @@ class LiveLogger:
         Returns
         -------
         OrderedDict[str, Dict[str, numpy.ndarray]]
+            The structure of the resulting dictionary is::
 
-       '<metric-name>' -> {"batch_data":   array,
-                           "epoch_data":   array,
-                           "epoch_domain": array,
-                           ...} """
+                '<metric-name>' -> {"batch_data":   array,
+                                    "epoch_data":   array,
+                                    "epoch_domain": array,
+                                    ...} """
         return OrderedDict((k, v.to_dict()) for k, v in self._test_metrics.items())
 
     def to_xarray(self, train_or_test: str) -> Tuple[Dataset, Dataset]:
