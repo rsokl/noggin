@@ -93,6 +93,10 @@ There are a number of ways that you can customize your live plot; these are deta
 - the maximum number of batches to be included in the plot
 - whether or not you want to plot the batch-level data at all
 
+If you don't care about visualizing your data, you can use
+:class:`~noggin.logger.LiveLogger` to record your
+measurements in a nearly-identical manner.
+
 Accessing Your Data
 ###################
 
@@ -159,5 +163,19 @@ The structure of the resulting dictionary is::
     >>> plotter.train_metrics['accuracy']['batch_data']
     array([3.08328619e-03, 3.19260208e-03, ..., 9.99981201e-01])
 
-Saving and Loading Your
-###################
+Saving and Resuming Your Experiment
+###################################
+Instances of Noggin's :class:`~noggin.plotter.LivePlot` and :class:`~noggin.logger.LiveLogger` classes can both be converted to dictionaries, which can then be
+"pickled" - saving them for later use.
+
+Let's convert ``plotter`` to a dictionary using :func:`~noggin.plotter.LivePlot.to_dict` and save it:
+
+.. code::
+
+    # converting `plotter` to a dictionary and pickling it
+    import pickle
+
+    with open('plotter.pkl', 'wb') as f:
+        pickle.dump(plotter.to_dict(), f, protocol=-1)
+
+We can now easily load out pickled
