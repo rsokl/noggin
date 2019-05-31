@@ -13,9 +13,13 @@ To begin, let's make up some functions to represent a data loader and a model th
 
     """
     Defining mock data-loader and model-training functions for this simple demo.
+    The details here are not important, other than the fact that
+    `training_loop` returns a tuple of two floats.
     """
-    import numpy as np
     from time import sleep
+    from typing import Tuple
+
+    import numpy as np
     np.random.seed(0)
 
     def batch_loader(num_batches):
@@ -24,7 +28,7 @@ To begin, let's make up some functions to represent a data loader and a model th
             batch_size = np.random.randint(1, 10)
             yield batch_size * [i]
 
-    def training_loop(batch):
+    def training_loop(batch) -> Tuple[float, float]:
         """Takes ~10ms to execute. Returns a 'loss' and 'accuracy'"""
         sleep(0.01)
         x = np.mean(batch)
@@ -96,12 +100,43 @@ There are two ways to access the data that you recorded during your experiment: 
 
 via xarray Datasets
 -------------------
->>> train_batch, train_epoch = plotter.to_xarray('train')
->>> train_batch
-<xarray.Dataset>
-Dimensions:     (iterations: 1000)
-Coordinates:
+The metrics that we recorded during our experiment are recorded as so-called 'data-variables' in an xarray dataset. And iteration-count serves as the coordinate that uniquely indexes these metrics.
+
+.. code:: python
+
+    # accessing train-metrics as an xarray dataset
+    >>> train_batch, train_epoch = plotter.to_xarray('train')
+    >>> train_batch
+    <xarray.Dataset>
+    Dimensions:     (iterations: 1000)
+    Coordinates:
+      * iterations  (iterations) int32 1 2 3 4 5 6 7 ... 995 996 997 998 999 1000
+    Data variables:
+        loss        (iterations) float64 3.176 3.154 3.842 ... 0.1056 0.06601 0.1135
+        accuracy    (iterations) float64 0.003083 0.003193 0.001193 ... 1.0 1.0 1.0
+
+    >>> train_epoch
+    <xarray.Dataset>
+    Dimensions:     (iterations: 10)
+    Coordinates:
+      * iterations  (iterations) int32 100 200 300 400 500 600 700 800 900 1000
+    Data variables:
+    loss        (iterations) float64 3.825 2.526 1.764 ... 0.2331 0.1495 0.09778
+    accuracy    (iterations) float64 0.00388 0.02844 0.1339 ... 0.9998 1.0
+
+Each metric can be easily accessed as an attribute of this dataset; this returns an individual xarray :obj:`~xarray.DataArray` for that metric:
+
+.. code::
+
+    >>> train_batch.accuracy  # or `train_batch['accuracy']
+    <xarray.DataArray 'accuracy' (iterations: 1000)>
+    array([0.003083, 0.003193, 0.001193, ..., 0.999987, 0.999999, 0.999981])
+    Coordinates:
   * iterations  (iterations) int32 1 2 3 4 5 6 7 ... 995 996 997 998 999 1000
-Data variables:
-    loss        (iterations) float64 3.176 3.154 3.842 ... 0.1056 0.06601 0.1135
-    accuracy    (iterations) float64 0.003083 0.003193 0.001193 ... 1.0 1.0 1.0
+
+xarray's data structures are powerful and highly-convenient. They provide a natural means for aligning batch-level and epoch-level measurements using iteration count. Furthermore, they handle missing data gracefully.
+
+Towards this end, if you run multiple iterations of an experiment, then you can use :func:`~noggin.xarray.concat_experiments` to combine your data sets
+along a new 'experiments' axis. This will gracefully accommodate combining
+experiments that were run for differing numbers of iterations, and will
+permit you to seamlessly compute statistics across them.

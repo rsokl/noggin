@@ -183,15 +183,15 @@ class LiveMetric:
 
         Notes
         -----
-        The encoded dictionary stores:
+        The encoded dictionary stores::
 
-        'batch_data' -> ndarray, shape-(N,)
-        'epoch_data' -> ndarray, shape-(M,)
-        'epoch_domain' -> ndarray, shape-(M,)
-        'cnt_since_epoch' -> int
-        'total_weighting' -> float
-        'running_weighted_sum' -> float
-        'name' -> str
+            'batch_data' -> ndarray, shape-(N,)
+            'epoch_data' -> ndarray, shape-(M,)
+            'epoch_domain' -> ndarray, shape-(M,)
+            'cnt_since_epoch' -> int
+            'total_weighting' -> float
+            'running_weighted_sum' -> float
+            'name' -> str
         """
         array_keys = ("batch_data", "epoch_data", "epoch_domain")
         running_stats_keys = (
@@ -283,15 +283,15 @@ class LiveLogger:
 
         Notes
         -----
-        The layout of the resulting data sets are:
+        The layout of the resulting data sets are::
 
-        Dimensions:     (iterations: num_iterations)
-        Coordinates:
-          * iterations  (iterations) int64 1 2 3 ...
-        Data variables:
-            metric0      (iterations) float64 val_0 val_1 ...
-            metric1      (iterations) float64 val_0 val_1 ...
-            ...
+            Dimensions:     (iterations: num_iterations)
+            Coordinates:
+              * iterations  (iterations) int64 1 2 3 ...
+            Data variables:
+                metric0      (iterations) float64 val_0 val_1 ...
+                metric1      (iterations) float64 val_0 val_1 ...
+                ...
         """
         from .xarray import metrics_to_xarrays
 

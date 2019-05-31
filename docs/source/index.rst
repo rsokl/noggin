@@ -10,7 +10,7 @@ Noggin is a python simple tool for 'live' logging and plotting measurements duri
 .. image:: _static/liveplot.gif
 
 Although Noggin can be used in a general context, it is designed around the train/test and batch/epoch paradigm for
-training a neural network.
+training a machine learning model.
 
 Noggin's primary features are its abilities to:
 
@@ -26,6 +26,7 @@ Noggin's primary features are its abilities to:
 
    install
    workflow
+   documentation
    changes
 
 Indices and tables

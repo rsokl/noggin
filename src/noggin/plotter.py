@@ -180,14 +180,14 @@ class LivePlot(LiveLogger):
         metrics : Union[str, Sequence[str], Dict[str, valid-color], Dict[str, Dict['train'/'test', valid-color]]]
             The name, or sequence of names, of the metric(s) that will be plotted.
 
-        `metrics` can also be a dictionary, specifying the colors used to plot
-        the metrics. Two mappings are valid:
-            - '<metric-name>' -> color-value  (specifies train-metric color only)
-            - '<metric-name>' -> {'train'/'test' : color-value}
+            ``metrics`` can also be a dictionary, specifying the colors used to plot
+            the metrics. Two mappings are valid:
+                - '<metric-name>' -> color-value  (specifies train-metric color only)
+                - '<metric-name>' -> {'train'/'test' : color-value}
 
         max_fraction_spent_plotting : float, optional (default=0.05)
             The maximum fraction of time spent plotting. The refresh rate of plotting
-            will update dynamically such that:
+            will update dynamically such that::
 
                 mean_plot_time / (time_since_last_plot + mean_plot_time)
 
@@ -628,7 +628,7 @@ class LivePlot(LiveLogger):
             ax.legend()
 
     def show(self):  # pragma: no cover
-        """ Calls `matplotlib.pyplot.show()`. For visualizing a static-plot"""
+        """ Calls ``matplotlib.pyplot.show()``. For visualizing a static-plot"""
         if not self._liveplot:
             self._pyplot.show()
 
