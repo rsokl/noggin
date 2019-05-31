@@ -298,7 +298,7 @@ class LiveLogger:
         if train_or_test not in ["train", "test"]:
             raise ValueError(
                 "`train_or_test` must be 'train' or 'test',"
-                "\nGot:{}".format(train_or_test)
+                "\nGot: {}".format(train_or_test)
             )
         metrics = self.train_metrics if train_or_test == "train" else self.test_metrics
         return metrics_to_xarrays(metrics)
