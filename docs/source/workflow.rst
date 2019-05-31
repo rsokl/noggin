@@ -183,6 +183,7 @@ We can now easily load out pickled plotter and recreate our plot as we left it v
 
 .. code::
 
+    # loading the pickled plotter and recreating the plot
     from noggin import LivePlot
 
     with open('plotter.pkl', 'rb') as f:
