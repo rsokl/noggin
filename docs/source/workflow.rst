@@ -104,7 +104,7 @@ There are two ways to access the data that you recorded during your experiment: 
 
 via xarray Datasets
 -------------------
-The metrics that we recorded during our experiment are recorded as so-called 'data-variables' in an xarray dataset. And iteration-count serves as the coordinate that uniquely indexes these metrics.
+The metrics that we recorded during our experiment are recorded as so-called 'data-variables' in an xarray dataset, which can be accessed via :func:`~noggin.plotter.LivePlot.to_xarray`. And iteration-count serves as the coordinate that uniquely indexes these metrics.
 
 .. code:: python
 
@@ -179,7 +179,7 @@ Let's convert ``plotter`` to a dictionary using :func:`~noggin.plotter.LivePlot.
         pickle.dump(plotter.to_dict(), f, protocol=-1)
 
 We can now easily load out pickled plotter and recreate our plot as we left it via
-:class:`~noggin.plotter.LivePlot.from_dict`
+:func:`~noggin.plotter.LivePlot.from_dict`
 
 .. code::
 
