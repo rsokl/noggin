@@ -56,17 +56,27 @@ class LiveMetric:
         self._cnt_since_epoch = 0
 
     @property
-    def name(self):
+    def name(self) -> str:
+        """Name of the metric.
+
+        Returns
+        -------
+        str"""
         return self._name
 
     @property
     def batch_domain(self) -> ndarray:
+        """Array of iteration-counts at which the metric was recorded.
+
+        Returns
+        -------
+        numpy.ndarray, shape=(N_batch, )
+        """
         return np.arange(1, len(self.batch_data) + 1, dtype=float)
 
     @property
     def batch_data(self) -> ndarray:
-        """
-        Metric data for consecutive batches.
+        """Batch-level measurements of the metric.
 
         Returns
         -------
@@ -78,6 +88,11 @@ class LiveMetric:
 
     @property
     def epoch_domain(self) -> ndarray:
+        """Array of iteration-counts at which an epoch was set for this metric.
+
+        Returns
+        -------
+        numpy.ndarray, shape=(N_epoch, )"""
         if self._epoch_domain_list:
             self._epoch_domain = np.concatenate(
                 (self._epoch_domain, self._epoch_domain_list)
@@ -87,8 +102,10 @@ class LiveMetric:
 
     @property
     def epoch_data(self) -> ndarray:
-        """
-        Metric data for consecutive epochs.
+        """Epoch-level measurements of the metrics.
+
+        When an epoch is set, the mean-value of the metric is computed over
+        all of its measurements since the last recorded epoch.
 
         Returns
         -------
@@ -99,11 +116,15 @@ class LiveMetric:
         return self._epoch_data
 
     def add_datapoint(self, value: Real, weighting: Real = 1.0):
-        """
+        """Record a batch-level measurement of the metric.
+
         Parameters
         ----------
         value : Real
-        weighting : Real """
+            The recorded value.
+        weighting : Real
+            The weight with which this recorded value will contribute
+            to the epoch-level mean."""
         if isinstance(value, np.ndarray):
             value = value.item()
 
@@ -113,10 +134,13 @@ class LiveMetric:
         self._cnt_since_epoch += 1
 
     def set_epoch_datapoint(self, x: Optional[Real] = None):
-        """ Parameters
-            ----------
-            x : Optional[Real]
-                Specify the domain-value to be set for this data point."""
+        """Mark the present iteration as an epoch, and compute
+        the mean value of the metric since the past epoch.
+
+        Parameters
+        ----------
+        x : Optional[Real]
+            Specify the domain-value to be set for this data point."""
         if self._cnt_since_epoch > 0:
             mean = self._running_weighted_sum / (
                 self._total_weighting if self._total_weighting > 0.0 else 1.0
@@ -142,15 +166,15 @@ class LiveMetric:
 
         Notes
         -----
-        The encoded dictionary stores:
+        The encoded dictionary stores::
 
-        'batch_data' -> ndarray, shape-(N,)
-        'epoch_data' -> ndarray, shape-(M,)
-        'epoch_domain' -> ndarray, shape-(M,)
-        'cnt_since_epoch' -> int
-        'total_weighting' -> float
-        'running_weighted_sum' -> float
-        'name' -> str
+            'batch_data' -> ndarray, shape-(N,)
+            'epoch_data' -> ndarray, shape-(M,)
+            'epoch_domain' -> ndarray, shape-(M,)
+            'cnt_since_epoch' -> int
+            'total_weighting' -> float
+            'running_weighted_sum' -> float
+            'name' -> str
         """
         out = {
             attr: getattr(self, attr)
@@ -169,7 +193,7 @@ class LiveMetric:
 
     @classmethod
     def from_dict(cls, metrics_dict: Dict[str, ndarray]):
-        """ The inverse of `LiveMetric.to_dict`. Given a dictionary of
+        """ The inverse of ``LiveMetric.to_dict``. Given a dictionary of
         live-metric data, constructs an instance of `LiveMetric`.
 
         Parameters
@@ -179,7 +203,7 @@ class LiveMetric:
 
         Returns
         -------
-        LiveMetric
+        noggin.LiveMetric
 
         Notes
         -----
