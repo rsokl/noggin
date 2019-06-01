@@ -38,10 +38,10 @@ To begin, let's make up some functions to represent a data loader and a model th
         return np.exp(-x / 5), 1 / (1 + np.exp(-x))
 
 
-Noggin's operation is centered around metrics: the various measurements that we want to record and perhaps
+Noggin's operation is centered around metrics: the various measurements that we want to record and
 visualize. Here, we will be interested in measuring the *accuracy* of our model - on both training data and validation data - along with the training *loss*. In general, we can work with any variety and number of metrics in Noggin; a metric boils down to being any scalar value.
 
-Let's create a live-plot for these two metrics; the resulting empty plot pane will automatically get updated as we proceed to make measurements during our experiment. In order to permit live-plotting in a Jupyter notebook, we need to enable the appropriate plotting backend: this is done by invoking the 'cell-magic' ``%matplotlib notebook`` (Note: one typically has to run this command twice before it will take effect - this seems to be a minor bug in Jupyter).
+Let's create a live-plot for these two metrics; the resulting empty plot pane will automatically update as we proceed to make measurements during our experiment. In order to permit live-plotting in a Jupyter notebook, we need to enable the appropriate plotting backend: this is done by invoking the 'cell-magic' ``%matplotlib notebook`` (Note: one typically has to run this command twice before it will take effect - this seems to be a minor bug in Jupyter).
 
 .. code:: python
 
@@ -56,7 +56,7 @@ Let's create a live-plot for these two metrics; the resulting empty plot pane wi
 
 There are two sets of axes in this figure, one for each of the metrics that we passed to ``create_plot``. Regarding the objects that this returned:
 
-- ``plotter`` is an instance of ``noggin.LivePlot``; it will be responsible for logging and plotting our measurements.
+- ``plotter`` is an instance of :class:`~noggin.plotter.LivePlot`; it will be responsible for logging and plotting our measurements.
 - ``fig`` and ``axes`` are the standard matplotlib figure and axes objects that are produced when one invokes ``matplotlib.pyplot.subplots``; these can be used to affect and save the plot as you would with any matplotlib plot.
 
 
@@ -66,6 +66,7 @@ We will be passing batches of training data to our model-training function, reco
 
 .. code:: python
 
+    # logging and plotting measurements during an experiment
     for nbatch, batch in enumerate(batch_loader(1000)):
         loss, train_accuracy = training_loop(batch)
         recorded_metrics = dict(loss=loss, accuracy=train_accuracy)
