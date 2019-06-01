@@ -37,7 +37,7 @@ To begin, let's make up some functions to represent a data loader and a model th
 
 
 Noggin's operation is centered around metrics: the various measurements that we want to record and perhaps
-visualize. Here, we will be interested in measuring the *accuracy* of our model - on both training data and validation data - along with the training *loss*. In general, we can work with any variety and number of metrics in Noggin - a metric boils down to being any scalar value.
+visualize. Here, we will be interested in measuring the *accuracy* of our model - on both training data and validation data - along with the training *loss*. In general, we can work with any variety and number of metrics in Noggin; a metric boils down to being any scalar value.
 
 Let's create a live-plot for these two metrics; the resulting empty plot pane will automatically get updated as we proceed to make measurements during our experiment. In order to permit live-plotting in a Jupyter notebook, we need to enable the appropriate plotting backend: this is done by invoking the 'cell-magic' ``%matplotlib notebook`` (Note: one typically has to run this command twice before it will take effect - this seems to be a minor bug in Jupyter).
 
@@ -65,8 +65,8 @@ We will be passing batches of training data to our model-training function, reco
 .. code:: python
 
     for nbatch, batch in enumerate(batch_loader(1000)):
-        loss, accuracy = training_loop(batch)
-        recorded_metrics = dict(loss=loss, accuracy=accuracy)
+        loss, train_accuracy = training_loop(batch)
+        recorded_metrics = dict(loss=loss, accuracy=train_accuracy)
         plotter.set_train_batch(recorded_metrics,
                                 batch_size=len(batch))
         if (nbatch + 1) % 100 == 0:
@@ -74,7 +74,7 @@ We will be passing batches of training data to our model-training function, reco
             for test_cnt in range(10):
                 # Measure model-accuracy on a validation set
                 _, test_accuracy = training_loop(batch)
-                plotter.set_test_batch(dict(accuracy=accuracy),
+                plotter.set_test_batch(dict(accuracy=test_accuracy),
                                        batch_size=len(batch))
             plotter.plot_train_epoch()
             plotter.plot_test_epoch()
@@ -178,7 +178,7 @@ Let's convert ``plotter`` to a dictionary using :func:`~noggin.plotter.LivePlot.
     with open('plotter.pkl', 'wb') as f:
         pickle.dump(plotter.to_dict(), f, protocol=-1)
 
-We can now easily load out pickled plotter and recreate our plot as we left it via
+We can now easily load our pickled plotter and recreate our plot as we left it, via
 :func:`~noggin.plotter.LivePlot.from_dict`
 
 .. code::
@@ -195,4 +195,4 @@ We can now easily load out pickled plotter and recreate our plot as we left it v
 
 .. image:: _static/filled_pane.png
 
-We can now resume recording measurements in your experiment just as we were doing earlier - our metrics will be logged and plotted just as before!
+We can now resume recording measurements in our experiment just as we were doing earlier; our metrics will be logged and plotted just as before!
