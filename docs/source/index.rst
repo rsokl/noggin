@@ -24,7 +24,7 @@ record and plot data during an experiment.
 
     %matplotlib notebook
     import numpy as np
-    from noggin import create_plot, save_metrics
+    from noggin import create_plot
     metrics = ["accuracy", "loss"]
     plotter, fig, ax = create_plot(metrics)
 
@@ -43,6 +43,7 @@ record and plot data during an experiment.
                x += (np.random.rand(1) - 0.5)*5
                test_metrics = {"accuracy": x**2}
                plotter.set_test_batch(test_metrics, batch_size=1)
+           plotter.plot_test_epoch()
     plotter.plot()  # ensures final data gets plotted
 
 .. image:: _static/liveplot.gif
