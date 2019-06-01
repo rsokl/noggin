@@ -9,3 +9,5 @@ Documentation for Noggin
    logger
    plotter
    xarray
+   utils
+

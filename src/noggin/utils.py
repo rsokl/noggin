@@ -35,6 +35,7 @@ def create_plot(
     Examples
     --------
     Creating a live plot in a Jupyter notebook
+
     >>> %matplotlib notebook
     >>> import numpy as np
     >>> from noggin import create_plot, save_metrics
@@ -60,6 +61,7 @@ def create_plot(
     ... plotter.plot()  # ensures final data gets plotted
 
     Saving the logged metrics
+
     >>> save_metrics("./metrics.npz", plotter) # save metrics to numpy-archive
     """
     live_plotter = LivePlot(

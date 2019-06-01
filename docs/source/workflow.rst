@@ -5,6 +5,8 @@ A Typical Workflow Using Noggin
 Here, we will create a simple mock-up of an experiment in which we use Noggin to record and plot
 our measurements. We will exercise the critical features that this library provides us with. The following demo is intended to be conducted in a `Jupyter notebook <https://www.pythonlikeyoumeanit.com/Module1_GettingStartedWithPython/Jupyter_Notebooks.html>`_.
 
+Please note that, if you don't need to visualize your data as you collect it, you can use :class:`~noggin.logger.LiveLogger` to record your measurements in a nearly-identical manner.
+
 Recording and Plotting Data During an Experiment
 ################################################
 To begin, let's make up some functions to represent a data loader and a model that we are training:
@@ -93,10 +95,6 @@ There are a number of ways that you can customize your live plot; these are deta
 - the maximum number of batches to be included in the plot
 - whether or not you want to plot the batch-level data at all
 
-If you don't care about visualizing your data, you can use
-:class:`~noggin.logger.LiveLogger` to record your
-measurements in a nearly-identical manner.
-
 Accessing Your Data
 ###################
 
@@ -132,6 +130,7 @@ Each metric can be easily accessed as an attribute of this dataset; this returns
 
 .. code::
 
+    # accessing the data array for 'accuracy'
     >>> train_batch.accuracy  # or `train_batch['accuracy']
     <xarray.DataArray 'accuracy' (iterations: 1000)>
     array([0.003083, 0.003193, 0.001193, ..., 0.999987, 0.999999, 0.999981])
