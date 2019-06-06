@@ -56,17 +56,27 @@ class LiveMetric:
         self._cnt_since_epoch = 0
 
     @property
-    def name(self):
+    def name(self) -> str:
+        """Name of the metric.
+
+        Returns
+        -------
+        str"""
         return self._name
 
     @property
     def batch_domain(self) -> ndarray:
+        """Array of iteration-counts at which the metric was recorded.
+
+        Returns
+        -------
+        numpy.ndarray, shape=(N_batch, )
+        """
         return np.arange(1, len(self.batch_data) + 1, dtype=float)
 
     @property
     def batch_data(self) -> ndarray:
-        """
-        Metric data for consecutive batches.
+        """Batch-level measurements of the metric.
 
         Returns
         -------
@@ -78,6 +88,11 @@ class LiveMetric:
 
     @property
     def epoch_domain(self) -> ndarray:
+        """Array of iteration-counts at which an epoch was set for this metric.
+
+        Returns
+        -------
+        numpy.ndarray, shape=(N_epoch, )"""
         if self._epoch_domain_list:
             self._epoch_domain = np.concatenate(
                 (self._epoch_domain, self._epoch_domain_list)
@@ -87,8 +102,10 @@ class LiveMetric:
 
     @property
     def epoch_data(self) -> ndarray:
-        """
-        Metric data for consecutive epochs.
+        """Epoch-level measurements of the metrics.
+
+        When an epoch is set, the mean-value of the metric is computed over
+        all of its measurements since the last recorded epoch.
 
         Returns
         -------
@@ -99,11 +116,15 @@ class LiveMetric:
         return self._epoch_data
 
     def add_datapoint(self, value: Real, weighting: Real = 1.0):
-        """
+        """Record a batch-level measurement of the metric.
+
         Parameters
         ----------
         value : Real
-        weighting : Real """
+            The recorded value.
+        weighting : Real
+            The weight with which this recorded value will contribute
+            to the epoch-level mean."""
         if isinstance(value, np.ndarray):
             value = value.item()
 
@@ -113,10 +134,13 @@ class LiveMetric:
         self._cnt_since_epoch += 1
 
     def set_epoch_datapoint(self, x: Optional[Real] = None):
-        """ Parameters
-            ----------
-            x : Optional[Real]
-                Specify the domain-value to be set for this data point."""
+        """Mark the present iteration as an epoch, and compute
+        the mean value of the metric since the past epoch.
+
+        Parameters
+        ----------
+        x : Optional[Real]
+            Specify the domain-value to be set for this data point."""
         if self._cnt_since_epoch > 0:
             mean = self._running_weighted_sum / (
                 self._total_weighting if self._total_weighting > 0.0 else 1.0
@@ -142,15 +166,15 @@ class LiveMetric:
 
         Notes
         -----
-        The encoded dictionary stores:
+        The encoded dictionary stores::
 
-        'batch_data' -> ndarray, shape-(N,)
-        'epoch_data' -> ndarray, shape-(M,)
-        'epoch_domain' -> ndarray, shape-(M,)
-        'cnt_since_epoch' -> int
-        'total_weighting' -> float
-        'running_weighted_sum' -> float
-        'name' -> str
+            'batch_data' -> ndarray, shape-(N,)
+            'epoch_data' -> ndarray, shape-(M,)
+            'epoch_domain' -> ndarray, shape-(M,)
+            'cnt_since_epoch' -> int
+            'total_weighting' -> float
+            'running_weighted_sum' -> float
+            'name' -> str
         """
         out = {
             attr: getattr(self, attr)
@@ -169,7 +193,7 @@ class LiveMetric:
 
     @classmethod
     def from_dict(cls, metrics_dict: Dict[str, ndarray]):
-        """ The inverse of `LiveMetric.to_dict`. Given a dictionary of
+        """ The inverse of ``LiveMetric.to_dict``. Given a dictionary of
         live-metric data, constructs an instance of `LiveMetric`.
 
         Parameters
@@ -179,19 +203,19 @@ class LiveMetric:
 
         Returns
         -------
-        LiveMetric
+        noggin.LiveMetric
 
         Notes
         -----
-        The encoded dictionary stores:
+        The encoded dictionary stores::
 
-        'batch_data' -> ndarray, shape-(N,)
-        'epoch_data' -> ndarray, shape-(M,)
-        'epoch_domain' -> ndarray, shape-(M,)
-        'cnt_since_epoch' -> int
-        'total_weighting' -> float
-        'running_weighted_sum' -> float
-        'name' -> str
+            'batch_data' -> ndarray, shape-(N,)
+            'epoch_data' -> ndarray, shape-(M,)
+            'epoch_domain' -> ndarray, shape-(M,)
+            'cnt_since_epoch' -> int
+            'total_weighting' -> float
+            'running_weighted_sum' -> float
+            'name' -> str
         """
         array_keys = ("batch_data", "epoch_data", "epoch_domain")
         running_stats_keys = (
@@ -232,42 +256,79 @@ class LiveLogger:
     """
     Logs batch-level and epoch-level summary statistics of the training and
     testing metrics of a model during a session.
+
+    Examples
+    --------
+    A simple example in which we log two iterations of training batches,
+    and set an epoch.
+
+    >>> from noggin import LiveLogger
+    >>> logger = LiveLogger()
+    >>> logger.set_train_batch(dict(metric_a=2., metric_b=1.), batch_size=10)
+    >>> logger.set_train_batch(dict(metric_a=0., metric_b=2.), batch_size=4)
+    >>> logger.set_train_epoch()  # compute the mean statistics
+    >>> logger
+    LiveLogger(metric_a, metric_b)
+    number of training batches set: 2
+    number of training epochs set: 1
+    number of testing batches set: 0
+    number of testing epochs set: 0
+
+    Accessing our logged batch-level and epoch-level data
+
+    >>> logger.to_xarray("train")
+    MetricArrays(batch=<xarray.Dataset>
+    Dimensions:     (iterations: 2)
+    Coordinates:
+      * iterations  (iterations) int32 1 2
+    Data variables:
+        metric_a    (iterations) float64 2.0 0.0
+        metric_b    (iterations) float64 1.0 2.0,
+    epoch=<xarray.Dataset>
+    Dimensions:     (iterations: 1)
+    Coordinates:
+      * iterations  (iterations) int32 2
+    Data variables:
+        metric_a    (iterations) float64 1.429
+        metric_b    (iterations) float64 1.286)
     """
 
     @property
     def train_metrics(self) -> Dict[str, Dict[str, ndarray]]:
         """
-        The batch and epoch data for each metric.
+        The batch and epoch data for each train-metric.
 
         Returns
         -------
         OrderedDict[str, Dict[str, numpy.ndarray]]
+            The structure of the resulting dictionary is::
 
-       '<metric-name>' -> {"batch_data":   array,
-                           "epoch_data":   array,
-                           "epoch_domain": array,
-                           ...} """
+                '<metric-name>' -> {"batch_data":   array,
+                                    "epoch_data":   array,
+                                    "epoch_domain": array,
+                                    ...} """
         return OrderedDict((k, v.to_dict()) for k, v in self._train_metrics.items())
 
     @property
     def test_metrics(self) -> Dict[str, Dict[str, ndarray]]:
         """
-        The batch and epoch data for each metric.
+        The batch and epoch data for each test-metric.
 
         Returns
         -------
         OrderedDict[str, Dict[str, numpy.ndarray]]
+            The structure of the resulting dictionary is::
 
-       '<metric-name>' -> {"batch_data":   array,
-                           "epoch_data":   array,
-                           "epoch_domain": array,
-                           ...} """
+                '<metric-name>' -> {"batch_data":   array,
+                                    "epoch_data":   array,
+                                    "epoch_domain": array,
+                                    ...} """
         return OrderedDict((k, v.to_dict()) for k, v in self._test_metrics.items())
 
     def to_xarray(self, train_or_test: str) -> Tuple[Dataset, Dataset]:
         """
-        Given noggin metrics, returns xarray datasets for the batch-level and epoch-level
-        metrics, respectively.
+        Returns xarray datasets for the batch-level and epoch-level metrics, respectively,
+        for either the train-metrics or test-metrics.
 
         Parameters
         ----------
@@ -283,27 +344,47 @@ class LiveLogger:
 
         Notes
         -----
-        The layout of the resulting data sets are:
+        The layout of the resulting data sets are::
 
-        Dimensions:     (iterations: num_iterations)
-        Coordinates:
-          * iterations  (iterations) int64 1 2 3 ...
-        Data variables:
-            metric0      (iterations) float64 val_0 val_1 ...
-            metric1      (iterations) float64 val_0 val_1 ...
-            ...
+            Dimensions:     (iterations: num_iterations)
+            Coordinates:
+              * iterations  (iterations) int64 1 2 3 ...
+            Data variables:
+                metric0      (iterations) float64 val_0 val_1 ...
+                metric1      (iterations) float64 val_0 val_1 ...
+                ...
+
+        Each metric can be accessed as an attribute of the resulting data-set,
+        e.g. ``dataset.metric0``, or via the 'get-item' syntax, e.g.
+        ``dataset['metric0']``. This returns a data-array for that metric.
+
+        Data sets collected from multiple trials of an experiment can be combined
+        using :func:`~noggin.xarray.concat_experiments`.
         """
         from .xarray import metrics_to_xarrays
 
         if train_or_test not in ["train", "test"]:
             raise ValueError(
                 "`train_or_test` must be 'train' or 'test',"
-                "\nGot:{}".format(train_or_test)
+                "\nGot: {}".format(train_or_test)
             )
         metrics = self.train_metrics if train_or_test == "train" else self.test_metrics
         return metrics_to_xarrays(metrics)
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
+        """Records the state of the logger in a dictionary.
+
+        This is the inverse of :func:`~noggin.logger.LiveLogger.from_dict`
+
+        Returns
+        -------
+        Dict[str, Any]
+
+        Notes
+        -----
+        To save your logger, use this method to convert it to a dictionary
+        and then pickle the dictionary.
+        """
         return dict(
             train_metrics=self.train_metrics,
             test_metrics=self.test_metrics,
@@ -314,7 +395,33 @@ class LiveLogger:
         )
 
     @classmethod
-    def from_dict(cls, logger_dict):
+    def from_dict(cls, logger_dict: Dict[str, Any]):
+        """Records the state of the logger in a dictionary.
+
+        This is the inverse of :func:`~noggin.logger.LiveLogger.to_dict`
+
+        Parameters
+        ----------
+        logger_dict : Dict[str, Any]
+            The dictionary storing the state of the logger to be
+            restored.
+
+        Returns
+        -------
+        noggin.LiveLogger
+            The restored logger.
+
+        Notes
+        -----
+        This is a class-method, the syntax for invoking it is:
+
+        >>> LiveLogger.from_dict(logger_dict)
+        LiveLogger(metric_a, metric_b)
+        number of training batches set: 3
+        number of training epochs set: 1
+        number of testing batches set: 0
+        number of testing epochs set: 0
+        """
         new = cls()
         # initializing LiveMetrics and setting data
         new._train_metrics.update(
@@ -366,7 +473,8 @@ class LiveLogger:
     def set_train_batch(
         self, metrics: Dict[str, Real], batch_size: Integral
     ):  # lgtm [py/inheritance/incorrect-overridden-signature]
-        """
+        """Record batch-level measurements for train-metrics.
+
         Parameters
         ----------
         metrics : Dict[str, Real]
@@ -391,9 +499,10 @@ class LiveLogger:
         self._num_train_batch += 1
 
     def set_train_epoch(self):
-        """
-        Compute epoch-level statistics based on the batches accumulated since
-        the prior batch.
+        """Record an epoch for the train-metrics.
+
+        Computes epoch-level statistics based on the batches accumulated since
+        the prior epoch.
         """
         # compute epoch-mean metrics
         for key in self._train_metrics:
@@ -402,7 +511,8 @@ class LiveLogger:
         self._num_train_epoch += 1
 
     def set_test_batch(self, metrics: Dict[str, Real], batch_size: Integral):
-        """
+        """Record batch-level measurements for test-metrics.
+
         Parameters
         ----------
         metrics : Dict[str, Real]
@@ -426,6 +536,11 @@ class LiveLogger:
         self._num_test_batch += 1
 
     def set_test_epoch(self):
+        """Record an epoch for the test-metrics.
+
+        Computes epoch-level statistics based on the batches accumulated since
+        the prior epoch.
+        """
         # compute epoch-mean metrics
         for key in self._test_metrics:
             try:

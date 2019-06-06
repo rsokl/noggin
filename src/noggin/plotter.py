@@ -43,8 +43,14 @@ def _check_valid_color(c: ValidColor) -> bool:
 
 
 class LivePlot(LiveLogger):
-    """ Plots batch-level and epoch-level summary statistics of the training and
+    """Records and plots batch-level and epoch-level summary statistics of the training and
     testing metrics of a model during a session.
+
+    The rate at which the plot is updated is controlled by
+    :obj:`~noggin.plotter.LivePlot.max_fraction_spent_plotting`.
+
+    The maximum number of batches to be included in the plot is controlled by
+    :obj:`~noggin.plotter.LivePlot.last_n_batches`.
 
     Notes
     -----
@@ -59,7 +65,9 @@ class LivePlot(LiveLogger):
 
     @property
     def metric_colors(self) -> Dict[str, Dict[str, str]]:
-        """
+        """The color associated with each of the train/test and batch/epoch-level
+        metrics.
+
         Returns
         -------
         Dict[str, Dict[str, color-value]]
@@ -74,7 +82,12 @@ class LivePlot(LiveLogger):
 
     @property
     def figsize(self) -> Optional[Tuple[float, float]]:
-        """Returns the current size of the figure in inches."""
+        """Returns the current size of the figure in inches.
+
+        Parameters
+        ----------
+        Optional[Tuple[float, float]]
+        """
         return self._pltkwargs.get("figsize")
 
     @figsize.setter
@@ -119,6 +132,22 @@ class LivePlot(LiveLogger):
 
     @property
     def max_fraction_spent_plotting(self) -> float:
+        """The maximum fraction of time spent plotting.
+
+        Parameters
+        ----------
+        value : float
+            A value in [0, 1]. A value of ``0.0`` turns live-plotting off.
+            A value of ``1.0`` will result in the plot updating whenever a
+            new measurement is recorded.
+
+        Notes
+        -----
+        The refresh rate for plotting will update dynamically such that::
+
+            mean_plot_time / (time_since_last_plot + mean_plot_time)
+
+        does not exceed ``max_fraction_spent_plotting``."""
         return self._max_fraction_spent_plotting
 
     @max_fraction_spent_plotting.setter
@@ -139,7 +168,12 @@ class LivePlot(LiveLogger):
     @property
     def last_n_batches(self) -> int:
         """The maximum number of batches to be plotted at any given time.
-        If ``None``, all data will be plotted."""
+        If ``None``, all data will be plotted.
+
+        Parameters
+        ----------
+        value : Union[int, None]
+        """
         return self._last_n_batches
 
     @last_n_batches.setter
@@ -180,18 +214,15 @@ class LivePlot(LiveLogger):
         metrics : Union[str, Sequence[str], Dict[str, valid-color], Dict[str, Dict['train'/'test', valid-color]]]
             The name, or sequence of names, of the metric(s) that will be plotted.
 
-        `metrics` can also be a dictionary, specifying the colors used to plot
-        the metrics. Two mappings are valid:
-            - '<metric-name>' -> color-value  (specifies train-metric color only)
-            - '<metric-name>' -> {'train'/'test' : color-value}
+            ``metrics`` can also be a dictionary, specifying the colors used to plot
+            the metrics. Two mappings are valid:
+                - '<metric-name>' -> color-value  (specifies train-metric color only)
+                - '<metric-name>' -> {'train'/'test' : color-value}
 
         max_fraction_spent_plotting : float, optional (default=0.05)
-            The maximum fraction of time spent plotting. The refresh rate of plotting
-            will update dynamically such that:
-
-                mean_plot_time / (time_since_last_plot + mean_plot_time)
-
-            does not exceed ``max_fraction_spent_plotting``.
+            The maximum fraction of time spent plotting. The default value is ``0.5``,
+            meaning that no more than 5% of processing time will be spent plotting, on
+            average.
 
         last_n_batches : Optional[int]
             The maximum number of batches to be plotted at any given time.
@@ -313,6 +344,19 @@ class LivePlot(LiveLogger):
             warn(cleandoc(_inline_msg.format(self._backend)))
 
     def to_dict(self):
+        """Records the state of the plotter in a dictionary.
+
+        This is the inverse of :func:`~noggin.plotter.LivePlot.from_dict`
+
+        Returns
+        -------
+        Dict[str, Any]
+
+        Notes
+        -----
+        To save your plotter, use this method to convert it to a dictionary
+        and then pickle the dictionary.
+        """
         out = super().to_dict()
         out.update(
             dict(
@@ -328,6 +372,31 @@ class LivePlot(LiveLogger):
 
     @classmethod
     def from_dict(cls, plotter_dict):
+        """Records the state of the plotter in a dictionary.
+
+        This is the inverse of :func:`~noggin.plotter.LivePlot.to_dict`
+
+        Parameters
+        ----------
+        plotter_dict : Dict[str, Any]
+            The dictionary storing the state of the logger to be
+            restored.
+
+        Returns
+        -------
+        noggin.LivePlot
+            The restored plotter.
+
+        Notes
+        -----
+        This is a class-method, the syntax for invoking it is:
+
+        >>> loaded_plotter = LivePlot.from_dict(plotter_dict)
+
+        To restore your plot from the loaded plotter, call:
+
+        >>> loaded_plotter.plot()
+        """
         new = cls(
             metrics=plotter_dict["metric_names"],
             max_fraction_spent_plotting=plotter_dict["max_fraction_spent_plotting"],
@@ -385,7 +454,8 @@ class LivePlot(LiveLogger):
     def set_train_batch(
         self, metrics: Dict[str, Real], batch_size: Integral, plot: bool = True
     ):
-        """ Provide the batch-level metric values to be recorded, and (optionally) plotted.
+        """Record batch-level measurements for train-metrics, and (optionally)
+        plot them.
 
         Parameters
         ----------
@@ -410,14 +480,16 @@ class LivePlot(LiveLogger):
             self._do_liveplot()
 
     def plot_train_epoch(self):
-        """
-        Compute the epoch-level train statistics and plot the data point.
+        """Record and plot an epoch for the train-metrics.
+
+        Computes epoch-level statistics based on the batches accumulated since
+        the prior epoch.
         """
         super().set_train_epoch()
         self._do_liveplot()
 
     def set_test_batch(self, metrics: Dict[str, Real], batch_size: Integral):
-        """ Provide the batch-level metric values to be recorded, and (optionally) plotted.
+        """Record batch-level measurements for test-metrics.
 
         Parameters
         ----------
@@ -433,8 +505,10 @@ class LivePlot(LiveLogger):
         )
 
     def plot_test_epoch(self):
-        """
-        Compute the epoch-level test statistics and plot the data point.
+        """Record and plot an epoch for the test-metrics.
+
+        Computes epoch-level statistics based on the batches accumulated since
+        the prior epoch.
         """
         super().set_test_epoch()
         self._do_liveplot()
@@ -477,7 +551,7 @@ class LivePlot(LiveLogger):
         ``Liveplot.plot_train_epoch``, and ``Liveplot.plot_test_epoch``, which will
         adjust their plot-rates according to ``Liveplot.max_fraction_spent_plotting``.
 
-        ``LivePlot.plot`` can be called at the end of a logging-loop to ensure that
+        ``LivePlot.plot`` should be called at the end of a logging-loop to ensure that
         the logged data is plotted in its entirety. This can also be used to recreate
         a plot after deserializing a ``LivePlot`` instance.
 
@@ -628,7 +702,7 @@ class LivePlot(LiveLogger):
             ax.legend()
 
     def show(self):  # pragma: no cover
-        """ Calls `matplotlib.pyplot.show()`. For visualizing a static-plot"""
+        """ Calls ``matplotlib.pyplot.show()``. For visualizing a static-plot"""
         if not self._liveplot:
             self._pyplot.show()
 
