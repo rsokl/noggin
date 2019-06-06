@@ -6,7 +6,7 @@
 Noggin
 ======
 
-Noggin is a simple Python tool for 'live' logging and plotting measurements during experiments. Although Noggin can be used in a general context, it is designed around the train/test and batch/epoch paradigm for training a machine learning model.
+Noggin is a simple Python tool for 'live' logging and plotting measurements during an experiment. Although Noggin can be used in a general context, it is designed around the train/test and batch/epoch paradigm for training a machine learning model.
 
 Noggin's primary features are its abilities to:
 

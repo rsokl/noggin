@@ -25,13 +25,14 @@ To begin, let's make up some functions to represent a data loader and a model th
     np.random.seed(0)
 
     def batch_loader(num_batches):
-        """Simulates loading batches of varying sizes"""
+        """Simulates loading batches of data of varying sizes"""
         for i in np.linspace(-10, 10, num_batches):
             batch_size = np.random.randint(1, 10)
             yield batch_size * [i]
 
     def training_loop(batch) -> Tuple[float, float]:
-        """Takes ~10ms to execute. Returns a 'loss' and 'accuracy'"""
+        """Simulates data processing Takes ~10ms to process a batch.
+        Returns a 'loss' and 'accuracy'"""
         sleep(0.01)
         x = np.mean(batch)
         x += np.random.rand(1)*5 # add some noise
@@ -54,7 +55,7 @@ Let's create a live-plot for these two metrics; the resulting empty plot pane wi
 
 .. image:: _static/empty_pane.png
 
-There are two sets of axes in this figure, one for each of the metrics that we passed to ``create_plot``. Regarding the objects that this returned:
+There are two sets of axes in this figure, one for each of the metrics that we passed to :func:`~noggin.utils.create_plot`. Regarding the objects that this returned:
 
 - ``plotter`` is an instance of :class:`~noggin.plotter.LivePlot`; it will be responsible for logging and plotting our measurements.
 - ``fig`` and ``axes`` are the standard matplotlib figure and axes objects that are produced when one invokes ``matplotlib.pyplot.subplots``; these can be used to affect and save the plot as you would with any matplotlib plot.
