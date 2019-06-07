@@ -180,7 +180,7 @@ def plot_logger(
     last_n_batches: Optional[int] = None,
     colors: Optional[Dict[str, Union[ValidColor, Dict[str, ValidColor]]]] = None,
 ) -> Tuple[LivePlot, Figure, Union[Axes, np.ndarray]]:
-    """Plots the data recorded by a :class:`~noggin.plotter.LiveLogger` instance.
+    """Plots the data recorded by a :class:`~noggin.logger.LiveLogger` instance.
 
     Converts the logger to an instance of :class:`~noggin.plotter.LivePlot`.
 
