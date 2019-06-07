@@ -7,5 +7,6 @@ Documentation for noggin.utils
    :toctree: generated/
 
    create_plot
+   plot_logger
    save_metrics
    load_metrics

@@ -1,3 +1,4 @@
+from typing import Optional
 import string
 
 import hypothesis.strategies as st
@@ -7,11 +8,14 @@ from hypothesis import given, settings, example
 from numpy.testing import assert_array_equal
 from tests import close_plots
 from tests.utils import compare_all_metrics, err_msg
+import tests.custom_strategies as cst
 
 from noggin import LiveLogger, LivePlot, create_plot
 from noggin.plotter import _check_valid_color
 from noggin.typing import Axes, Figure, ndarray
-from noggin.utils import load_metrics, save_metrics
+from noggin.utils import load_metrics, save_metrics, plot_logger
+
+from xarray.testing import assert_equal
 
 
 @pytest.mark.parametrize(
@@ -161,3 +165,55 @@ def test_metric_io_test(metric_name: str):
             assert_array_equal(actual, expected)
         else:
             assert expected == actual
+
+
+@settings(deadline=None)
+@given(
+    logger=cst.loggers(min_num_metrics=1),
+    last_n_batches=st.none() | st.integers(1, 10),
+    plot_batches=st.booleans(),
+    data=st.data(),
+)
+def test_plot_logger(
+    logger: LiveLogger,
+    last_n_batches: Optional[int],
+    plot_batches: bool,
+    data: st.DataObject,
+):
+    metrics = set(list(logger.train_metrics.keys()) + list(logger.test_metrics.keys()))
+
+    colors = data.draw(
+        st.none()
+        | st.fixed_dictionaries(
+            {
+                k: st.fixed_dictionaries(
+                    {"train": cst.matplotlib_colors(), "test": cst.matplotlib_colors()}
+                )
+                for k in metrics
+            }
+        ),
+        label="colors",
+    )
+    with close_plots():
+        plotter, fig, ax = plot_logger(
+            logger,
+            colors=colors,
+            plot_batches=plot_batches,
+            last_n_batches=last_n_batches,
+        )
+        assert isinstance(plotter, LivePlot)
+        assert isinstance(fig, Figure)
+        assert isinstance(ax, (Axes, ndarray))
+    assert plotter.last_n_batches == last_n_batches
+    assert plotter.metric_colors == (colors if colors else {})
+
+    train_batch_expected, train_epoch_expected = logger.to_xarray("train")
+    test_batch_expected, test_epoch_expected = logger.to_xarray("test")
+
+    train_batch_actual, train_epoch_actual = plotter.to_xarray("train")
+    test_batch_actual, test_epoch_actual = plotter.to_xarray("test")
+
+    assert_equal(train_batch_actual, train_batch_expected)
+    assert_equal(test_batch_actual, test_batch_expected)
+    assert_equal(train_epoch_actual, train_epoch_expected)
+    assert_equal(test_epoch_actual, test_epoch_expected)
