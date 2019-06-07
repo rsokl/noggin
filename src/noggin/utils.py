@@ -204,7 +204,7 @@ def plot_logger(
         If ``None``, default colors are used in the plot.
 
     Returns
-    -----
+    -------
     Tuple[LivePlot, Figure, Union[Axes, np.ndarray]]
         The resulting plotter, matplotlib-figure, and axis (or array of axes)
     """
