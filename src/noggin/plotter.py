@@ -64,7 +64,7 @@ class LivePlot(LiveLogger):
         return self._metrics
 
     @property
-    def metric_colors(self) -> Dict[str, Dict[str, str]]:
+    def metric_colors(self) -> Dict[str, Dict[str, ValidColor]]:
         """The color associated with each of the train/test and batch/epoch-level
         metrics.
 
@@ -79,6 +79,28 @@ class LivePlot(LiveLogger):
         for k, v in self._test_colors.items():
             out[k]["test"] = v
         return dict(out)
+
+    @metric_colors.setter
+    def metric_colors(self, value: Dict[str, Union[ValidColor, Dict[str, ValidColor]]]):
+        if not isinstance(value, dict):
+            raise TypeError(
+                "`metric_colors` must be a dictionary that maps:"
+                "\nmetric-name -> valid-color"
+                "\nor"
+                "\nmetric-name -> 'train' -> valid-color"
+                "\n               'test'  -> valid-color"
+                "\nGot: {}".format(value)
+            )
+        for k, v in value.items():
+            if k not in self.metrics:
+                continue
+            if isinstance(v, dict):
+                self._train_colors[k] = v.get("train")
+                self._test_colors[k] = v.get("test")
+            else:
+                self._train_colors[k] = v
+        sum(_check_valid_color(c) for c in self._train_colors.values())
+        sum(_check_valid_color(c) for c in self._test_colors.values())
 
     @property
     def figsize(self) -> Optional[Tuple[float, float]]:
@@ -326,16 +348,9 @@ class LivePlot(LiveLogger):
         self._train_colors = defaultdict(lambda: None)
         self._test_colors = defaultdict(lambda: None)
         if isinstance(metrics, dict):
-            for k, v in metrics.items():
-                if isinstance(v, dict):
-                    self._train_colors[k] = v.get("train")
-                    self._test_colors[k] = v.get("test")
-                else:
-                    self._train_colors[k] = v
-        sum(_check_valid_color(c) for c in self._train_colors.values())
-        sum(_check_valid_color(c) for c in self._test_colors.values())
+            self.metric_colors = metrics
 
-        if "nbAgg" not in self._backend:
+        if "nbAgg" not in self._backend and max_fraction_spent_plotting > 0.0:
             _inline_msg = """Live plotting is not supported when matplotlib uses the '{}'
                              backend. Instead, use the 'nbAgg' backend.
 
