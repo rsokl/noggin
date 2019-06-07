@@ -83,7 +83,7 @@ class LivePlot(LiveLogger):
     @metric_colors.setter
     def metric_colors(self, value: Dict[str, Union[ValidColor, Dict[str, ValidColor]]]):
         if not isinstance(value, dict):
-            raise TypeError(
+            raise ValueError(
                 "`metric_colors` must be a dictionary that maps:"
                 "\nmetric-name -> valid-color"
                 "\nor"
