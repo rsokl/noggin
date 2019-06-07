@@ -1,21 +1,20 @@
-from typing import Optional
 import string
+from typing import Optional
 
 import hypothesis.strategies as st
 import numpy as np
 import pytest
-from hypothesis import given, settings, example
+import tests.custom_strategies as cst
+from hypothesis import example, given, settings
 from numpy.testing import assert_array_equal
 from tests import close_plots
 from tests.utils import compare_all_metrics, err_msg
-import tests.custom_strategies as cst
+from xarray.testing import assert_equal
 
 from noggin import LiveLogger, LivePlot, create_plot
 from noggin.plotter import _check_valid_color
 from noggin.typing import Axes, Figure, ndarray
-from noggin.utils import load_metrics, save_metrics, plot_logger
-
-from xarray.testing import assert_equal
+from noggin.utils import load_metrics, plot_logger, save_metrics
 
 
 @pytest.mark.parametrize(
@@ -165,6 +164,13 @@ def test_metric_io_test(metric_name: str):
             assert_array_equal(actual, expected)
         else:
             assert expected == actual
+
+
+@settings(deadline=None)
+@given(bad_logger=cst.everything_except(LiveLogger))
+def test_plot_logger_validation(bad_logger):
+    with pytest.raises(TypeError):
+        plot_logger(bad_logger)
 
 
 @settings(deadline=None)
