@@ -1,14 +1,13 @@
 from collections import OrderedDict, defaultdict, namedtuple
 from pathlib import Path
-from typing import Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
-from noggin.logger import LiveLogger
-from noggin.plotter import LivePlot
-from noggin.typing import Figure, LiveMetrics, Metrics, ndarray
-
 from custom_inherit import doc_inherit
 
+from noggin.logger import LiveLogger
+from noggin.plotter import LivePlot
+from noggin.typing import Axes, Figure, LiveMetrics, Metrics, ValidColor, ndarray
 
 __all__ = ["create_plot", "save_metrics", "load_metrics"]
 
@@ -173,3 +172,34 @@ def load_metrics(path: Union[str, Path]) -> Tuple[LiveMetrics, LiveMetrics]:
     train_metrics = OrderedDict(((k, dict(out["train"][k])) for k in train_order))
     test_metrics = OrderedDict(((k, dict(out["test"][k])) for k in test_order))
     return metrics(train_metrics, test_metrics)
+
+
+def plot_logger(
+    logger: LiveLogger,
+    last_n_batches: Optional[int] = None,
+    colors: Optional[Dict[str, Union[ValidColor, Dict[str, ValidColor]]]] = None,
+) -> Tuple[LiveLogger, Figure, Union[Axes, np.ndarray]]:
+    metrics = sorted(
+        set(list(logger.train_metrics.keys()) + list(logger.test_metrics.keys()))
+    )
+
+    if not isinstance(logger, LiveLogger):
+        raise ValueError(
+            "`logger` must be an instance of `noggin.LiveLogger`, got {}".format(logger)
+        )
+
+    plotter = LivePlot(
+        metrics, max_fraction_spent_plotting=0.0, last_n_batches=last_n_batches
+    )
+
+    plotter.last_n_batches = last_n_batches
+    if colors is not None:
+        plotter.metric_colors = colors
+
+    plotter_dict = plotter.to_dict()
+
+    plotter_dict.update(logger.to_dict())
+    plotter = LivePlot.from_dict(plotter_dict)
+    plotter.plot()
+    fig, ax = plotter.plot_objects
+    return plotter, fig, ax
