@@ -208,14 +208,15 @@ def plot_logger(
     Tuple[LivePlot, Figure, Union[Axes, np.ndarray]]
         The resulting plotter, matplotlib-figure, and axis (or array of axes)
     """
+
+    if not isinstance(logger, LiveLogger):
+        raise TypeError(
+            "`logger` must be an instance of `noggin.LiveLogger`, got {}".format(logger)
+        )
+
     metrics = sorted(
         set(list(logger.train_metrics.keys()) + list(logger.test_metrics.keys()))
     )
-
-    if not isinstance(logger, LiveLogger):
-        raise ValueError(
-            "`logger` must be an instance of `noggin.LiveLogger`, got {}".format(logger)
-        )
 
     plotter = LivePlot(
         metrics, max_fraction_spent_plotting=0.0, last_n_batches=last_n_batches
