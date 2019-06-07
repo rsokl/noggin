@@ -158,6 +158,40 @@ def test_flat_color_syntax(colors: list):
     assert p.metric_colors == {n: dict(train=c) for n, c in zip(metric_names, colors)}
 
 
+@settings(deadline=None)
+@given(plotter=cst.plotters(), data=st.data())
+def test_setting_color_for_non_metric_is_silent(plotter: LivePlot, data: st.DataObject):
+    color = {
+        data.draw(st.text(), label="non_metric"): data.draw(
+            cst.matplotlib_colors(), label="color"
+        )
+    }
+    original_colors = plotter.metric_colors
+    plotter.metric_colors = color
+    assert plotter.metric_colors == original_colors
+
+
+@settings(deadline=None)
+@given(plotter=cst.plotters(), bad_colors=cst.everything_except(dict))
+def test_color_setter_validation(plotter: LivePlot, bad_colors):
+    with pytest.raises(TypeError):
+        plotter.metric_colors = bad_colors
+
+
+@settings(deadline=None)
+@given(
+    plotter=cst.plotters(),
+    colors=st.fixed_dictionaries(
+        {"train": cst.matplotlib_colors(), "test": cst.matplotlib_colors()}
+    ),
+    data=st.data(),
+)
+def test_set_color(plotter: LivePlot, colors: dict, data: st.DataObject):
+    metric = data.draw(st.sampled_from(plotter.metrics), label="metric")
+    plotter.metric_colors = {metric: colors}
+    assert plotter.metric_colors[metric] == colors
+
+
 class LivePlotStateChecker(LivePlotStateMachine):
     """Ensures that:
     - LivePlot and LiveLogger log metrics information identically.

@@ -1,14 +1,13 @@
 from collections import OrderedDict, defaultdict, namedtuple
 from pathlib import Path
-from typing import Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
-from noggin.logger import LiveLogger
-from noggin.plotter import LivePlot
-from noggin.typing import Figure, LiveMetrics, Metrics, ndarray
-
 from custom_inherit import doc_inherit
 
+from noggin.logger import LiveLogger
+from noggin.plotter import LivePlot
+from noggin.typing import Axes, Figure, LiveMetrics, Metrics, ValidColor, ndarray
 
 __all__ = ["create_plot", "save_metrics", "load_metrics"]
 
@@ -173,3 +172,64 @@ def load_metrics(path: Union[str, Path]) -> Tuple[LiveMetrics, LiveMetrics]:
     train_metrics = OrderedDict(((k, dict(out["train"][k])) for k in train_order))
     test_metrics = OrderedDict(((k, dict(out["test"][k])) for k in test_order))
     return metrics(train_metrics, test_metrics)
+
+
+def plot_logger(
+    logger: LiveLogger,
+    plot_batches: bool = True,
+    last_n_batches: Optional[int] = None,
+    colors: Optional[Dict[str, Union[ValidColor, Dict[str, ValidColor]]]] = None,
+) -> Tuple[LivePlot, Figure, Union[Axes, np.ndarray]]:
+    """Plots the data recorded by a :class:`~noggin.plotter.LiveLogger` instance.
+
+    Converts the logger to an instance of :class:`~noggin.plotter.LivePlot`.
+
+    Parameters
+    ----------
+    logger : LiveLogger
+        The logger whose train/test-split batch/epoch-level data will be plotted.
+
+    plot_batches : bool, optional (default=True)
+        If ``True`` include batch-level data in plot.
+
+    last_n_batches : Optional[int]
+        The maximum number of batches to be plotted at any given time.
+        If ``None``, all of the data will be plotted.
+
+    colors : Optional[Dict[str, Union[ValidColor, Dict[str, ValidColor]]]]
+        ``colors`` can be a dictionary, specifying the colors used to plot
+        the metrics. Two mappings are valid:
+            - '<metric-name>' -> color-value  (specifies train-metric color only)
+            - '<metric-name>' -> {'train'/'test' : color-value}
+        If ``None``, default colors are used in the plot.
+
+    Returns
+    -----
+    Tuple[LivePlot, Figure, Union[Axes, np.ndarray]]
+        The resulting plotter, matplotlib-figure, and axis (or array of axes)
+    """
+
+    if not isinstance(logger, LiveLogger):
+        raise TypeError(
+            "`logger` must be an instance of `noggin.LiveLogger`, got {}".format(logger)
+        )
+
+    metrics = sorted(
+        set(list(logger.train_metrics.keys()) + list(logger.test_metrics.keys()))
+    )
+
+    plotter = LivePlot(
+        metrics, max_fraction_spent_plotting=0.0, last_n_batches=last_n_batches
+    )
+
+    plotter.last_n_batches = last_n_batches
+    if colors is not None:
+        plotter.metric_colors = colors
+
+    plotter_dict = plotter.to_dict()
+
+    plotter_dict.update(logger.to_dict())
+    plotter = LivePlot.from_dict(plotter_dict)
+    plotter.plot(plot_batches=plot_batches)
+    fig, ax = plotter.plot_objects
+    return plotter, fig, ax

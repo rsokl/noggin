@@ -148,9 +148,9 @@ class VerbosePlotter(LivePlot):
 
 
 @st.composite
-def loggers(draw) -> st.SearchStrategy[LiveLogger]:
-    train_metrics = draw(live_metrics())
-    test_metrics = draw(live_metrics())
+def loggers(draw, min_num_metrics=0) -> st.SearchStrategy[LiveLogger]:
+    train_metrics = draw(live_metrics(min_num_metrics=min_num_metrics))
+    test_metrics = draw(live_metrics(min_num_metrics=min_num_metrics))
     return VerboseLogger.from_dict(
         dict(
             train_metrics=train_metrics,
