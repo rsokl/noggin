@@ -179,6 +179,9 @@ def plot_logger(
     plot_batches: bool = True,
     last_n_batches: Optional[int] = None,
     colors: Optional[Dict[str, Union[ValidColor, Dict[str, ValidColor]]]] = None,
+    nrows: Optional[int] = None,
+    ncols: int = 1,
+    figsize: Optional[Tuple[int, int]] = None,
 ) -> Tuple[LivePlot, Figure, Union[Axes, np.ndarray]]:
     """Plots the data recorded by a :class:`~noggin.logger.LiveLogger` instance.
 
@@ -203,6 +206,17 @@ def plot_logger(
             - '<metric-name>' -> {'train'/'test' : color-value}
         If ``None``, default colors are used in the plot.
 
+    nrows : Optional[int]
+        Number of rows of the subplot grid. Metrics are added in
+        row-major order to fill the grid.
+
+    ncols : int, optional, default: 1
+        Number of columns of the subplot grid. Metrics are added in
+        row-major order to fill the grid.
+
+    figsize : Optional[Sequence[float, float]]
+        Specifies the width and height, respectively, of the figure.
+
     Returns
     -------
     Tuple[LivePlot, Figure, Union[Axes, np.ndarray]]
@@ -219,7 +233,12 @@ def plot_logger(
     )
 
     plotter = LivePlot(
-        metrics, max_fraction_spent_plotting=0.0, last_n_batches=last_n_batches
+        metrics,
+        max_fraction_spent_plotting=0.0,
+        last_n_batches=last_n_batches,
+        nrows=nrows,
+        ncols=ncols,
+        figsize=figsize,
     )
 
     plotter.last_n_batches = last_n_batches
