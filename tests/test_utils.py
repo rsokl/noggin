@@ -1,5 +1,4 @@
 import string
-from typing import Optional
 
 import hypothesis.strategies as st
 import numpy as np
@@ -111,22 +110,26 @@ def test_mismatched_metrics(mismatched_category, mismatched_metric):
 @settings(deadline=None)
 @given(
     metrics=st.lists(st.sampled_from("abcdef"), min_size=1, unique=True).map(tuple),
-    figsize=st.tuples(*[st.floats(min_value=1, max_value=10)] * 2),
-    max_fraction_spent_plotting=st.floats(0.0, 1.0),
-    last_n_batches=st.none() | st.integers(1, 10),
+    kwargs=cst.plot_kwargs(),
 )
-def test_create_plot(metrics, figsize, max_fraction_spent_plotting, last_n_batches):
+def test_create_plot(metrics, kwargs: dict):
     with close_plots():
-        plotter, fig, ax = create_plot(
-            metrics=metrics,
-            figsize=figsize,
-            max_fraction_spent_plotting=max_fraction_spent_plotting,
-            last_n_batches=last_n_batches,
-        )
+        plotter, fig, ax = create_plot(metrics=metrics, **kwargs)
         assert isinstance(plotter, LivePlot)
         assert isinstance(fig, Figure)
         assert isinstance(ax, (Axes, ndarray))
+
+    last_n_batches = kwargs.get("last_n_batches")
+    max_fraction_spent_plotting = kwargs.get("max_fraction_spent_plotting")
+
+    assert plotter._pltkwargs["nrows"] * plotter._pltkwargs["ncols"] >= len(
+        plotter.metrics
+    )
+
+    if last_n_batches is not None:
         assert plotter.last_n_batches == last_n_batches
+
+    if max_fraction_spent_plotting is not None:
         assert plotter.max_fraction_spent_plotting == max_fraction_spent_plotting
 
 
@@ -176,16 +179,18 @@ def test_plot_logger_validation(bad_logger):
 @settings(deadline=None)
 @given(
     logger=cst.loggers(min_num_metrics=1),
-    last_n_batches=st.none() | st.integers(1, 10),
     plot_batches=st.booleans(),
+    kwargs=cst.plot_kwargs(),
     data=st.data(),
 )
 def test_plot_logger(
-    logger: LiveLogger,
-    last_n_batches: Optional[int],
-    plot_batches: bool,
-    data: st.DataObject,
+    logger: LiveLogger, plot_batches: bool, kwargs: dict, data: st.DataObject
 ):
+    try:
+        kwargs.pop("max_fraction_spent_plotting")
+    except KeyError:
+        pass
+
     metrics = set(list(logger.train_metrics.keys()) + list(logger.test_metrics.keys()))
 
     colors = data.draw(
@@ -202,16 +207,22 @@ def test_plot_logger(
     )
     with close_plots():
         plotter, fig, ax = plot_logger(
-            logger,
-            colors=colors,
-            plot_batches=plot_batches,
-            last_n_batches=last_n_batches,
+            logger, colors=colors, plot_batches=plot_batches, **kwargs
         )
         assert isinstance(plotter, LivePlot)
         assert isinstance(fig, Figure)
         assert isinstance(ax, (Axes, ndarray))
+
+    last_n_batches = kwargs.get("last_n_batches")
     assert plotter.last_n_batches == last_n_batches
-    assert plotter.metric_colors == (colors if colors else {})
+
+    assert plotter._pltkwargs["nrows"] * plotter._pltkwargs["ncols"] >= len(
+        plotter.metrics
+    )
+
+    figsize = kwargs.get("figsize")
+    if figsize is not None:
+        assert plotter.figsize == figsize
 
     train_batch_expected, train_epoch_expected = logger.to_xarray("train")
     test_batch_expected, test_epoch_expected = logger.to_xarray("test")
