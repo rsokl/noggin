@@ -18,6 +18,7 @@ __all__ = [
     "live_metrics",
     "loggers",
     "matplotlib_colors",
+    "plot_kwargs",
 ]
 
 T = TypeVar("T")
@@ -40,6 +41,21 @@ a_bunch_of_colors.extend(colors.CSS4_COLORS.values())
 a_bunch_of_colors.extend(["C{}".format(i) for i in range(10)])
 a_bunch_of_colors.append((1.0, 0.0, 0.0, 0.5))
 a_bunch_of_colors.append(None)
+
+
+def plot_kwargs() -> st.SearchStrategy[Dict[str, Any]]:
+    def _filter_key_if_none(d: dict):
+        return {k: v for k, v in d.items() if v is not None}
+
+    return st.fixed_dictionaries(
+        dict(
+            figsize=st.none() | st.tuples(*[st.floats(min_value=1, max_value=10)] * 2),
+            max_fraction_spent_plotting=st.none() | st.floats(0.0, 1.0),
+            last_n_batches=st.none() | st.integers(1, 10),
+            nrows=st.none() | st.integers(1, 3),
+            ncols=st.none() | st.integers(1, 3),
+        )
+    ).map(_filter_key_if_none)
 
 
 def matplotlib_colors() -> st.SearchStrategy[ValidColor]:
