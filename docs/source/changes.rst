@@ -6,6 +6,20 @@ This is a record of all past noggin releases and what went into them,
 in reverse chronological order. All previous releases should still be available
 on pip.
 
+.. _v0.10.0:
+
+-------------------
+0.10.0 - 2019-06-15
+-------------------
+
+Normalizes the interfaces of :class:`~noggin.logger.LiveLogger` and :class:`~noggin.plotter.LivePlot`
+so that they can be used as drop-in replacements for each other more seamlessly.
+
+This is an API-breaking update for :class:`~noggin.plotter.LivePlot`, as it renames the methods
+``plot_train_epoch`` and ``plot_test_epoch`` to ``set_train_epoch`` and ``set_test_epoch``,
+respectively. As stated above, this is to match the interface of  :class:`~noggin.logger.LiveLogger`.
+
+
 .. _v0.9.1:
 
 -------------------
