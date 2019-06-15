@@ -474,9 +474,7 @@ class LiveLogger:
 
         return msg
 
-    def set_train_batch(
-        self, metrics: Dict[str, Real], batch_size: Integral, **kwargs
-    ):  # lgtm [py/inheritance/incorrect-overridden-signature]
+    def set_train_batch(self, metrics: Dict[str, Real], batch_size: Integral, **kwargs):
         """Record batch-level measurements for train-metrics.
 
         Parameters
@@ -509,17 +507,11 @@ class LiveLogger:
 
         self._num_train_batch += 1
 
-    def set_train_epoch(self, **kwargs):
+    def set_train_epoch(self):
         """Record an epoch for the train-metrics.
 
         Computes epoch-level statistics based on the batches accumulated since
         the prior epoch.
-
-        Notes
-        -----
-        ``**kwargs`` is included in the signature only to facilitate a seamless
-        drop-in replacement for :obj:`~noggin.plotter.LivePlot`. It is not
-        utilized here.
         """
         # compute epoch-mean metrics
         for key in self._train_metrics:
@@ -558,17 +550,11 @@ class LiveLogger:
 
         self._num_test_batch += 1
 
-    def set_test_epoch(self, **kwargs):
+    def set_test_epoch(self):
         """Record an epoch for the test-metrics.
 
         Computes epoch-level statistics based on the batches accumulated since
         the prior epoch.
-
-        Notes
-        -----
-        ``**kwargs`` is included in the signature only to facilitate a seamless
-        drop-in replacement for :obj:`~noggin.plotter.LivePlot`. It is not
-        utilized here.
         """
         # compute epoch-mean metrics
         for key in self._test_metrics:

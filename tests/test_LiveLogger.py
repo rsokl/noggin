@@ -53,6 +53,14 @@ def test_fuzz_set_epoch(logger: LiveLogger):
     logger.set_test_epoch()
 
 
+@pytest.mark.parametrize(
+    ("args", "kwargs"),
+    [(tuple(), dict()), ((["metric_a", "metric_b"], 0.5), dict(nrows=2))],
+)
+def test_logger_init_compatible_with_plotter(args: tuple, kwargs: dict):
+    LiveLogger(*args, **kwargs)
+
+
 class LiveLoggerStateMachine(RuleBasedStateMachine):
     """ Ensures that exercising the api of LiveLogger produces
     results that are consistent with a simplistic implementation"""

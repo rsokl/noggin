@@ -34,12 +34,12 @@ record and plot data during an experiment.
         if i%10 == 0 and i > 0:
             plotter.plot_train_epoch()
 
-           # cue test-evaluation of model
-           for x in np.linspace(0, 10, 5):
-               x += (np.random.rand(1) - 0.5)*5
-               test_metrics = {"accuracy": x**2}
-               plotter.set_test_batch(test_metrics, batch_size=1)
-           plotter.plot_test_epoch()
+            # cue test-evaluation of model
+            for x in np.linspace(0, 10, 5):
+                x += (np.random.rand(1) - 0.5)*5
+                test_metrics = {"accuracy": x**2}
+                plotter.set_test_batch(test_metrics, batch_size=1)
+            plotter.set_test_epoch()
     plotter.plot()  # ensures final data gets plotted
 
 .. image:: _static/liveplot.gif
