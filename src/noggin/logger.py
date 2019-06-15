@@ -438,7 +438,11 @@ class LiveLogger:
             setattr(new, "_" + item, logger_dict[item])
         return new
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        """LiveLogger.__init__ does not utilize any input arguments, but accepts
+        ``*args, **kwargs`` so that it can be used as a drop-in replacement for
+         :obj:`~noggin.plotter.LivePlot`.
+        """
         self._num_train_epoch = 0  # int: Current number of epochs trained
         self._num_train_batch = 0  # int: Current number of batches trained
         self._num_test_epoch = 0  # int: Current number of epochs tested
@@ -471,7 +475,7 @@ class LiveLogger:
         return msg
 
     def set_train_batch(
-        self, metrics: Dict[str, Real], batch_size: Integral
+        self, metrics: Dict[str, Real], batch_size: Integral, **kwargs
     ):  # lgtm [py/inheritance/incorrect-overridden-signature]
         """Record batch-level measurements for train-metrics.
 
@@ -483,7 +487,14 @@ class LiveLogger:
 
         batch_size : Integral
             The number of samples in the batch used to produce the metrics.
-            Used to weight the metrics to produce epoch-level statistics. """
+            Used to weight the metrics to produce epoch-level statistics.
+
+        Notes
+        -----
+        ``**kwargs`` is included in the signature only to facilitate a seamless
+        drop-in replacement for :obj:`~noggin.plotter.LivePlot`. It is not
+        utilized here.
+        """
 
         if not self._num_train_batch:
             # initialize batch-level metrics
@@ -498,11 +509,17 @@ class LiveLogger:
 
         self._num_train_batch += 1
 
-    def set_train_epoch(self):
+    def set_train_epoch(self, **kwargs):
         """Record an epoch for the train-metrics.
 
         Computes epoch-level statistics based on the batches accumulated since
         the prior epoch.
+
+        Notes
+        -----
+        ``**kwargs`` is included in the signature only to facilitate a seamless
+        drop-in replacement for :obj:`~noggin.plotter.LivePlot`. It is not
+        utilized here.
         """
         # compute epoch-mean metrics
         for key in self._train_metrics:
@@ -510,7 +527,7 @@ class LiveLogger:
 
         self._num_train_epoch += 1
 
-    def set_test_batch(self, metrics: Dict[str, Real], batch_size: Integral):
+    def set_test_batch(self, metrics: Dict[str, Real], batch_size: Integral, **kwargs):
         """Record batch-level measurements for test-metrics.
 
         Parameters
@@ -522,7 +539,13 @@ class LiveLogger:
         batch_size : Integral
             The number of samples in the batch used to produce the metrics.
             Used to weight the metrics to produce epoch-level statistics.
-            """
+
+        Notes
+        -----
+        ``**kwargs`` is included in the signature only to facilitate a seamless
+        drop-in replacement for :obj:`~noggin.plotter.LivePlot`. It is not
+        utilized here.
+        """
         if not self._num_test_batch:
             self._test_metrics.update((key, LiveMetric(key)) for key in metrics)
 
@@ -535,11 +558,17 @@ class LiveLogger:
 
         self._num_test_batch += 1
 
-    def set_test_epoch(self):
+    def set_test_epoch(self, **kwargs):
         """Record an epoch for the test-metrics.
 
         Computes epoch-level statistics based on the batches accumulated since
         the prior epoch.
+
+        Notes
+        -----
+        ``**kwargs`` is included in the signature only to facilitate a seamless
+        drop-in replacement for :obj:`~noggin.plotter.LivePlot`. It is not
+        utilized here.
         """
         # compute epoch-mean metrics
         for key in self._test_metrics:
