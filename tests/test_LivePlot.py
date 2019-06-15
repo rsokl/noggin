@@ -113,21 +113,12 @@ def test_unregister_metric_warns():
         plotter.set_test_batch(dict(a=1, c=1), batch_size=1)
 
 
-@given(plotter=cst.plotters())
-def test_residual_logger_methods_raise(plotter: LivePlot):
-    with pytest.raises(NotImplementedError):
-        plotter.set_train_epoch()
-
-    with pytest.raises(NotImplementedError):
-        plotter.set_test_epoch()
-
-
 def test_trivial_case():
     """ Perform a trivial sanity check on live plotter"""
     plotter = LivePlot("a")
     plotter.set_train_batch(dict(a=1.0), batch_size=1, plot=False)
     plotter.set_train_batch(dict(a=3.0), batch_size=1, plot=False)
-    plotter.plot_train_epoch()
+    plotter.set_train_epoch()
 
     assert_array_equal(plotter.train_metrics["a"]["batch_data"], np.array([1.0, 3.0]))
     assert_array_equal(plotter.train_metrics["a"]["epoch_domain"], np.array([2]))

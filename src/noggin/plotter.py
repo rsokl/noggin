@@ -494,7 +494,7 @@ class LivePlot(LiveLogger):
         if self._plot_batch:
             self._do_liveplot()
 
-    def plot_train_epoch(self):
+    def set_train_epoch(self):
         """Record and plot an epoch for the train-metrics.
 
         Computes epoch-level statistics based on the batches accumulated since
@@ -519,7 +519,7 @@ class LivePlot(LiveLogger):
             self._filter_unregistered_metrics(metrics), batch_size=batch_size
         )
 
-    def plot_test_epoch(self):
+    def set_test_epoch(self):
         """Record and plot an epoch for the test-metrics.
 
         Computes epoch-level statistics based on the batches accumulated since
@@ -720,11 +720,3 @@ class LivePlot(LiveLogger):
         """ Calls ``matplotlib.pyplot.show()``. For visualizing a static-plot"""
         if not self._liveplot:
             self._pyplot.show()
-
-    def set_test_epoch(self):
-        """ Not implemented. Use `plot_test_epoch` instead"""
-        raise NotImplementedError("Use the method `plot_test_epoch` instead")
-
-    def set_train_epoch(self):
-        """ Not implemented. Use `plot_train_epoch` instead"""
-        raise NotImplementedError("Use the method `plot_train_epoch` instead")
