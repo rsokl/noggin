@@ -149,8 +149,8 @@ def test_plot_batches_flag_via_set_batch(plotter: LivePlot, plot_batches: bool):
         plotter._liveplot = True
         plotter.max_fraction_spent_plotting = 1.0
         plotter.set_train_batch({}, batch_size=1, plot=plot_batches)
-        plotter.plot_train_epoch()
-        plotter.plot_test_epoch()
+        plotter.set_train_epoch()
+        plotter.set_test_epoch()
         for name, metric in plotter._train_metrics.items():
             if metric.batch_domain.size:
                 assert metric.batch_line is None or (
@@ -190,7 +190,7 @@ def test_plot_last_n_batches(
         for n, datum in enumerate(train_data):
             plotter.set_train_batch(dict(a=datum), batch_size=1, plot=True)
             if n + 1 in epochs:
-                plotter.plot_train_epoch()
+                plotter.set_train_epoch()
 
             # check batches
             actual_batchx = plotter._train_metrics["a"].batch_line.get_xdata()

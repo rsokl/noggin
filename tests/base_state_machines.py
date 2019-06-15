@@ -94,7 +94,7 @@ class LivePlotStateMachine(RuleBasedStateMachine):
     @rule()
     def set_train_epoch(self):
         self.logger.set_train_epoch()
-        self.plotter.plot_train_epoch()
+        self.plotter.set_train_epoch()
 
     @rule(batch_size=st.integers(0, 2), data=st.data())
     def set_test_batch(self, batch_size: int, data: SearchStrategy):
@@ -110,7 +110,7 @@ class LivePlotStateMachine(RuleBasedStateMachine):
     @rule()
     def set_test_epoch(self):
         self.logger.set_test_epoch()
-        self.plotter.plot_test_epoch()
+        self.plotter.set_test_epoch()
 
     def teardown(self):
         plt.close("all")

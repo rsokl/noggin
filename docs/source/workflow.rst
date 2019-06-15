@@ -80,8 +80,8 @@ We will be passing batches of training data to our model-training function, reco
                 _, test_accuracy = training_loop(batch)
                 plotter.set_test_batch(dict(accuracy=test_accuracy),
                                        batch_size=len(batch))
-            plotter.plot_train_epoch()
-            plotter.plot_test_epoch()
+            plotter.set_train_epoch()
+            plotter.set_test_epoch()
     # make sure any "straggler" data gets plotted
     plotter.plot()
 
