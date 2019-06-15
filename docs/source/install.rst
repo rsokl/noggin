@@ -32,7 +32,7 @@ record and plot data during an experiment.
 
         # record training epoch
         if i%10 == 0 and i > 0:
-            plotter.plot_train_epoch()
+            plotter.set_train_epoch()
 
             # cue test-evaluation of model
             for x in np.linspace(0, 10, 5):
