@@ -18,6 +18,7 @@ To begin, let's make up some functions to represent a data loader and a model th
     The details here are not important, other than the fact that
     `training_loop` returns a tuple of two floats.
     """
+
     from time import sleep
     from typing import Tuple
 
@@ -97,6 +98,8 @@ There are a number of ways that you can customize your live plot; these are deta
 - the maximum number of batches to be included in the plot
 - whether or not you want to plot the batch-level data at all
 
+.. _accessing-data:
+
 Accessing Your Data
 ###################
 
@@ -163,6 +166,8 @@ The structure of the resulting dictionary is::
 
     >>> plotter.train_metrics['accuracy']['batch_data']
     array([3.08328619e-03, 3.19260208e-03, ..., 9.99981201e-01])
+
+.. _io:
 
 Saving and Resuming Your Experiment
 ###################################
