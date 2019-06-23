@@ -3,7 +3,7 @@ Logging Data with Noggin
 ########################
 
 
-Noggin's core role in an experiment is to log your measurements and store them in an organized, accessible manner. :class:`~noggin.logger.LiveLogger` is responsible facilitating this. This class is meant to serve as
+Noggin's core role in an experiment is to log your measurements and store them in an organized, accessible manner. :class:`~noggin.logger.LiveLogger` is responsible for facilitating this. This class is meant to serve as
 a drop-in replacement for :class:`~noggin.plotter.LivePlot`, and is useful for running experiments where you do
 not need a live visualization of your data.
 
