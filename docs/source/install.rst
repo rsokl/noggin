@@ -14,7 +14,7 @@ Noggin's primary features are its abilities to:
 A Simple Example of Using Your Noggin
 -------------------------------------
 Here is a sneak peak of what it looks like to use Noggin to
-record and plot data during an experiment.
+record and plot data during an experiment. The following code is meant to be run in a Jupyter notebook.
 
 .. code:: python
 
