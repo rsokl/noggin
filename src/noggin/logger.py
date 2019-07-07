@@ -519,7 +519,7 @@ class LiveLogger:
 
         self._num_train_epoch += 1
 
-    def set_test_batch(self, metrics: Dict[str, Real], batch_size: Integral, **kwargs):
+    def set_test_batch(self, metrics: Dict[str, Real], batch_size: Integral):
         """Record batch-level measurements for test-metrics.
 
         Parameters
@@ -531,12 +531,6 @@ class LiveLogger:
         batch_size : Integral
             The number of samples in the batch used to produce the metrics.
             Used to weight the metrics to produce epoch-level statistics.
-
-        Notes
-        -----
-        ``**kwargs`` is included in the signature only to facilitate a seamless
-        drop-in replacement for :obj:`~noggin.plotter.LivePlot`. It is not
-        utilized here.
         """
         if not self._num_test_batch:
             self._test_metrics.update((key, LiveMetric(key)) for key in metrics)
