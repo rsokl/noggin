@@ -563,7 +563,7 @@ class LivePlot(LiveLogger):
         called repeatedly while logging data.
 
         Instead, one should invoke ``Liveplot.set_train_batch(plot=True)``,
-        ``Liveplot.plot_train_epoch``, and ``Liveplot.plot_test_epoch``, which will
+        ``Liveplot.set_train_epoch``, and ``Liveplot.set_test_epoch``, which will
         adjust their plot-rates according to ``Liveplot.max_fraction_spent_plotting``.
 
         ``LivePlot.plot`` should be called at the end of a logging-loop to ensure that
