@@ -200,9 +200,11 @@ class LivePlot(LiveLogger):
 
     @last_n_batches.setter
     def last_n_batches(self, value: int):
+        self._epoch_domain_lookup = dict(train=defaultdict(int), test=defaultdict(int))
+        # type: Dict[str, Dict[str, int]]
+
         if value is None:
             self._last_n_batches = None
-            self._epoch_domain_lookup = defaultdict(int)  # type: Dict[str, int]
             return
 
         if not isinstance(value, int):
@@ -218,7 +220,6 @@ class LivePlot(LiveLogger):
         # given metric's name; used to keep epoch plot within
         # "last-n-batches" plotted.
         # This must be reset each time `last_n_batches` is set
-        self._epoch_domain_lookup = defaultdict(int)  # type: Dict[str, int]
         self._last_n_batches = value
 
     def __init__(
@@ -289,7 +290,11 @@ class LivePlot(LiveLogger):
         self._plot_time_queue = deque([])  # stores most recent plot-times (seconds)
         self._time_of_last_liveplot_attempt = None  # type: Optional[float]
         self._draw_time = 0.0  # type: float
-        self._epoch_domain_lookup = defaultdict(int)  # type: Dict[str, int]
+
+        # 'train/test' -> {metric-name -> batch-index of most-recent epoch}
+        self._epoch_domain_lookup = dict(train=defaultdict(int), test=defaultdict(int))
+        # type: Dict[str, Dict[str, int]]
+
         self.last_n_batches = last_n_batches
 
         # used to warn users only once when they plot an unregistered metric
@@ -622,18 +627,12 @@ class LivePlot(LiveLogger):
                 ax.legend(**self._legend)
 
             if livedata.epoch_line is not None and livedata.batch_domain.size:
-                if self.last_n_batches:
-                    old_n = self._epoch_domain_lookup[livedata.name]
-                    n = np.searchsorted(
-                        livedata.epoch_domain[old_n:],
-                        livedata.batch_domain[-self.last_n_batches :][0],
-                    )
-                    n += old_n
-                else:
-                    n = 0
-                self._epoch_domain_lookup[livedata.name] = n
-                livedata.epoch_line.set_xdata(livedata.epoch_domain[n:])
-                livedata.epoch_line.set_ydata(livedata.epoch_data[n:])
+                self._update_epoch_domain(
+                    self.last_n_batches,
+                    batch_domain=livedata.batch_domain,
+                    epoch_domain_lookup=self._epoch_domain_lookup["train"],
+                    livedata=livedata,
+                )
 
         # plot epoch-level test metrics
         for key, livedata in self._test_metrics.items():
@@ -650,10 +649,20 @@ class LivePlot(LiveLogger):
                 ax.set_title(key)
                 ax.legend(**self._legend)
 
-            if livedata.epoch_line is not None:
-                n = self._epoch_domain_lookup[livedata.name]
-                livedata.epoch_line.set_xdata(livedata.epoch_domain[n:])
-                livedata.epoch_line.set_ydata(livedata.epoch_data[n:])
+            if livedata.epoch_line is not None and livedata.batch_domain.size:
+                if (
+                    livedata.name in self._train_metrics
+                    and self._train_metrics[livedata.name].batch_domain.size
+                ):
+                    batch_domain = self._train_metrics[livedata.name].batch_domain
+                else:
+                    batch_domain = livedata.batch_domain
+                self._update_epoch_domain(
+                    last_n_batches=self.last_n_batches,
+                    batch_domain=batch_domain,
+                    epoch_domain_lookup=self._epoch_domain_lookup["test"],
+                    livedata=livedata,
+                )
                 if livedata.epoch_data.size:
                     livedata.epoch_line.set_label(
                         "test: " + "{:.2e}".format(livedata.epoch_data[-1])
@@ -665,6 +674,42 @@ class LivePlot(LiveLogger):
         if self._liveplot and self._fig is not None:
             self._fig.canvas.draw()
         self._draw_time = time.time() - s
+
+    @staticmethod
+    def _update_epoch_domain(
+        last_n_batches: int,
+        batch_domain: np.ndarray,
+        epoch_domain_lookup: Dict[str, int],
+        livedata: LiveMetric,
+    ):
+        """ Finds the oldest epoch batch-iteration within `last_n_batches` and
+        sets the epoch-data such that it satisfies that bound.
+
+        Parameters
+        ----------
+        last_n_batches : int
+
+        batch_domain : numpy.ndarray
+            The training batch data
+
+        epoch_domain_lookup : Dict[str, int]
+            metric-name -> batch-iteration of previous earliest-plotted-epoch
+
+        livedata : LiveMetric
+            The metric being updated
+        """
+
+        if last_n_batches:
+            old_n = epoch_domain_lookup[livedata.name]
+            n = np.searchsorted(
+                livedata.epoch_domain[old_n:], batch_domain[-last_n_batches:][0]
+            )
+            n += old_n
+        else:
+            n = 0
+        epoch_domain_lookup[livedata.name] = n
+        livedata.epoch_line.set_xdata(livedata.epoch_domain[n:])
+        livedata.epoch_line.set_ydata(livedata.epoch_data[n:])
 
     def _timed_plot(self, plot_batches: bool):
         plot_start_time = time.time()
