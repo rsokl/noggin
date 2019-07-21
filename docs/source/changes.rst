@@ -6,6 +6,17 @@ This is a record of all past noggin releases and what went into them,
 in reverse chronological order. All previous releases should still be available
 on pip.
 
+.. _v0.10.1:
+
+-------------------
+0.10.1 - 2019-07-21
+-------------------
+
+Fixes bug which `last_n_batches` was specified for a :class:`~noggin.plotter.LivePlot` instance, and a
+metric's test-epochs were being plotted, but its train-epochs were not. In this scenario, `noggin` was not
+properly tracking the batch-iterations associated with the plotted epochs, and *all* of the test-epochs were
+being plotted.
+
 .. _v0.10.0:
 
 -------------------
