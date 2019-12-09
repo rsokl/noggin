@@ -243,7 +243,7 @@ class LivePlot(LiveLogger):
                 - '<metric-name>' -> {'train'/'test' : color-value}
 
         max_fraction_spent_plotting : float, optional (default=0.05)
-            The maximum fraction of time spent plotting. The default value is ``0.5``,
+            The maximum fraction of time spent plotting. The default value is ``0.05``,
             meaning that no more than 5% of processing time will be spent plotting, on
             average.
 
