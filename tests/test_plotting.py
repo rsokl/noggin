@@ -164,10 +164,10 @@ def test_plot_batches_flag_via_set_batch(plotter: LivePlot, plot_batches: bool):
                 assert metric.epoch_line.get_xdata().size > 0
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=20)
 @given(
     last_n_batches=st.none() | st.integers(1, 100),
-    train_data=st.lists(st.floats(-1e6, 1e6), min_size=1).map(np.array),
+    train_data=st.lists(st.floats(-1e6, 1e6), min_size=1, max_size=15).map(np.array),
     data=st.data(),
 )
 def test_plot_last_n_batches(
