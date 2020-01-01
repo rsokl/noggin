@@ -1,5 +1,4 @@
 from numbers import Real
-from random import Random
 from typing import Any, Optional
 
 import hypothesis.strategies as st
@@ -57,9 +56,7 @@ def test_from_dict_input_validation(bad_input: st.SearchStrategy, data: st.DataO
         LiveMetric.from_dict(bad_input)
 
 
-static_logger_dict = cst.live_metrics(min_num_metrics=1).example(
-    random=Random(0)
-)  # type: dict
+static_logger_dict = cst.live_metrics(min_num_metrics=1).example()  # type: dict
 
 
 @pytest.mark.parametrize(
