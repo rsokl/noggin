@@ -3,6 +3,7 @@ services:
   - xvfb
 sudo: false
 language: python
+install: travis_wait mvn install
 install: pip install tox
 jobs:
   include:
