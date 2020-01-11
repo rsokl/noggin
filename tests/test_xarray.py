@@ -116,7 +116,7 @@ def test_concat_experiments(logger: LiveLogger, num_exps: int, data: st.DataObje
             assert_equal(
                 batch_xarrays[n].to_array(metric),
                 out.isel(experiment=n)
-                .drop(labels=["experiment"])
+                .drop_vars(names=["experiment"])
                 .to_array(metric)
                 .dropna(dim="iterations"),
             )
