@@ -1,6 +1,6 @@
 # noggin
 
-![Python version support](https://img.shields.io/badge/python-3.6%20%203.7-blue.svg)
+![Python version support](https://img.shields.io/badge/python-3.6%20&#8208;%203.8-blue.svg)
 [![PyPi version](https://img.shields.io/pypi/v/noggin.svg)](https://pypi.python.org/pypi/noggin)
 [![Build Status](https://travis-ci.com/rsokl/noggin.svg?branch=master)](https://travis-ci.com/rsokl/noggin)
 [![codecov](https://codecov.io/gh/rsokl/noggin/branch/master/graph/badge.svg)](https://codecov.io/gh/rsokl/noggin)
