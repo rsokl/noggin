@@ -20,7 +20,7 @@ CLASSIFIERS = [
 ]
 
 INSTALL_REQUIRES = (
-    ["numpy>=1.9", "matplotlib>=2.0", "xarray>=0.1", "custom_inherit>=2.2"],
+    ["numpy>=1.9", "matplotlib>=2.0", "xarray>=0.14.1", "custom_inherit>=2.2"],
 )
 TESTS_REQUIRE = ["pytest >= 3.8", "hypothesis >= 4.22.3"]
 
