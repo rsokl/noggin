@@ -16,6 +16,6 @@ Noggin’s primary features are its abilities to:
 - Organize your measurements into a data set of arrays with labeled axes, via xarray
 - Save and load your measurements & live-plot session: resume your experiment later without a hitch
 
-You can read mode about Noggin [here](https://noggin.readthedocs.io/en/latest)
+You can read more about Noggin [here](https://noggin.readthedocs.io/en/latest)
 
 ![noggin](https://user-images.githubusercontent.com/29104956/52166468-bf425700-26db-11e9-9324-1fc83d4bc71d.gif)
